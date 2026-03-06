@@ -3,6 +3,7 @@ package com.example.diving.dto;
 import com.example.diving.domain.UserRole;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public class AuthDto {
@@ -15,7 +16,9 @@ public class AuthDto {
     public record RegisterRequest(
             @NotBlank @Email String email,
             @NotBlank @Size(min = 6, max = 100) String password,
-            @NotBlank @Size(min = 2, max = 100) String name
+            @NotBlank @Size(min = 2, max = 100) String name,
+            @NotBlank @Pattern(regexp = "^[+]?[0-9 .\\-()]{7,20}$", message = "Numéro de téléphone invalide")
+            String phone
     ) {}
 
     public record LoginResponse(

@@ -1,5 +1,5 @@
 import api from './api';
-import type { User, AppConfig } from '../types';
+import type { User, AppConfig, CreateUserRequest } from '../types';
 import type { UserRole } from '../types';
 
 export const adminService = {
@@ -8,8 +8,17 @@ export const adminService = {
     return res.data;
   },
 
-  async updateRole(userId: number, role: UserRole): Promise<User> {
-    const res = await api.put<User>(`/users/${userId}/role`, { role });
+  async createUser(req: CreateUserRequest): Promise<User> {
+    const res = await api.post<User>('/users', req);
+    return res.data;
+  },
+
+  async deleteUser(userId: number): Promise<void> {
+    await api.delete(`/users/${userId}`);
+  },
+
+  async updateRoles(userId: number, roles: UserRole[]): Promise<User> {
+    const res = await api.put<User>(`/users/${userId}/roles`, { roles });
     return res.data;
   },
 
@@ -22,5 +31,19 @@ export const adminService = {
     const res = await api.put<AppConfig>('/config/max-divers', { maxDivers });
     return res.data;
   },
-};
 
+  async updateSiteName(siteName: string): Promise<AppConfig> {
+    const res = await api.put<AppConfig>('/config/site-name', { siteName });
+    return res.data;
+  },
+
+  async updateSlotTypes(items: string[]): Promise<AppConfig> {
+    const res = await api.put<AppConfig>('/config/slot-types', { items });
+    return res.data;
+  },
+
+  async updateClubs(items: string[]): Promise<AppConfig> {
+    const res = await api.put<AppConfig>('/config/clubs', { items });
+    return res.data;
+  },
+};

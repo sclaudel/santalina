@@ -3,6 +3,7 @@ package com.example.diving.resource;
 import com.example.diving.dto.AuthDto.*;
 import com.example.diving.service.AuthService;
 import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
@@ -56,6 +57,7 @@ public class AuthResource {
 
     @POST
     @Path("/change-password")
+    @RolesAllowed({"ADMIN", "DIVE_DIRECTOR", "DIVER"})
     public Response changePassword(@Valid ChangePasswordRequest request) {
         authService.changePassword(jwt.getName(), request);
         return Response.ok(java.util.Map.of("message", "Mot de passe modifié avec succès")).build();

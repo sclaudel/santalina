@@ -1,16 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { LoginModal } from './LoginModal';
+import { adminService } from '../services/adminService';
 
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: '🔑 Administrateur',
   DIVE_DIRECTOR: '🤿 Directeur de plongée',
-  GUEST: '👁️ Invité',
+  DIVER: '🏊 Plongeur',
 };
 const ROLE_COLORS: Record<string, string> = {
   ADMIN: 'badge-admin',
   DIVE_DIRECTOR: 'badge-director',
-  GUEST: 'badge-guest',
+  DIVER: 'badge-guest',
 };
 
 interface Props {
@@ -22,11 +23,18 @@ export function NavBar({ onNavigate, currentPage }: Props) {
   const { user, isAuthenticated, logout } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [siteName, setSiteName] = useState('Carrière de Saint-Lin');
+
+  useEffect(() => {
+    adminService.getConfig()
+      .then(c => { if (c.siteName) setSiteName(c.siteName); })
+      .catch(() => {});
+  }, []);
 
   return (
     <nav className="navbar">
       <div className="navbar-brand" onClick={() => onNavigate('calendar')}>
-        🌊 <span>Lac Plongée</span>
+        🌊 <span>{siteName}</span>
       </div>
 
       <div className="navbar-nav">
@@ -78,4 +86,3 @@ export function NavBar({ onNavigate, currentPage }: Props) {
     </nav>
   );
 }
-

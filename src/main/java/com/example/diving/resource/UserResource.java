@@ -7,6 +7,7 @@ import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
@@ -26,12 +27,14 @@ public class UserResource {
 
     @GET
     @Path("/me")
+    @RolesAllowed({"ADMIN", "DIVE_DIRECTOR", "DIVER"})
     public UserResponse getProfile() {
         return userService.getProfile(jwt.getName());
     }
 
     @PUT
     @Path("/me")
+    @RolesAllowed({"ADMIN", "DIVE_DIRECTOR", "DIVER"})
     public UserResponse updateProfile(@Valid UpdateProfileRequest request) {
         return userService.updateProfile(jwt.getName(), request);
     }
@@ -42,11 +45,25 @@ public class UserResource {
         return userService.getAllUsers();
     }
 
-    @PUT
-    @Path("/{id}/role")
+    @POST
     @RolesAllowed("ADMIN")
-    public UserResponse updateRole(@PathParam("id") Long id, @Valid UpdateRoleRequest request) {
-        return userService.updateRole(id, request);
+    public Response createUser(@Valid CreateUserRequest request) {
+        UserResponse created = userService.createUser(request);
+        return Response.status(201).entity(created).build();
+    }
+
+    @PUT
+    @Path("/{id}/roles")
+    @RolesAllowed("ADMIN")
+    public UserResponse updateRoles(@PathParam("id") Long id, @Valid UpdateRolesRequest request) {
+        return userService.updateRoles(id, request);
+    }
+
+    @DELETE
+    @Path("/{id}")
+    @RolesAllowed("ADMIN")
+    public Response deleteUser(@PathParam("id") Long id) {
+        userService.deleteUser(id);
+        return Response.noContent().build();
     }
 }
-

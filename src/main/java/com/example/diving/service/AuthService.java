@@ -35,22 +35,32 @@ public class AuthService {
             throw new BadRequestException("Un compte existe déjà avec cet email");
         }
         User user = new User();
-        user.email = request.email();
-        user.name = request.name();
+        user.email        = request.email();
+        user.name         = request.name();
+        user.phone        = request.phone();
         user.passwordHash = PasswordUtil.hash(request.password());
-        user.role = UserRole.GUEST;
+        user.role         = UserRole.DIVER;
+        user.roles        = new java.util.HashSet<>();
+        user.roles.add(UserRole.DIVER);
         user.persist();
         String token = jwtUtil.generateToken(user);
-        return new LoginResponse(token, user.email, user.name, user.role, user.id);
+        return new LoginResponse(token, user.email, user.name, user.primaryRole(), user.id);
     }
 
+    @Transactional
     public LoginResponse login(LoginRequest request) {
         User user = User.findByEmail(request.email());
         if (user == null || !PasswordUtil.verify(request.password(), user.passwordHash)) {
             throw new NotAuthorizedException("Email ou mot de passe incorrect");
         }
+        // Synchroniser roles depuis role si vide (migration)
+        if (user.roles == null || user.roles.isEmpty()) {
+            user.roles = new java.util.HashSet<>();
+            user.roles.add(user.role);
+            user.persist();
+        }
         String token = jwtUtil.generateToken(user);
-        return new LoginResponse(token, user.email, user.name, user.role, user.id);
+        return new LoginResponse(token, user.email, user.name, user.primaryRole(), user.id);
     }
 
     @Transactional
@@ -97,18 +107,19 @@ public class AuthService {
     @Transactional
     public void ensureAdminExists() {
         String adminEmail = (config.adminEmail() != null && !config.adminEmail().isBlank())
-                ? config.adminEmail() : "admin@lacplongee.com";
+                ? config.adminEmail() : "admin@santalina.com";
         String adminPassword = (config.adminPassword() != null && !config.adminPassword().isBlank())
                 ? config.adminPassword() : "Admin1234";
 
         if (User.findByEmail(adminEmail) == null) {
             User admin = new User();
-            admin.email = adminEmail;
-            admin.name = "Administrateur";
+            admin.email        = adminEmail;
+            admin.name         = "Administrateur";
             admin.passwordHash = PasswordUtil.hash(adminPassword);
-            admin.role = UserRole.ADMIN;
+            admin.role         = UserRole.ADMIN;
+            admin.roles        = new java.util.HashSet<>();
+            admin.roles.add(UserRole.ADMIN);
             admin.persist();
         }
     }
 }
-

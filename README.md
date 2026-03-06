@@ -1,16 +1,17 @@
-# 🌊 Lac Plongée — Système de Réservation
+# 🌊 Santalina — Système de Réservation
 
 Application de réservation de créneaux de plongée en lac, développée avec **Quarkus 3.32.2** (Java 21) et **React 19** (TypeScript).
 
 ## ✨ Fonctionnalités
 
-- 📅 **Calendrier public** : vues Jour et Semaine sans authentification
+- 📅 **Calendrier public** : vues Jour, Semaine et Mois **chronologiques** sans authentification
 - 🔐 **Authentification JWT** : login, inscription, reset de mot de passe par email
-- 👥 **3 rôles** :
+- 👥 **3 rôles** (cumulables) :
   - `ADMIN` 🔑 : configuration, tous les créneaux, gestion des utilisateurs
-  - `DIVE_DIRECTOR` 🤿 : création et suppression de ses propres créneaux
-  - `GUEST` 👁️ : lecture seule
-- ⏰ **Créneaux** : 1h min, 10h max, résolution 15 min, chevauchements autorisés dans la limite de capacité
+  - `DIVE_DIRECTOR` 🤿 : création et suppression de ses propres créneaux + gestion des plongeurs
+  - `DIVER` 🏊 : lecture seule
+- ⏰ **Créneaux** : 1h min, 10h max, résolution 15 min, chevauchements affichés côte à côte
+- 🤿 **Plongeurs** : ajout/modification/suppression de plongeurs (nom, prénom, niveau) sur chaque créneau
 - 🎯 **Capacité configurable** : max 25 plongeurs simultanés (modifiable par l'admin)
 - 🗄️ **Double base de données** : H2 fichier (dev) / PostgreSQL (prod) — couche d'abstraction Panache
 - 🐳 **Docker-ready** : Dockerfile multi-stage + docker-compose
@@ -27,7 +28,6 @@ Application de réservation de créneaux de plongée en lac, développée avec *
 ### 1. Générer les clés RSA JWT
 ```bash
 python generate_keys.py
-# Ou lancer une première fois via Gradle (les clés sont déjà générées)
 ```
 
 ### 2. Build du frontend React
@@ -44,10 +44,10 @@ npm run build
 
 L'application est disponible sur **http://localhost:8085**
 
-> En mode dev, Quarkus utilise H2 (fichier `./data/lac-plongee`)
+> En mode dev, Quarkus utilise H2 (fichier `./data/santalina`)
 
 ### Compte administrateur par défaut
-- **Email** : `admin@lacplongee.com`
+- **Email** : `admin@santalina.com`
 - **Mot de passe** : `Admin1234`
 
 ---
@@ -58,17 +58,17 @@ L'application est disponible sur **http://localhost:8085**
 # Build et démarrage complet (app + PostgreSQL + Mailhog)
 docker compose up --build
 
-# L'application est sur http://localhost:8080
+# L'application est sur http://localhost:8085
 # Interface mail de test : http://localhost:8025
 ```
 
 ### Variables d'environnement (docker-compose.yml)
 | Variable | Description | Défaut |
 |----------|-------------|--------|
-| `JDBC_URL` | URL JDBC PostgreSQL | `jdbc:postgresql://db:5432/lacplongee` |
-| `DB_USER` | Utilisateur DB | `lacplongee` |
-| `DB_PASSWORD` | Mot de passe DB | `lacplongee_secret` |
-| `ADMIN_EMAIL` | Email admin initial | `admin@lacplongee.com` |
+| `JDBC_URL` | URL JDBC PostgreSQL | `jdbc:postgresql://db:5432/santalina` |
+| `DB_USER` | Utilisateur DB | `santalina` |
+| `DB_PASSWORD` | Mot de passe DB | `santalina_secret` |
+| `ADMIN_EMAIL` | Email admin initial | `admin@santalina.com` |
 | `ADMIN_PASSWORD` | Mot de passe admin | `Admin1234` |
 | `APP_DIVING_MAX_DIVERS` | Capacité maximale | `25` |
 | `MAILER_HOST` | Serveur SMTP | `mailhog` |
@@ -89,12 +89,17 @@ docker compose up --build
 | `GET` | `/api/slots/week?from=YYYY-MM-DD` | Public | Créneaux de la semaine |
 | `POST` | `/api/slots` | ADMIN, DIVE_DIRECTOR | Créer un créneau |
 | `DELETE` | `/api/slots/{id}` | ADMIN (tout), DIRECTOR (sien) | Supprimer |
+| `GET` | `/api/slots/{id}/divers` | Public | Plongeurs d'un créneau |
+| `POST` | `/api/slots/{id}/divers` | ADMIN, DIVE_DIRECTOR | Ajouter un plongeur |
+| `PUT` | `/api/slots/{id}/divers/{diverId}` | ADMIN, DIVE_DIRECTOR | Modifier un plongeur |
+| `DELETE` | `/api/slots/{id}/divers/{diverId}` | ADMIN, DIVE_DIRECTOR | Retirer un plongeur |
 | `GET` | `/api/users/me` | Authentifié | Mon profil |
 | `PUT` | `/api/users/me` | Authentifié | Modifier profil |
 | `GET` | `/api/users` | ADMIN | Liste utilisateurs |
-| `PUT` | `/api/users/{id}/role` | ADMIN | Changer rôle |
-| `GET` | `/api/config` | Public | Config du lac |
+| `PUT` | `/api/users/{id}/roles` | ADMIN | Changer rôles |
+| `GET` | `/api/config` | Public | Config du site |
 | `PUT` | `/api/config/max-divers` | ADMIN | Max plongeurs |
+| `PUT` | `/api/config/site-name` | ADMIN | Nom du site |
 
 Documentation Swagger : **http://localhost:8085/q/swagger-ui**
 
@@ -106,25 +111,25 @@ Documentation Swagger : **http://localhost:8085/q/swagger-ui**
 src/main/
 ├── java/com/example/diving/
 │   ├── config/          # DivingConfig (@ConfigProperty)
-│   ├── domain/          # Entités JPA (User, DiveSlot, AppConfigEntry)
+│   ├── domain/          # Entités JPA (User, DiveSlot, SlotDiver, AppConfigEntry)
 │   ├── dto/             # Records Java (request/response)
 │   ├── exception/       # GlobalExceptionMapper
 │   ├── mail/            # PasswordResetMailer
 │   ├── resource/        # JAX-RS endpoints
-│   ├── security/        # JwtUtil, PasswordUtil (BCrypt)
+│   ���── security/        # JwtUtil, PasswordUtil (BCrypt)
 │   ├── service/         # AuthService, SlotService, UserService, ConfigService
 │   └── startup/         # AppStartup (init admin + config)
 ├── resources/
 │   ├── application.properties
-│   ├── db/migration/V1__init.sql
+│   ├── db/migration/    # Flyway V1..V5
 │   ├── privateKey.pem   # Clé privée JWT (générée, ne pas committer)
 │   └── publicKey.pem    # Clé publique JWT
 └── webui/               # Frontend React + TypeScript + Vite
     └── src/
-        ├── components/  # NavBar, CalendarPicker, DayView, WeekView, SlotCard, SlotForm, LoginModal
-        ├── context/     # AuthContext (JWT + state)
+        ├── components/  # NavBar, CalendarPicker, DayView, WeekView, MonthView, SlotBlock, SlotForm, LoginModal
+        ├── context/     # AuthContext (JWT + état multi-rôles)
         ├── pages/       # CalendarPage, ProfilePage, AdminPage, ResetPasswordPage
-        ├── services/    # api.ts, authService, slotService, adminService
+        ├── services/    # api.ts, authService, slotService, adminService, slotDiverService
         └── types/       # Types TypeScript partagés
 ```
 

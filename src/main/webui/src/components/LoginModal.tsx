@@ -11,6 +11,7 @@ export function LoginModal({ onClose }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -23,7 +24,7 @@ export function LoginModal({ onClose }: Props) {
         await login(email, password);
         onClose();
       } else if (mode === 'register') {
-        await register(email, password, name);
+        await register(email, password, name, phone);
         onClose();
       } else {
         const res = await fetch('/api/auth/password-reset/request', {
@@ -41,51 +42,69 @@ export function LoginModal({ onClose }: Props) {
     }
   };
 
+  const switchMode = (m: 'login' | 'register' | 'forgot') => {
+    setMode(m); setError(''); setSuccess('');
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
         <button className="modal-close" onClick={onClose}>✕</button>
-
         <h2 className="modal-title">
           {mode === 'login' ? '🔐 Connexion' : mode === 'register' ? '📝 Inscription' : '📧 Mot de passe oublié'}
         </h2>
 
-        {error && <div className="alert alert-error">{error}</div>}
+        {error   && <div className="alert alert-error">{error}</div>}
         {success && <div className="alert alert-success">{success}</div>}
 
         <form onSubmit={handleSubmit} className="form">
           {mode === 'register' && (
             <div className="form-group">
-              <label>Nom complet</label>
-              <input type="text" value={name} onChange={e => setName(e.target.value)} required placeholder="Jean Dupont" />
+              <label>Nom complet *</label>
+              <input type="text" value={name} onChange={e => setName(e.target.value)}
+                required placeholder="Jean Dupont" />
             </div>
           )}
+
           <div className="form-group">
-            <label>Email</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="email@exemple.com" />
+            <label>Email *</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+              required placeholder="email@exemple.com" />
           </div>
+
+          {mode === 'register' && (
+            <div className="form-group">
+              <label>Téléphone *</label>
+              <input type="tel" value={phone} onChange={e => setPhone(e.target.value)}
+                required placeholder="+33 6 12 34 56 78"
+                pattern="^[+]?[0-9 .\-()]{7,20}$"
+                title="Numéro de téléphone valide (ex: +33 6 12 34 56 78)" />
+            </div>
+          )}
+
           {mode !== 'forgot' && (
             <div className="form-group">
-              <label>Mot de passe</label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} placeholder="••••••" />
+              <label>Mot de passe *</label>
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+                required minLength={6} placeholder="••••••" />
             </div>
           )}
-          <button type="submit" className="btn btn-primary" disabled={loading}>
+
+          <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: '100%' }}>
             {loading ? 'Chargement...' : mode === 'login' ? 'Se connecter' : mode === 'register' ? "S'inscrire" : 'Envoyer le lien'}
           </button>
         </form>
 
         <div className="modal-links">
           {mode === 'login' && (<>
-            <button onClick={() => setMode('register')}>Pas encore de compte ? S'inscrire</button>
-            <button onClick={() => setMode('forgot')}>Mot de passe oublié ?</button>
+            <button onClick={() => switchMode('register')}>Pas encore de compte ? S'inscrire</button>
+            <button onClick={() => switchMode('forgot')}>Mot de passe oublié ?</button>
           </>)}
           {mode !== 'login' && (
-            <button onClick={() => setMode('login')}>← Retour à la connexion</button>
+            <button onClick={() => switchMode('login')}>← Retour à la connexion</button>
           )}
         </div>
       </div>
     </div>
   );
 }
-

@@ -1,10 +1,12 @@
 package com.example.diving.service;
 
 import com.example.diving.domain.DiveSlot;
+import com.example.diving.domain.SlotDiver;
 import com.example.diving.domain.User;
 import com.example.diving.domain.UserRole;
 import com.example.diving.dto.SlotDto.SlotRequest;
 import com.example.diving.dto.SlotDto.SlotResponse;
+import com.example.diving.dto.SlotDto.UpdateSlotInfoRequest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -43,6 +45,17 @@ public class SlotService {
     }
 
     /**
+     * Retourne les créneaux d'un mois (du 1er au dernier jour)
+     */
+    public List<SlotResponse> getSlotsByMonth(int year, int month) {
+        LocalDate from = LocalDate.of(year, month, 1);
+        LocalDate to   = from.withDayOfMonth(from.lengthOfMonth());
+        return DiveSlot.findByDateRange(from, to).stream()
+                .map(SlotResponse::from)
+                .toList();
+    }
+
+    /**
      * Retourne un créneau par ID
      */
     public SlotResponse getById(Long id) {
@@ -67,7 +80,33 @@ public class SlotService {
         slot.diverCount = request.diverCount();
         slot.title = request.title();
         slot.notes = request.notes();
+        slot.slotType = request.slotType();
+        slot.club = request.club();
         slot.createdBy = currentUser;
+        slot.persist();
+
+        return SlotResponse.from(slot);
+    }
+
+    /**
+     * Modifier les infos textuelles d'un créneau (titre, notes, type, club)
+     * - ADMIN : peut modifier n'importe lequel
+     * - DIVE_DIRECTOR : seulement les siens
+     */
+    @Transactional
+    public SlotResponse updateSlotInfo(Long id, UpdateSlotInfoRequest request, User currentUser) {
+        DiveSlot slot = DiveSlot.findById(id);
+        if (slot == null) throw new NotFoundException("Créneau non trouvé");
+
+        if (currentUser.role == UserRole.DIVE_DIRECTOR &&
+                !slot.createdBy.id.equals(currentUser.id)) {
+            throw new ForbiddenException("Vous ne pouvez modifier que vos propres créneaux");
+        }
+
+        slot.title    = request.title();
+        slot.notes    = request.notes();
+        slot.slotType = request.slotType();
+        slot.club     = request.club();
         slot.persist();
 
         return SlotResponse.from(slot);
@@ -89,6 +128,39 @@ public class SlotService {
         }
 
         slot.delete();
+    }
+
+    /**
+     * Modifier le nombre de plongeurs d'un créneau
+     * - ADMIN : peut modifier n'importe lequel
+     * - DIVE_DIRECTOR : seulement les siens
+     * - Contrôle que la nouvelle valeur n'est pas inférieure au nombre de plongeurs déjà inscrits
+     */
+    @Transactional
+    public SlotResponse updateDiverCount(Long id, int newDiverCount, User currentUser) {
+        DiveSlot slot = DiveSlot.findById(id);
+        if (slot == null) throw new NotFoundException("Créneau non trouvé");
+
+        if (currentUser.role == UserRole.DIVE_DIRECTOR &&
+                !slot.createdBy.id.equals(currentUser.id)) {
+            throw new ForbiddenException("Vous ne pouvez modifier que vos propres créneaux");
+        }
+
+        validateDiverCount(newDiverCount);
+
+        long currentDiverCount = SlotDiver.countBySlot(id);
+        if (newDiverCount < currentDiverCount) {
+            throw new BadRequestException(
+                "Impossible de réduire la capacité à " + newDiverCount +
+                " : " + currentDiverCount + " plongeur(s) sont déjà inscrits");
+        }
+
+        checkCapacity(slot.slotDate, slot.startTime, slot.endTime, newDiverCount, id);
+
+        slot.diverCount = newDiverCount;
+        slot.persist();
+
+        return SlotResponse.from(slot);
     }
 
     // ---- Validation helpers ----

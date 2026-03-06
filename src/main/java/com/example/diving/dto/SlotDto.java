@@ -1,11 +1,14 @@
 package com.example.diving.dto;
 
 import com.example.diving.domain.DiveSlot;
+import com.example.diving.domain.SlotDiver;
+import com.example.diving.dto.SlotDiverDto.SlotDiverResponse;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.*;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 public class SlotDto {
 
@@ -13,9 +16,22 @@ public class SlotDto {
             @NotNull LocalDate slotDate,
             @NotNull @JsonFormat(pattern = "HH:mm") LocalTime startTime,
             @NotNull @JsonFormat(pattern = "HH:mm") LocalTime endTime,
-            @NotNull @Min(1) @Max(25) Integer diverCount,
+            @NotNull @Min(1) Integer diverCount,
             String title,
-            String notes
+            String notes,
+            String slotType,
+            String club
+    ) {}
+
+    public record UpdateDiverCountRequest(
+            @NotNull @Min(1) Integer diverCount
+    ) {}
+
+    public record UpdateSlotInfoRequest(
+            String title,
+            String notes,
+            String slotType,
+            String club
     ) {}
 
     public record SlotResponse(
@@ -26,10 +42,15 @@ public class SlotDto {
             int diverCount,
             String title,
             String notes,
+            String slotType,
+            String club,
             Long createdById,
-            String createdByName
+            String createdByName,
+            List<SlotDiverResponse> divers
     ) {
         public static SlotResponse from(DiveSlot slot) {
+            List<SlotDiverResponse> divers = SlotDiver.findBySlot(slot.id)
+                    .stream().map(SlotDiverResponse::from).toList();
             return new SlotResponse(
                     slot.id,
                     slot.slotDate,
@@ -38,10 +59,12 @@ public class SlotDto {
                     slot.diverCount,
                     slot.title,
                     slot.notes,
+                    slot.slotType,
+                    slot.club,
                     slot.createdBy != null ? slot.createdBy.id : null,
-                    slot.createdBy != null ? slot.createdBy.name : null
+                    slot.createdBy != null ? slot.createdBy.name : null,
+                    divers
             );
         }
     }
 }
-

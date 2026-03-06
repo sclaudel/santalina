@@ -31,5 +31,25 @@ public class ConfigResource {
     public ConfigResponse updateMaxDivers(@Valid UpdateMaxDiversRequest request) {
         return configService.updateMaxDivers(request.maxDivers());
     }
-}
 
+    @PUT
+    @Path("/site-name")
+    @RolesAllowed("ADMIN")
+    public ConfigResponse updateSiteName(@Valid UpdateSiteNameRequest request) {
+        return configService.updateSiteName(request.siteName());
+    }
+
+    @PUT
+    @Path("/slot-types")
+    @RolesAllowed("ADMIN")
+    public ConfigResponse updateSlotTypes(@Valid UpdateListRequest request) {
+        return configService.updateSlotTypes(request.items());
+    }
+
+    @PUT
+    @Path("/clubs")
+    @RolesAllowed("ADMIN")
+    public ConfigResponse updateClubs(@Valid UpdateListRequest request) {
+        return configService.updateClubs(request.items());
+    }
+}

@@ -1,41 +1,38 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import dayjs from 'dayjs';
-import isoWeek from 'dayjs/plugin/isoWeek';
 import type { DiveSlot, AppConfig } from '../types';
 import { slotService } from '../services/slotService';
-import { SlotCard } from './SlotCard';
-import { SlotForm } from './SlotForm';
 import { useAuth } from '../context/AuthContext';
-
-dayjs.extend(isoWeek);
+import { TimeGrid } from './TimeGrid';
 
 interface Props {
-  weekStart: string; // YYYY-MM-DD (lundi)
+  weekStart: string;
   config: AppConfig;
   onSelectDay: (date: string) => void;
+  onAdd: (date: string) => void;
 }
 
-export function WeekView({ weekStart, config, onSelectDay }: Props) {
-  const [slots, setSlots] = useState<DiveSlot[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [showFormFor, setShowFormFor] = useState<string | null>(null);
-  const { isAuthenticated, user } = useAuth();
+const DAYS_FR = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 
-  const canCreate = isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'DIVE_DIRECTOR');
+export function WeekView({ weekStart, config, onSelectDay, onAdd }: Props) {
+  const { user, isAuthenticated } = useAuth();
+  const [allSlots, setAllSlots] = useState<DiveSlot[]>([]);
+  const [loading, setLoading]   = useState(true);
 
-  const days = Array.from({ length: 7 }, (_, i) => dayjs(weekStart).add(i, 'day'));
+  const canEdit = isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'DIVE_DIRECTOR');
+  const today   = dayjs().format('YYYY-MM-DD');
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const data = await slotService.getByWeek(weekStart);
-      setSlots(data);
+      setAllSlots(data);
     } finally {
       setLoading(false);
     }
-  };
+  }, [weekStart]);
 
-  useEffect(() => { load(); }, [weekStart]);
+  useEffect(() => { load(); }, [load]);
 
   const handleDelete = async (id: number) => {
     if (!confirm('Supprimer ce créneau ?')) return;
@@ -43,55 +40,61 @@ export function WeekView({ weekStart, config, onSelectDay }: Props) {
     load();
   };
 
-  const slotsForDay = (date: string) =>
-    slots.filter(s => s.slotDate === date).sort((a, b) => a.startTime.localeCompare(b.startTime));
+  const days = Array.from({ length: 7 }, (_, i) =>
+    dayjs(weekStart).add(i, 'day').format('YYYY-MM-DD')
+  );
 
   return (
-    <div className="week-view">
-      {loading && <div className="loading">Chargement...</div>}
-      <div className="week-grid">
-        {days.map(day => {
-          const dateStr = day.format('YYYY-MM-DD');
-          const daySlots = slotsForDay(dateStr);
-          const totalDivers = daySlots.reduce((s, sl) => s + sl.diverCount, 0);
-          const isToday = dateStr === dayjs().format('YYYY-MM-DD');
-
+    <div className="week-view-chrono">
+      {/* En-tête des 7 jours */}
+      <div className="week-header-row">
+        <div className="week-time-spacer" />
+        {days.map((d, i) => {
+          const isToday = d === today;
+          const dayNum  = dayjs(d).date();
+          const count   = allSlots.filter(s => s.slotDate === d).length;
           return (
-            <div key={dateStr} className={`week-day ${isToday ? 'today' : ''}`}>
-              <div className="week-day-header" onClick={() => onSelectDay(dateStr)}>
-                <span className="week-day-name">{day.format('ddd')}</span>
-                <span className={`week-day-num ${isToday ? 'today-num' : ''}`}>{day.date()}</span>
-                {totalDivers > 0 && (
-                  <span className="week-day-count">🤿 {totalDivers}</span>
-                )}
-              </div>
-              <div className="week-slots">
-                {daySlots.map(slot => (
-                  <SlotCard
-                    key={slot.id}
-                    slot={slot}
-                    maxDivers={config.maxDivers}
-                    onDelete={handleDelete}
-                  />
-                ))}
-                {canCreate && (
-                  <button className="btn-add-day" onClick={() => setShowFormFor(dateStr)}>+</button>
-                )}
-              </div>
+            <div key={d} className={`week-day-col-header ${isToday ? 'today' : ''}`}
+              onClick={() => onSelectDay(d)}>
+              <span className="week-col-dayname">{DAYS_FR[i]}</span>
+              <span className={`week-col-daynum ${isToday ? 'today-num' : ''}`}>{dayNum}</span>
+              {count > 0 && <span className="week-col-count">{count} créneau{count > 1 ? 'x' : ''}</span>}
+              {canEdit && (
+                <button className="week-col-add"
+                  onClick={e => { e.stopPropagation(); onAdd(d); }}
+                  title={`Ajouter un créneau le ${d}`}>+</button>
+              )}
             </div>
           );
         })}
       </div>
 
-      {showFormFor && (
-        <SlotForm
-          date={showFormFor}
-          config={config}
-          onCreated={() => { setShowFormFor(null); load(); }}
-          onCancel={() => setShowFormFor(null)}
-        />
+      {loading ? (
+        <div className="loading">Chargement...</div>
+      ) : (
+        <div className="week-grid-chrono">
+          <div className="week-time-axis">
+            {Array.from({ length: 17 }, (_, i) => i + 6).map(h => (
+              <div key={h} className="week-time-label" style={{ top: (h - 6) * 60 * 2 + 'px' }}>
+                {String(h).padStart(2, '0')}:00
+              </div>
+            ))}
+          </div>
+          {days.map(d => (
+            <div key={d} className="week-day-column">
+              <TimeGrid
+                slots={allSlots.filter(s => s.slotDate === d)}
+                config={config}
+                onDelete={handleDelete}
+                onRefresh={load}
+                canEdit={canEdit}
+                currentUserId={user?.id}
+                currentUserRole={user?.role}
+              />
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
 }
-

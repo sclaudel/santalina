@@ -1,12 +1,14 @@
 // Types partagés de l'application
 
-export type UserRole = 'ADMIN' | 'DIVE_DIRECTOR' | 'GUEST';
+export type UserRole = 'ADMIN' | 'DIVE_DIRECTOR' | 'DIVER';
 
 export interface User {
   id: number;
   email: string;
   name: string;
-  role: UserRole;
+  phone?: string;
+  role: UserRole;        // rôle principal
+  roles: UserRole[];     // tous les rôles
 }
 
 export interface LoginResponse {
@@ -17,6 +19,33 @@ export interface LoginResponse {
   userId: number;
 }
 
+export interface CreateUserRequest {
+  email: string;
+  name: string;
+  password: string;
+  phone?: string;
+  roles: UserRole[];
+}
+
+export interface SlotDiver {
+  id: number;
+  firstName: string;
+  lastName: string;
+  level: string;
+  email?: string;
+  phone?: string;
+  isDirector: boolean;
+}
+
+export interface SlotDiverRequest {
+  firstName: string;
+  lastName: string;
+  level: string;
+  email?: string;
+  phone?: string;
+  isDirector: boolean;
+}
+
 export interface DiveSlot {
   id: number;
   slotDate: string;       // YYYY-MM-DD
@@ -25,8 +54,11 @@ export interface DiveSlot {
   diverCount: number;
   title: string | null;
   notes: string | null;
+  slotType: string | null;
+  club: string | null;
   createdById: number;
   createdByName: string;
+  divers: SlotDiver[];
 }
 
 export interface SlotRequest {
@@ -36,6 +68,8 @@ export interface SlotRequest {
   diverCount: number;
   title?: string;
   notes?: string;
+  slotType?: string;
+  club?: string;
 }
 
 export interface AppConfig {
@@ -43,5 +77,7 @@ export interface AppConfig {
   slotMinHours: number;
   slotMaxHours: number;
   slotResolutionMinutes: number;
+  siteName: string;
+  slotTypes: string[];
+  clubs: string[];
 }
-

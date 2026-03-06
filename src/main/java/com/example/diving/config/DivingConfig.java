@@ -11,6 +11,10 @@ public interface DivingConfig {
     @WithDefault("25")
     int maxDivers();
 
+    @WithName("site-name")
+    @WithDefault("Carrière de Saint-Lin")
+    String siteName();
+
     @WithName("slot.min-hours")
     @WithDefault("1")
     int slotMinHours();
@@ -32,7 +36,7 @@ public interface DivingConfig {
     int jwtExpiryHours();
 
     @WithName("admin.email")
-    @WithDefault("admin@lacplongee.com")
+    @WithDefault("admin@santalina.com")
     String adminEmail();
 
     @WithName("admin.password")

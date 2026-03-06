@@ -45,6 +45,15 @@ public class SlotResource {
     }
 
     @GET
+    @Path("/month")
+    @PermitAll
+    public List<SlotResponse> getByMonth(@QueryParam("year") int year, @QueryParam("month") int month) {
+        if (year == 0) year = LocalDate.now().getYear();
+        if (month == 0) month = LocalDate.now().getMonthValue();
+        return slotService.getSlotsByMonth(year, month);
+    }
+
+    @GET
     @Path("/{id}")
     @PermitAll
     public SlotResponse getById(@PathParam("id") Long id) {
@@ -68,6 +77,26 @@ public class SlotResource {
         if (currentUser == null) throw new NotAuthorizedException("Utilisateur non trouvé");
         slotService.deleteSlot(id, currentUser);
         return Response.noContent().build();
+    }
+
+    @PATCH
+    @Path("/{id}/diver-count")
+    @RolesAllowed({"ADMIN", "DIVE_DIRECTOR"})
+    public SlotResponse updateDiverCount(@PathParam("id") Long id,
+                                         @Valid UpdateDiverCountRequest request) {
+        User currentUser = User.findByEmail(jwt.getName());
+        if (currentUser == null) throw new NotAuthorizedException("Utilisateur non trouvé");
+        return slotService.updateDiverCount(id, request.diverCount(), currentUser);
+    }
+
+    @PATCH
+    @Path("/{id}/info")
+    @RolesAllowed({"ADMIN", "DIVE_DIRECTOR"})
+    public SlotResponse updateSlotInfo(@PathParam("id") Long id,
+                                       UpdateSlotInfoRequest request) {
+        User currentUser = User.findByEmail(jwt.getName());
+        if (currentUser == null) throw new NotAuthorizedException("Utilisateur non trouvé");
+        return slotService.updateSlotInfo(id, request, currentUser);
     }
 }
 

@@ -1,16 +1,9 @@
-# Exclusions pour le build Docker multi-stage
-.gradle/
-build/
-.idea/
-*.iml
-*.log
-*.txt
+# Exclusions pour le build Docker
+# Le Dockerfile copie uniquement build/quarkus-app/ (déjà buildé par build.bat)
 
-# Garder les sources
-!src/
-!build.gradle
-!settings.gradle
-!gradle.properties
-!gradlew
-!gradlew.bat
-!gradle/
+# Tout exclure par défaut
+*
+
+# Sauf le quarkus-app buildé
+!build/quarkus-app/
+!build/quarkus-app/**

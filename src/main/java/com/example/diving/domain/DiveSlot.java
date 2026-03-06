@@ -33,6 +33,12 @@ public class DiveSlot extends PanacheEntityBase {
     @Column(columnDefinition = "TEXT")
     public String notes;
 
+    @Column(name = "slot_type")
+    public String slotType;
+
+    @Column
+    public String club;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "created_by", nullable = false)
     public User createdBy;

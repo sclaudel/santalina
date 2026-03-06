@@ -21,29 +21,45 @@ function timeOptions(resolutionMinutes: number): string[] {
 }
 
 export function SlotForm({ date, config, onCreated, onCancel }: Props) {
-  // Valeurs de sécurité si config pas encore chargée
   const safeConfig = {
     maxDivers: config?.maxDivers > 0 ? config.maxDivers : 25,
     slotResolutionMinutes: config?.slotResolutionMinutes > 0 ? config.slotResolutionMinutes : 15,
     slotMinHours: config?.slotMinHours > 0 ? config.slotMinHours : 1,
     slotMaxHours: config?.slotMaxHours > 0 ? config.slotMaxHours : 10,
+    slotTypes: config?.slotTypes ?? [],
+    clubs: config?.clubs ?? [],
   };
   const times = timeOptions(safeConfig.slotResolutionMinutes);
 
-  const [startTime, setStartTime] = useState('08:00');
-  const [endTime, setEndTime] = useState('10:00');
-  const [diverCount, setDiverCount] = useState(1);
-  const [title, setTitle] = useState('');
-  const [notes, setNotes] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [startTime, setStartTime]     = useState('08:00');
+  const [endTime, setEndTime]         = useState('10:00');
+  const [diverCountStr, setDiverCountStr] = useState('1');
+  const [title, setTitle]             = useState('');
+  const [notes, setNotes]             = useState('');
+  const [slotType, setSlotType]       = useState(safeConfig.slotTypes[0] ?? '');
+  const [club, setClub]               = useState(safeConfig.clubs[0] ?? '');
+  const [error, setError]             = useState('');
+  const [loading, setLoading]         = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    const diverCount = parseInt(diverCountStr, 10);
+    if (!diverCountStr || isNaN(diverCount) || diverCount < 1) {
+      setError('Le nombre de plongeurs doit être au moins 1');
+      return;
+    }
+    if (diverCount > safeConfig.maxDivers) {
+      setError(`Le nombre de plongeurs ne peut pas dépasser ${safeConfig.maxDivers}`);
+      return;
+    }
     setLoading(true);
     try {
-      const req: SlotRequest = { slotDate: date, startTime, endTime, diverCount, title, notes };
+      const req: SlotRequest = {
+        slotDate: date, startTime, endTime, diverCount, title, notes,
+        slotType: slotType || undefined,
+        club: club || undefined,
+      };
       await slotService.create(req);
       onCreated();
     } catch (err: unknown) {
@@ -78,11 +94,34 @@ export function SlotForm({ date, config, onCreated, onCancel }: Props) {
             <label>Nombre de plongeurs (max {safeConfig.maxDivers})</label>
             <input
               type="number" min={1} max={safeConfig.maxDivers}
-              value={diverCount}
-              onChange={e => setDiverCount(Number(e.target.value))}
+              value={diverCountStr}
+              onChange={e => setDiverCountStr(e.target.value)}
+              onBlur={() => {
+                const val = parseInt(diverCountStr, 10);
+                if (!diverCountStr || isNaN(val) || val < 1) setDiverCountStr('1');
+                else if (val > safeConfig.maxDivers) setDiverCountStr(String(safeConfig.maxDivers));
+              }}
               required
             />
           </div>
+          {safeConfig.slotTypes.length > 0 && (
+            <div className="form-group">
+              <label>Type de créneau</label>
+              <select value={slotType} onChange={e => setSlotType(e.target.value)}>
+                <option value="">— Aucun —</option>
+                {safeConfig.slotTypes.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+          )}
+          {safeConfig.clubs.length > 0 && (
+            <div className="form-group">
+              <label>Club</label>
+              <select value={club} onChange={e => setClub(e.target.value)}>
+                <option value="">— Aucun —</option>
+                {safeConfig.clubs.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          )}
           <div className="form-group">
             <label>Titre (optionnel)</label>
             <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Ex: Formation niveau 1" />
@@ -102,4 +141,3 @@ export function SlotForm({ date, config, onCreated, onCancel }: Props) {
     </div>
   );
 }
-
