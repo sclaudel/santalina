@@ -44,4 +44,16 @@ public class UserDto {
             String phone,
             @NotNull @Size(min = 1) Set<UserRole> roles
     ) {}
+
+    /** Résultat allégé pour la recherche lors de l'ajout d'un plongeur */
+    public record UserSearchResult(
+            Long id,
+            String name,
+            String email,
+            String phone
+    ) {
+        public static UserSearchResult from(User user) {
+            return new UserSearchResult(user.id, user.name, user.email, user.phone);
+        }
+    }
 }

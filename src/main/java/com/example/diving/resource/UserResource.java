@@ -45,6 +45,13 @@ public class UserResource {
         return userService.getAllUsers();
     }
 
+    @GET
+    @Path("/search")
+    @RolesAllowed({"ADMIN", "DIVE_DIRECTOR"})
+    public List<UserSearchResult> searchUsers(@QueryParam("q") String q) {
+        return userService.searchUsers(q);
+    }
+
     @POST
     @RolesAllowed("ADMIN")
     public Response createUser(@Valid CreateUserRequest request) {

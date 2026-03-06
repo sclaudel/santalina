@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import type { DiveSlot } from '../types';
 import { slotService } from '../services/slotService';
 import { useAuth } from '../context/AuthContext';
+import { getSlotTypeStyle } from '../utils/slotTypeColors';
 
 interface Props {
   year: number;
@@ -115,20 +116,23 @@ export function MonthView({ year, month, onSelectDay, onAdd }: Props) {
 
                 {/* Liste des premiers créneaux (max 3) */}
                 <div className="month-slot-pills">
-                  {daySlots.slice(0, 3).map(s => (
-                    <div
-                      key={s.id}
-                      className="month-slot-pill"
-                      title={`${s.startTime}–${s.endTime}${s.title ? ' · ' + s.title : ''}`}
-                      style={{
-                        background: getCapacityColor(s.divers?.length ?? 0, s.diverCount) + '22',
-                        borderLeft: `3px solid ${getCapacityColor(s.divers?.length ?? 0, s.diverCount)}`,
-                      }}
-                    >
-                      <span className="month-pill-time">{s.startTime}–{s.endTime}</span>
-                      {s.title && <span className="month-pill-title">{s.title}</span>}
-                    </div>
-                  ))}
+                  {daySlots.slice(0, 3).map(s => {
+                    const typeStyle = getSlotTypeStyle(s.slotType);
+                    return (
+                      <div
+                        key={s.id}
+                        className="month-slot-pill"
+                        title={`${s.startTime}–${s.endTime}${s.title ? ' · ' + s.title : ''}${s.slotType ? ' · ' + s.slotType : ''}`}
+                        style={{
+                          background: typeStyle.tagBg,
+                          borderLeft: `3px solid ${typeStyle.border}`,
+                        }}
+                      >
+                        <span className="month-pill-time" style={{ color: typeStyle.color }}>{s.startTime}–{s.endTime}</span>
+                        {s.title && <span className="month-pill-title">{s.title}</span>}
+                      </div>
+                    );
+                  })}
                   {daySlots.length > 3 && (
                     <div className="month-slot-pill-more">+{daySlots.length - 3} autre{daySlots.length - 3 > 1 ? 's' : ''}</div>
                   )}

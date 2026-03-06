@@ -1,10 +1,14 @@
 import api from './api';
-import type { User, AppConfig, CreateUserRequest } from '../types';
-import type { UserRole } from '../types';
+import type { User, AppConfig, CreateUserRequest, UserRole, UserSearchResult } from '../types';
 
 export const adminService = {
   async getAllUsers(): Promise<User[]> {
     const res = await api.get<User[]>('/users');
+    return res.data;
+  },
+
+  async searchUsers(q: string): Promise<UserSearchResult[]> {
+    const res = await api.get<UserSearchResult[]>('/users/search', { params: { q } });
     return res.data;
   },
 

@@ -27,6 +27,13 @@ export interface CreateUserRequest {
   roles: UserRole[];
 }
 
+export interface UserSearchResult {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string;
+}
+
 export interface SlotDiver {
   id: number;
   firstName: string;

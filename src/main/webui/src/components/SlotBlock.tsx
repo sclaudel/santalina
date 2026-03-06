@@ -1,8 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import type { AppConfig, DiveSlot, SlotDiver, SlotDiverRequest } from '../types';
+import type { AppConfig, DiveSlot, SlotDiver, SlotDiverRequest, UserSearchResult } from '../types';
 import { slotDiverService } from '../services/slotDiverService';
 import { slotService } from '../services/slotService';
+import { adminService } from '../services/adminService';
+import { getSlotTypeStyle } from '../utils/slotTypeColors';
+import { exportFicheSecurite } from '../utils/exportFicheSecurite';
 
 interface Props {
   slot: DiveSlot;
@@ -61,6 +64,7 @@ const LEVEL_COLORS: Record<string, string> = {
 
 const TOOLTIP_WIDTH = 320;
 
+
 const EMPTY_FORM: SlotDiverRequest = {
   firstName: '', lastName: '', level: 'E1',
   email: '', phone: '', isDirector: false,
@@ -114,6 +118,15 @@ export function SlotBlock({
   const [currentSlotType, setCurrentSlotType] = useState(slot.slotType ?? '');
   const [currentClub, setCurrentClub]       = useState(slot.club ?? '');
 
+  // Recherche utilisateur (formulaire ajout)
+  const [searchQuery, setSearchQuery]         = useState('');
+  const [searchResults, setSearchResults]     = useState<UserSearchResult[]>([]);
+  const [searchLoading, setSearchLoading]     = useState(false);
+  // Recherche utilisateur (formulaire édition)
+  const [editSearchQuery, setEditSearchQuery]     = useState('');
+  const [editSearchResults, setEditSearchResults] = useState<UserSearchResult[]>([]);
+  const [editSearchLoading, setEditSearchLoading] = useState(false);
+
   const blockRef   = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
@@ -126,12 +139,30 @@ export function SlotBlock({
   const color          = getCapacityColor(usedDivers, currentDiverCount);
   const isCompact      = height < 60;
   const hasDirector    = divers.some(d => d.isDirector);
-  const isDirectorForm = form.level === 'Directeur de plongée';
 
-  // Sync isDirector dans le formulaire selon le niveau choisi
+  // Recherche utilisateur avec debounce (formulaire ajout)
   useEffect(() => {
-    setForm(f => ({ ...f, isDirector: f.level === 'Directeur de plongée' }));
-  }, [form.level]);
+    if (!searchQuery.trim()) { setSearchResults([]); return; }
+    const t = setTimeout(async () => {
+      setSearchLoading(true);
+      try { setSearchResults(await adminService.searchUsers(searchQuery)); }
+      catch { setSearchResults([]); }
+      finally { setSearchLoading(false); }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  // Recherche utilisateur avec debounce (formulaire édition)
+  useEffect(() => {
+    if (!editSearchQuery.trim()) { setEditSearchResults([]); return; }
+    const t = setTimeout(async () => {
+      setEditSearchLoading(true);
+      try { setEditSearchResults(await adminService.searchUsers(editSearchQuery)); }
+      catch { setEditSearchResults([]); }
+      finally { setEditSearchLoading(false); }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [editSearchQuery]);
 
   // Calcule position fixed en tenant compte de l'espace disponible
   const computePos = useCallback(() => {
@@ -254,22 +285,40 @@ export function SlotBlock({
     setEditingDiver(d);
     setEditForm({ firstName: d.firstName, lastName: d.lastName, level: d.level,
                   email: d.email ?? '', phone: d.phone ?? '', isDirector: d.isDirector });
+    setEditSearchQuery(''); setEditSearchResults([]);
     setEditError('');
-    setShowDiverForm(false); // ferme l'ajout si ouvert
+    setShowDiverForm(false);
+  };
+
+  /** Pré-remplit le formulaire d'ajout depuis un utilisateur trouvé */
+  const selectUserForAdd = (u: UserSearchResult) => {
+    const parts = u.name.trim().split(' ');
+    const firstName = parts[0] ?? '';
+    const lastName  = parts.slice(1).join(' ') || (parts[0] ?? '');
+    setForm(f => ({ ...f, firstName, lastName, email: u.email ?? '', phone: u.phone ?? '' }));
+    setSearchQuery(''); setSearchResults([]);
+  };
+
+  /** Pré-remplit le formulaire d'édition depuis un utilisateur trouvé */
+  const selectUserForEdit = (u: UserSearchResult) => {
+    const parts = u.name.trim().split(' ');
+    const firstName = parts[0] ?? '';
+    const lastName  = parts.slice(1).join(' ') || (parts[0] ?? '');
+    setEditForm(f => ({ ...f, firstName, lastName, email: u.email ?? '', phone: u.phone ?? '' }));
+    setEditSearchQuery(''); setEditSearchResults([]);
   };
 
   const handleUpdateDiver = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingDiver) return;
-    const isDir = editForm.level === 'Directeur de plongée';
-    if (isDir) {
+    if (editForm.isDirector) {
       if (!editForm.email?.trim()) { setEditError("L'email est obligatoire pour un directeur de plongée"); return; }
       if (!editForm.phone?.trim()) { setEditError("Le téléphone est obligatoire pour un directeur de plongée"); return; }
     }
     setEditSaving(true); setEditError('');
     try {
       const updated = await slotDiverService.update(slot.id, editingDiver.id, {
-        ...editForm, isDirector: isDir,
+        ...editForm,
       });
       setDivers(prev => {
         const next = prev.map(d => d.id === updated.id ? updated : d);
@@ -286,7 +335,7 @@ export function SlotBlock({
 
   const handleAddDiver = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isDirectorForm) {
+    if (form.isDirector) {
       if (!form.email?.trim()) { setError("L'email est obligatoire pour un directeur de plongée"); return; }
       if (!form.phone?.trim()) { setError("Le téléphone est obligatoire pour un directeur de plongée"); return; }
       if (hasDirector)         { setError("Il y a déjà un directeur de plongée sur ce créneau"); return; }
@@ -343,8 +392,12 @@ export function SlotBlock({
       {/* Tags type / club */}
       {(currentSlotType || currentClub) && !editingInfo && (
         <div className="slot-tooltip-tags">
-          {currentSlotType && <span className="slot-tag slot-tag-type">{currentSlotType}</span>}
-          {currentClub     && <span className="slot-tag slot-tag-club">🏊 {currentClub}</span>}
+          {currentSlotType && (
+            <span className="slot-tag" style={{ background: getSlotTypeStyle(currentSlotType).tagBg, color: getSlotTypeStyle(currentSlotType).tagColor }}>
+              {currentSlotType}
+            </span>
+          )}
+          {currentClub && <span className="slot-tag slot-tag-club">🏊 {currentClub}</span>}
         </div>
       )}
 
@@ -431,13 +484,16 @@ export function SlotBlock({
                           {d.isDirector && <span className="diver-director-badge" title="Directeur de plongée">🎖</span>}
                           <span className="diver-level-dot" style={{ background: getLevelColor(d.level) }} title={d.level} />
                           <span className="diver-name">{d.firstName} {d.lastName}</span>
-                          <span className="diver-level">{d.level}</span>
                           {canEditThisSlot && (
                             <div className="diver-actions">
                               <button className="diver-edit" onClick={() => startEdit(d)} title="Modifier">✏️</button>
                               <button className="diver-remove" onClick={() => handleRemoveDiver(d.id)} title="Retirer">✕</button>
                             </div>
                           )}
+                        </div>
+                        <div className="diver-sub-row">
+                          {d.isDirector && <span className="diver-function-tag">Dir. plongée</span>}
+                          <span className="diver-level">{d.level}</span>
                         </div>
                         {d.isDirector && (d.email || d.phone) && (
                           <div className="diver-director-coords">
@@ -450,6 +506,30 @@ export function SlotBlock({
                       /* Mode édition inline */
                       <form onSubmit={handleUpdateDiver} className="diver-edit-form">
                         {editError && <div className="diver-form-error">{editError}</div>}
+
+                        {/* Recherche utilisateur existant */}
+                        <div className="user-search-wrapper">
+                          <input className="user-search-input"
+                            placeholder="🔍 Rechercher un utilisateur..."
+                            value={editSearchQuery}
+                            onChange={e => setEditSearchQuery(e.target.value)}
+                            autoComplete="off" />
+                          {editSearchLoading && <div className="user-search-hint">Recherche...</div>}
+                          {!editSearchLoading && editSearchResults.length > 0 && (
+                            <ul className="user-search-results">
+                              {editSearchResults.map(u => (
+                                <li key={u.id} className="user-search-item" onMouseDown={() => selectUserForEdit(u)}>
+                                  <span className="user-search-name">{u.name}</span>
+                                  <span className="user-search-email">{u.email}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                          {!editSearchLoading && editSearchQuery.trim() && editSearchResults.length === 0 && (
+                            <div className="user-search-hint">Aucun utilisateur trouvé</div>
+                          )}
+                        </div>
+
                         <div className="diver-form-row">
                           <input placeholder="Prénom *" value={editForm.firstName} required
                             onChange={e => setEditForm(f => ({ ...f, firstName: e.target.value }))} />
@@ -457,15 +537,24 @@ export function SlotBlock({
                             onChange={e => setEditForm(f => ({ ...f, lastName: e.target.value }))} />
                         </div>
                         <select value={editForm.level}
-                          onChange={e => setEditForm(f => ({ ...f, level: e.target.value, isDirector: e.target.value === 'Directeur de plongée' }))}>
-                          {LEVELS.map(l => (
-                            <option key={l} value={l}
-                              disabled={l === 'Directeur de plongée' && hasDirector && !d.isDirector}>
-                              {l}{l === 'Directeur de plongée' && hasDirector && !d.isDirector ? ' (déjà présent)' : ''}
-                            </option>
-                          ))}
+                          onChange={e => setEditForm(f => ({ ...f, level: e.target.value }))}>
+                          {LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
                         </select>
-                        {editForm.level === 'Directeur de plongée' && (
+
+                        {/* Case directeur indépendante du niveau */}
+                        <div className="diver-director-toggle-row">
+                          {(!hasDirector || d.isDirector) ? (
+                            <label className="diver-director-checkbox">
+                              <input type="checkbox" checked={editForm.isDirector}
+                                onChange={e => setEditForm(f => ({ ...f, isDirector: e.target.checked }))} />
+                              <span>🎖 Directeur de plongée sur ce créneau</span>
+                            </label>
+                          ) : (
+                            <div className="user-search-hint" style={{ color: '#92400e' }}>⚠️ Un directeur est déjà inscrit</div>
+                          )}
+                        </div>
+
+                        {editForm.isDirector && (
                           <div className="diver-director-fields">
                             <div className="diver-director-fields-label">📋 Coordonnées (obligatoires)</div>
                             <input type="email" placeholder="Email *" required
@@ -500,69 +589,95 @@ export function SlotBlock({
           {!showDiverForm ? (
             <button
               className="btn-add-diver"
-              onClick={() => { setShowDiverForm(true); setError(''); setForm(EMPTY_FORM); }}
+              onClick={() => { setShowDiverForm(true); setError(''); setForm(EMPTY_FORM); setSearchQuery(''); setSearchResults([]); }}
             >
               + Ajouter un plongeur
             </button>
           ) : (
             <form onSubmit={handleAddDiver} className="diver-form">
               {error && <div className="diver-form-error">{error}</div>}
-              <div className="diver-form-row">
+
+              {/* Recherche utilisateur existant */}
+              <div className="user-search-wrapper">
                 <input
-                  placeholder="Prénom *"
-                  value={form.firstName}
-                  onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))}
-                  required
+                  className="user-search-input"
+                  placeholder="🔍 Rechercher un utilisateur..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  autoComplete="off"
                 />
-                <input
-                  placeholder="Nom *"
-                  value={form.lastName}
-                  onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))}
-                  required
-                />
+                {searchLoading && <div className="user-search-hint">Recherche...</div>}
+                {!searchLoading && searchResults.length > 0 && (
+                  <ul className="user-search-results">
+                    {searchResults.map(u => (
+                      <li key={u.id} className="user-search-item" onMouseDown={() => selectUserForAdd(u)}>
+                        <span className="user-search-name">{u.name}</span>
+                        <span className="user-search-email">{u.email}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {!searchLoading && searchQuery.trim() && searchResults.length === 0 && (
+                  <div className="user-search-hint">Aucun utilisateur trouvé</div>
+                )}
               </div>
-              <select
-                value={form.level}
-                onChange={e => setForm(f => ({ ...f, level: e.target.value }))}
-              >
+
+              <div className="diver-form-row">
+                <input placeholder="Prénom *" value={form.firstName} required
+                  onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))} />
+                <input placeholder="Nom *" value={form.lastName} required
+                  onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))} />
+              </div>
+              <select value={form.level} onChange={e => setForm(f => ({ ...f, level: e.target.value }))}>
                 {LEVELS.map(l => (
-                  <option key={l} value={l} disabled={l === 'Directeur de plongée' && hasDirector}>
-                    {l}{l === 'Directeur de plongée' && hasDirector ? ' (déjà présent)' : ''}
-                  </option>
+                  <option key={l} value={l}>{l}</option>
                 ))}
               </select>
-              {/* Champs supplémentaires si Directeur de plongée */}
-              {isDirectorForm && (
+
+              {/* Case à cocher directeur — indépendante du niveau */}
+              <div className="diver-director-toggle-row">
+                {!hasDirector ? (
+                  <label className="diver-director-checkbox">
+                    <input type="checkbox" checked={form.isDirector}
+                      onChange={e => setForm(f => ({ ...f, isDirector: e.target.checked }))} />
+                    <span>🎖 Directeur de plongée sur ce créneau</span>
+                  </label>
+                ) : (
+                  <div className="user-search-hint" style={{ color: '#92400e' }}>⚠️ Un directeur est déjà inscrit</div>
+                )}
+              </div>
+
+              {/* Champs email/téléphone obligatoires si directeur */}
+              {form.isDirector && (
                 <div className="diver-director-fields">
                   <div className="diver-director-fields-label">📋 Coordonnées du directeur (obligatoires)</div>
-                  <input
-                    type="email"
-                    placeholder="Email *"
-                    value={form.email ?? ''}
-                    onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                    required
-                  />
-                  <input
-                    type="tel"
-                    placeholder="Téléphone *"
-                    value={form.phone ?? ''}
-                    onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                    required
-                  />
+                  <input type="email" placeholder="Email *" value={form.email ?? ''} required
+                    onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+                  <input type="tel" placeholder="Téléphone *" value={form.phone ?? ''} required
+                    onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
                 </div>
               )}
               <div className="diver-form-actions">
-                <button type="submit" disabled={saving} className="btn-diver-save">
-                  {saving ? '...' : 'Ajouter'}
-                </button>
+                <button type="submit" disabled={saving} className="btn-diver-save">{saving ? '...' : 'Ajouter'}</button>
                 <button type="button" className="btn-diver-cancel"
-                  onClick={() => { setShowDiverForm(false); setError(''); }}>
+                  onClick={() => { setShowDiverForm(false); setError(''); setSearchQuery(''); setSearchResults([]); }}>
                   Annuler
                 </button>
               </div>
             </form>
           )}
         </div>
+      )}
+
+      {/* Bouton export fiche de sécurité */}
+      {canEditThisSlot && (
+        <button className="btn-export-fiche"
+          onClick={() => exportFicheSecurite(
+            { ...slot, title: currentTitle, notes: currentNotes, slotType: currentSlotType, club: currentClub, diverCount: currentDiverCount },
+            divers
+          ).catch(err => console.error('Export fiche sécurité :', err))}>
+          📊 Exporter fiche de sécurité (Excel)
+        </button>
       )}
 
       {/* Bouton supprimer le créneau */}
@@ -581,12 +696,20 @@ export function SlotBlock({
       <div
         ref={blockRef}
         className={`slot-block ${isCompact ? 'compact' : ''} ${showTooltip ? 'slot-block-active' : ''}`}
-        style={{ borderLeftColor: color, cursor: 'pointer' }}
+        style={{
+          borderLeftColor: getSlotTypeStyle(currentSlotType).border,
+          background: getSlotTypeStyle(currentSlotType).bg,
+          cursor: 'pointer',
+        }}
         onClick={handleBlockClick}
       >
         <div className="slot-block-content">
-          <div className="slot-block-time">{slot.startTime} – {slot.endTime}</div>
-          {!isCompact && currentSlotType && <div className="slot-block-type">{currentSlotType}</div>}
+          <div className="slot-block-time" style={{ color: getSlotTypeStyle(currentSlotType).color }}>{slot.startTime} – {slot.endTime}</div>
+          {!isCompact && currentSlotType && (
+            <div className="slot-block-type" style={{ background: getSlotTypeStyle(currentSlotType).tagBg, color: getSlotTypeStyle(currentSlotType).tagColor }}>
+              {currentSlotType}
+            </div>
+          )}
           {!isCompact && currentClub     && <div className="slot-block-club">🏊 {currentClub}</div>}
           {!isCompact && currentTitle    && <div className="slot-block-title">{currentTitle}</div>}
           <div className="slot-block-count" style={{ color }}>🤿 {usedDivers}/{currentDiverCount}</div>

@@ -344,7 +344,9 @@ body {
 .diver-director-badge { font-size: 12px; flex-shrink: 0; }
 .diver-level-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .diver-name  { font-size: 12px; font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.diver-level { font-size: 11px; color: var(--gray-500); white-space: nowrap; }
+.diver-level{font-size:11px;color:var(--gray-500);white-space:nowrap}
+.diver-sub-row{display:flex;align-items:center;gap:5px;padding-left:22px;margin-top:1px}
+.diver-function-tag{font-size:10px;font-weight:700;color:#9a3412;background:#ffedd5;border:1px solid #fed7aa;border-radius:10px;padding:1px 6px;white-space:nowrap;flex-shrink:0}
 .diver-remove {
   background: none; border: none; cursor: pointer; color: var(--danger);
   font-size: 11px; padding: 2px 4px; border-radius: 3px; opacity: 0.6; flex-shrink: 0;
@@ -403,6 +405,11 @@ body {
   border: 1px solid #fecaca; border-radius: 4px; cursor: pointer; font-size: 12px;
 }
 .btn-delete-slot-tooltip:hover { background: var(--danger); color: var(--white); }
+.btn-export-fiche {
+  width: 100%; margin-top: 8px; padding: 6px; background: #eff6ff; color: #1e40af;
+  border: 1px solid #bfdbfe; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;
+}
+.btn-export-fiche:hover { background: #1e40af; color: var(--white); }
 
 /* Tags type / club dans la tooltip */
 .slot-tooltip-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
@@ -436,6 +443,46 @@ body {
 /* Club affiché dans le bloc calendrier */
 .slot-block-club { font-size: 10px; font-weight: 700; color: #15803d; background: #dcfce7;
   border-radius: 3px; padding: 1px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ========== RECHERCHE UTILISATEUR ========== */
+.user-search-wrapper { position: relative; margin-bottom: 6px; }
+.user-search-input {
+  width: 100%; border: 1px solid var(--gray-300); border-radius: 4px;
+  padding: 5px 8px; font-size: 12px; box-sizing: border-box;
+}
+.user-search-input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 2px var(--primary-light); }
+.user-search-results {
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 100000;
+  background: var(--white); border: 1px solid var(--gray-200); border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin: 0; padding: 0; list-style: none;
+  max-height: 160px; overflow-y: auto;
+}
+.user-search-item {
+  display: flex; flex-direction: column; padding: 7px 10px; cursor: pointer;
+  border-bottom: 1px solid var(--gray-100); transition: background .1s;
+}
+.user-search-item:last-child { border-bottom: none; }
+.user-search-item:hover { background: var(--primary-light); }
+.user-search-name { font-size: 12px; font-weight: 600; color: var(--gray-800); }
+.user-search-email { font-size: 11px; color: var(--gray-500); }
+.user-search-hint { font-size: 11px; color: var(--gray-400); padding: 4px 2px; }
+
+/* Ligne conteneur de la checkbox directeur */
+.diver-director-toggle-row {
+  display: flex; align-items: center; padding: 2px 0;
+}
+/* Case à cocher directeur */
+.diver-director-checkbox {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 11px; white-space: nowrap;
+  color: #92400e; cursor: pointer; padding: 4px 8px;
+  background: #fef9c3; border: 1px solid #fde68a; border-radius: 4px;
+  line-height: 1.4; user-select: none;
+}
+.diver-director-checkbox input[type="checkbox"] {
+  cursor: pointer; margin: 0; flex-shrink: 0;
+  width: 13px; height: 13px; accent-color: #d97706;
+}
+.diver-director-checkbox span { flex-shrink: 0; }
 
 /* ========== SLOT FORM MODAL ========== */
 .slot-form-overlay {

@@ -9,6 +9,7 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 
+import java.text.Normalizer;
 import java.util.HashSet;
 import java.util.List;
 
@@ -35,6 +36,26 @@ public class UserService {
         return User.<User>listAll().stream()
                 .map(UserResponse::from)
                 .toList();
+    }
+
+    /** Recherche d'utilisateurs par nom ou email (insensible à la casse ET aux accents, max 10 résultats) */
+    public List<UserSearchResult> searchUsers(String query) {
+        if (query == null || query.isBlank()) return List.of();
+        String normalized = stripAccents(query.trim().toLowerCase());
+        return User.<User>listAll()
+                .stream()
+                .filter(u -> stripAccents(u.name.toLowerCase()).contains(normalized)
+                          || stripAccents(u.email.toLowerCase()).contains(normalized))
+                .limit(10)
+                .map(UserSearchResult::from)
+                .toList();
+    }
+
+    /** Supprime les diacritiques (accents) d'une chaîne */
+    private static String stripAccents(String s) {
+        if (s == null) return "";
+        String decomposed = Normalizer.normalize(s, Normalizer.Form.NFD);
+        return decomposed.replaceAll("\\p{M}", "");
     }
 
     @Transactional
