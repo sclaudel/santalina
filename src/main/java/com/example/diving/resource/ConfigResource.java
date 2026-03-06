@@ -1,0 +1,35 @@
+package com.example.diving.resource;
+
+import com.example.diving.dto.ConfigDto.*;
+import com.example.diving.service.ConfigService;
+import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
+import jakarta.validation.Valid;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+
+@Path("/api/config")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "Configuration")
+public class ConfigResource {
+
+    @Inject
+    ConfigService configService;
+
+    @GET
+    @PermitAll
+    public ConfigResponse getConfig() {
+        return configService.getConfig();
+    }
+
+    @PUT
+    @Path("/max-divers")
+    @RolesAllowed("ADMIN")
+    public ConfigResponse updateMaxDivers(@Valid UpdateMaxDiversRequest request) {
+        return configService.updateMaxDivers(request.maxDivers());
+    }
+}
+

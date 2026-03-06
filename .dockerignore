@@ -1,0 +1,16 @@
+# Exclusions pour le build Docker multi-stage
+.gradle/
+build/
+.idea/
+*.iml
+*.log
+*.txt
+
+# Garder les sources
+!src/
+!build.gradle
+!settings.gradle
+!gradle.properties
+!gradlew
+!gradlew.bat
+!gradle/

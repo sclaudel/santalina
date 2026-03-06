@@ -1,0 +1,63 @@
+services:
+
+  # ---- Base de données PostgreSQL ----
+  db:
+    image: postgres:16-alpine
+    container_name: lac-plongee-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lacplongee
+      POSTGRES_USER: lacplongee
+      POSTGRES_PASSWORD: lacplongee_secret
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lacplongee"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---- Application Quarkus ----
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lac-plongee-app
+    restart: unless-stopped
+    ports:
+      - "8085:8085"
+    environment:
+      QUARKUS_PROFILE: prod
+      JDBC_URL: jdbc:postgresql://db:5432/lacplongee
+      DB_USER: lacplongee
+      DB_PASSWORD: lacplongee_secret
+      # Surcharger le compte admin par défaut
+      ADMIN_EMAIL: admin@lacplongee.com
+      ADMIN_PASSWORD: AdminSecure@2024!
+      # Mailer SMTP (optionnel, remplacer par vos paramètres)
+      MAILER_FROM: noreply@lacplongee.com
+      MAILER_HOST: mailhog
+      MAILER_PORT: 1025
+      # Capacité du lac
+      APP_DIVING_MAX_DIVERS: 25
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - app_data:/deployments/data
+
+  # ---- Mailhog (serveur SMTP de test) ----
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: lac-plongee-mail
+    restart: unless-stopped
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Interface web
+
+volumes:
+  postgres_data:
+  app_data:
+
