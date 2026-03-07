@@ -4,7 +4,7 @@ REM build.bat — Script de build complet pour Windows
 REM ============================================================
 echo.
 echo ======================================
-echo  Build Lac Plongée (Windows)
+echo  Build (Windows)
 echo ======================================
 
 echo.

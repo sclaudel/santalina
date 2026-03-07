@@ -20,7 +20,7 @@ public class AppStartup {
     ConfigService configService;
 
     void onStart(@Observes StartupEvent event) {
-        LOG.info("🌊 Démarrage de l'application Lac Plongée...");
+        LOG.info("🌊 Démarrage de l'application...");
         configService.ensureDefaults();
         authService.ensureAdminExists();
         LOG.info("✅ Initialisation terminée");
