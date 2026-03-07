@@ -5,6 +5,7 @@ import { CalendarPage } from './pages/CalendarPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { AdminPage } from './pages/AdminPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
+import { HelpPage } from './pages/HelpPage';
 import { adminService } from './services/adminService';
 import type { AppConfig } from './types';
 import './App.css';
@@ -57,6 +58,7 @@ function AppContent() {
         {currentPage === 'calendar' && <CalendarPage />}
         {currentPage === 'profile' && isAuthenticated && <ProfilePage />}
         {currentPage === 'admin' && user?.role === 'ADMIN' && <AdminPage />}
+        {currentPage === 'help' && <HelpPage />}
       </div>
       <footer className="app-footer">
         <p>🌊 Lac Plongée — Système de réservation © {new Date().getFullYear()}</p>
