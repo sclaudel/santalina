@@ -23,6 +23,7 @@ export function NavBar({ onNavigate, currentPage }: Props) {
   const { user, isAuthenticated, logout } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [siteName, setSiteName] = useState('Carrière de Saint-Lin');
 
   useEffect(() => {
@@ -31,12 +32,15 @@ export function NavBar({ onNavigate, currentPage }: Props) {
       .catch(() => {});
   }, []);
 
+  const closeMobileMenu = () => setShowMobileMenu(false);
+
   return (
     <nav className="navbar">
-      <div className="navbar-brand" onClick={() => onNavigate('calendar')}>
+      <div className="navbar-brand" onClick={() => { onNavigate('calendar'); closeMobileMenu(); }}>
         🌊 <span>{siteName}</span>
       </div>
 
+      {/* Navigation desktop */}
       <div className="navbar-nav">
         <button
           className={`nav-link ${currentPage === 'calendar' ? 'active' : ''}`}
@@ -54,7 +58,8 @@ export function NavBar({ onNavigate, currentPage }: Props) {
         )}
       </div>
 
-      <div className="navbar-auth">
+      {/* Menu utilisateur desktop */}
+      <div className="navbar-auth navbar-auth-desktop">
         {isAuthenticated && user ? (
           <div className="user-menu-wrapper">
             <button className="user-btn" onClick={() => setShowUserMenu(!showUserMenu)}>
@@ -81,6 +86,53 @@ export function NavBar({ onNavigate, currentPage }: Props) {
           </button>
         )}
       </div>
+
+      {/* Bouton hamburger (mobile uniquement) */}
+      <button
+        className="navbar-hamburger"
+        onClick={() => setShowMobileMenu(v => !v)}
+        aria-label="Menu"
+        aria-expanded={showMobileMenu}
+      >
+        {showMobileMenu ? '✕' : '☰'}
+      </button>
+
+      {/* Menu déroulant mobile */}
+      {showMobileMenu && (
+        <div className="navbar-mobile-menu">
+          <button
+            className={currentPage === 'calendar' ? 'active' : ''}
+            onClick={() => { onNavigate('calendar'); closeMobileMenu(); }}
+          >
+            📅 Calendrier
+          </button>
+          {isAuthenticated && user?.role === 'ADMIN' && (
+            <button
+              className={currentPage === 'admin' ? 'active' : ''}
+              onClick={() => { onNavigate('admin'); closeMobileMenu(); }}
+            >
+              ⚙️ Administration
+            </button>
+          )}
+          {isAuthenticated ? (
+            <>
+              <button
+                className={currentPage === 'profile' ? 'active' : ''}
+                onClick={() => { onNavigate('profile'); closeMobileMenu(); }}
+              >
+                👤 Mon profil {user ? `— ${user.name}` : ''}
+              </button>
+              <button className="mobile-menu-danger" onClick={() => { logout(); closeMobileMenu(); }}>
+                🚪 Déconnexion
+              </button>
+            </>
+          ) : (
+            <button onClick={() => { setShowLogin(true); closeMobileMenu(); }}>
+              🔐 Connexion
+            </button>
+          )}
+        </div>
+      )}
 
       {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
     </nav>
