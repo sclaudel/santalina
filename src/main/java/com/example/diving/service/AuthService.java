@@ -27,10 +27,16 @@ public class AuthService {
     DivingConfig config;
 
     @Inject
+    ConfigService configService;
+
+    @Inject
     PasswordResetMailer mailer;
 
     @Transactional
     public LoginResponse register(RegisterRequest request) {
+        if (!configService.isSelfRegistration()) {
+            throw new BadRequestException("Les inscriptions sont désactivées");
+        }
         if (User.findByEmail(request.email()) != null) {
             throw new BadRequestException("Un compte existe déjà avec cet email");
         }

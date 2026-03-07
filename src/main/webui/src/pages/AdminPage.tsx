@@ -210,6 +210,49 @@ export function AdminPage() {
         </div>
       </div>
 
+      {/* Accès et inscriptions */}
+      <div className="admin-section">
+        <h2>🔒 Accès &amp; inscriptions</h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <label className="toggle-setting">
+            <div className="toggle-setting-info">
+              <strong>Accès public au calendrier</strong>
+              <span>Si activé, les visiteurs non connectés peuvent consulter les créneaux</span>
+            </div>
+            <button
+              type="button"
+              className={`toggle-btn ${config?.publicAccess ? 'toggle-on' : 'toggle-off'}`}
+              onClick={async () => {
+                if (!config) return;
+                const updated = await adminService.updatePublicAccess(!config.publicAccess);
+                setConfig(updated);
+                setMsg(`Accès public ${updated.publicAccess ? 'activé' : 'désactivé'}`);
+              }}
+            >
+              {config?.publicAccess ? '✅ Activé' : '🔴 Désactivé'}
+            </button>
+          </label>
+          <label className="toggle-setting">
+            <div className="toggle-setting-info">
+              <strong>Inscription libre</strong>
+              <span>Si activé, n'importe qui peut créer un compte depuis la page de connexion</span>
+            </div>
+            <button
+              type="button"
+              className={`toggle-btn ${config?.selfRegistration ? 'toggle-on' : 'toggle-off'}`}
+              onClick={async () => {
+                if (!config) return;
+                const updated = await adminService.updateSelfRegistration(!config.selfRegistration);
+                setConfig(updated);
+                setMsg(`Inscription libre ${updated.selfRegistration ? 'activée' : 'désactivée'}`);
+              }}
+            >
+              {config?.selfRegistration ? '✅ Activée' : '🔴 Désactivée'}
+            </button>
+          </label>
+        </div>
+      </div>
+
       {/* Listes configurables */}
       <div className="admin-section">
         <h2>📋 Listes configurables</h2>

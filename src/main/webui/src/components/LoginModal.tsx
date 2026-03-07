@@ -3,9 +3,10 @@ import { useAuth } from '../context/AuthContext';
 
 interface Props {
   onClose: () => void;
+  selfRegistration?: boolean;
 }
 
-export function LoginModal({ onClose }: Props) {
+export function LoginModal({ onClose, selfRegistration = true }: Props) {
   const { login, register } = useAuth();
   const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
   const [email, setEmail] = useState('');
@@ -97,7 +98,9 @@ export function LoginModal({ onClose }: Props) {
 
         <div className="modal-links">
           {mode === 'login' && (<>
-            <button onClick={() => switchMode('register')}>Pas encore de compte ? S'inscrire</button>
+            {selfRegistration && (
+              <button onClick={() => switchMode('register')}>Pas encore de compte ? S'inscrire</button>
+            )}
             <button onClick={() => switchMode('forgot')}>Mot de passe oublié ?</button>
           </>)}
           {mode !== 'login' && (

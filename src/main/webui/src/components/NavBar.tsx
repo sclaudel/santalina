@@ -17,9 +17,10 @@ const ROLE_COLORS: Record<string, string> = {
 interface Props {
   onNavigate: (page: string) => void;
   currentPage: string;
+  selfRegistration?: boolean;
 }
 
-export function NavBar({ onNavigate, currentPage }: Props) {
+export function NavBar({ onNavigate, currentPage, selfRegistration = true }: Props) {
   const { user, isAuthenticated, logout } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -87,6 +88,7 @@ export function NavBar({ onNavigate, currentPage }: Props) {
         )}
       </div>
 
+      {showLogin && <LoginModal onClose={() => setShowLogin(false)} selfRegistration={selfRegistration} />}
       {/* Bouton hamburger (mobile uniquement) */}
       <button
         className="navbar-hamburger"

@@ -23,6 +23,7 @@ export function CalendarPage() {
   const [config, setConfig] = useState<AppConfig>({
     maxDivers: 25, slotMinHours: 1, slotMaxHours: 10, slotResolutionMinutes: 15,
     siteName: 'Carri\u00e8re de Saint-Lin', slotTypes: [], clubs: [],
+    publicAccess: true, selfRegistration: true,
   });
   // Date pour laquelle on ouvre le formulaire (null = fermé)
   const [formDate, setFormDate] = useState<string | null>(null);

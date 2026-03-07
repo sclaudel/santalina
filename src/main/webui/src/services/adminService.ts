@@ -55,4 +55,14 @@ export const adminService = {
     const res = await api.put<AppConfig>('/config/clubs', { items });
     return res.data;
   },
+
+  async updatePublicAccess(value: boolean): Promise<AppConfig> {
+    const res = await api.put<AppConfig>('/config/public-access', { value });
+    return res.data;
+  },
+
+  async updateSelfRegistration(value: boolean): Promise<AppConfig> {
+    const res = await api.put<AppConfig>('/config/self-registration', { value });
+    return res.data;
+  },
 };
