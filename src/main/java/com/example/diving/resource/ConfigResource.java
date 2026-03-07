@@ -52,4 +52,18 @@ public class ConfigResource {
     public ConfigResponse updateClubs(@Valid UpdateListRequest request) {
         return configService.updateClubs(request.items());
     }
+
+    @PUT
+    @Path("/public-access")
+    @RolesAllowed("ADMIN")
+    public ConfigResponse updatePublicAccess(@Valid UpdateBooleanRequest request) {
+        return configService.updatePublicAccess(request.value());
+    }
+
+    @PUT
+    @Path("/self-registration")
+    @RolesAllowed("ADMIN")
+    public ConfigResponse updateSelfRegistration(@Valid UpdateBooleanRequest request) {
+        return configService.updateSelfRegistration(request.value());
+    }
 }

@@ -93,4 +93,6 @@ export interface AppConfig {
   siteName: string;
   slotTypes: string[];
   clubs: string[];
+  publicAccess: boolean;
+  selfRegistration: boolean;
 }

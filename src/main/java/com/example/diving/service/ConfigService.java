@@ -20,8 +20,10 @@ public class ConfigService {
     private static final String KEY_MAX_HOURS   = "slot.max.hours";
     private static final String KEY_RESOLUTION  = "slot.resolution.minutes";
     private static final String KEY_SITE_NAME   = "site.name";
-    private static final String KEY_SLOT_TYPES  = "slot.types";
-    private static final String KEY_CLUBS       = "slot.clubs";
+    private static final String KEY_SLOT_TYPES       = "slot.types";
+    private static final String KEY_CLUBS             = "slot.clubs";
+    private static final String KEY_PUBLIC_ACCESS     = "public.access";
+    private static final String KEY_SELF_REGISTRATION = "self.registration";
 
     private static final String DEFAULT_SLOT_TYPES =
         "Club - Plongée|Club - Apnée|Club - Nage avec Palme|CODEP - Plongée|CODEP - Apnée|CODEP - Nage avec Palme|Externe - SDIS - Gendarmerie";
@@ -55,12 +57,19 @@ public class ConfigService {
     public List<String> getClubs() {
         return parseList(getStringValue(KEY_CLUBS, DEFAULT_CLUBS));
     }
+    public boolean isPublicAccess() {
+        return Boolean.parseBoolean(getStringValue(KEY_PUBLIC_ACCESS, "true"));
+    }
+    public boolean isSelfRegistration() {
+        return Boolean.parseBoolean(getStringValue(KEY_SELF_REGISTRATION, "true"));
+    }
 
     public ConfigResponse getConfig() {
         return new ConfigResponse(
                 getMaxDivers(), getSlotMinHours(), getSlotMaxHours(),
                 getSlotResolutionMinutes(), getSiteName(),
-                getSlotTypes(), getClubs()
+                getSlotTypes(), getClubs(),
+                isPublicAccess(), isSelfRegistration()
         );
     }
 
@@ -86,6 +95,16 @@ public class ConfigService {
         forceUpsert(KEY_CLUBS, serializeList(clubs));
         return getConfig();
     }
+    @Transactional
+    public ConfigResponse updatePublicAccess(boolean value) {
+        forceUpsert(KEY_PUBLIC_ACCESS, String.valueOf(value));
+        return getConfig();
+    }
+    @Transactional
+    public ConfigResponse updateSelfRegistration(boolean value) {
+        forceUpsert(KEY_SELF_REGISTRATION, String.valueOf(value));
+        return getConfig();
+    }
 
     // ---- Init au démarrage ----
 
@@ -107,8 +126,10 @@ public class ConfigService {
         upsertIfInvalid(KEY_MAX_HOURS,  "10");
         upsertIfInvalid(KEY_RESOLUTION, "15");
         upsertIfMissing(KEY_SITE_NAME,  "Carri\u00e8re de Saint-Lin");
-        upsertIfMissing(KEY_SLOT_TYPES, DEFAULT_SLOT_TYPES);
-        upsertIfMissing(KEY_CLUBS,      DEFAULT_CLUBS);
+        upsertIfMissing(KEY_SLOT_TYPES,       DEFAULT_SLOT_TYPES);
+        upsertIfMissing(KEY_CLUBS,             DEFAULT_CLUBS);
+        upsertIfMissing(KEY_PUBLIC_ACCESS,     "true");
+        upsertIfMissing(KEY_SELF_REGISTRATION, "true");
     }
 
     // ---- Helpers privés ----

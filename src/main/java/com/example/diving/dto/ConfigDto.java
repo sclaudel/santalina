@@ -15,7 +15,9 @@ public class ConfigDto {
             int slotResolutionMinutes,
             String siteName,
             List<String> slotTypes,
-            List<String> clubs
+            List<String> clubs,
+            boolean publicAccess,
+            boolean selfRegistration
     ) {}
 
     public record UpdateMaxDiversRequest(
@@ -28,5 +30,9 @@ public class ConfigDto {
 
     public record UpdateListRequest(
             @NotNull List<@NotBlank String> items
+    ) {}
+
+    public record UpdateBooleanRequest(
+            @NotNull Boolean value
     ) {}
 }
