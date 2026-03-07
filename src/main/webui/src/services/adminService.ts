@@ -1,5 +1,5 @@
 import api from './api';
-import type { User, AppConfig, CreateUserRequest, UserRole, UserSearchResult } from '../types';
+import type { User, AppConfig, CreateUserRequest, UpdateUserAdminRequest, UserRole, UserSearchResult } from '../types';
 
 export const adminService = {
   async getAllUsers(): Promise<User[]> {
@@ -19,6 +19,11 @@ export const adminService = {
 
   async deleteUser(userId: number): Promise<void> {
     await api.delete(`/users/${userId}`);
+  },
+
+  async updateUser(userId: number, req: UpdateUserAdminRequest): Promise<User> {
+    const res = await api.put<User>(`/users/${userId}`, req);
+    return res.data;
   },
 
   async updateRoles(userId: number, roles: UserRole[]): Promise<User> {

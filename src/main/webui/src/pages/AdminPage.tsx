@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { adminService } from '../services/adminService';
-import type { User, AppConfig, CreateUserRequest, UserRole } from '../types';
+import type { User, AppConfig, CreateUserRequest, UpdateUserAdminRequest, UserRole } from '../types';
+import { getErrorMessage } from '../utils/errorUtils';
 
 
 const ALL_ROLES: { value: UserRole; label: string }[] = [
@@ -25,6 +26,10 @@ export function AdminPage() {
   const [createForm, setCreateForm]         = useState<CreateUserRequest>(EMPTY_FORM);
   const [createError, setCreateError]       = useState('');
   const [createLoading, setCreateLoading]   = useState(false);
+  const [editingUserId, setEditingUserId]   = useState<number | null>(null);
+  const [editForm, setEditForm]             = useState<UpdateUserAdminRequest>({ email: '', name: '', phone: '' });
+  const [editError, setEditError]           = useState('');
+  const [editLoading, setEditLoading]       = useState(false);
 
   // Listes configurables
   const [slotTypesText, setSlotTypesText] = useState('');
@@ -53,8 +58,7 @@ export function AdminPage() {
       setConfig(updated);
       setMsg(`Capacité maximale mise à jour : ${updated.maxDivers} plongeurs`);
     } catch (err: unknown) {
-      const m = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(m || 'Erreur lors de la mise à jour');
+      setError(getErrorMessage(err));
     } finally { setLoading(false); }
   };
 
@@ -65,8 +69,7 @@ export function AdminPage() {
       setConfig(updated);
       setMsg(`Nom du site mis à jour : "${updated.siteName}"`);
     } catch (err: unknown) {
-      const m = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(m || 'Erreur lors de la mise à jour');
+      setError(getErrorMessage(err));
     } finally { setLoading(false); }
   };
 
@@ -81,8 +84,8 @@ export function AdminPage() {
       const updated = await adminService.updateRoles(user.id, next);
       setUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
       setMsg(`Rôles de ${user.name} mis à jour`);
-    } catch {
-      setError('Erreur lors du changement de rôle');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
     }
   };
 
@@ -92,8 +95,8 @@ export function AdminPage() {
       await adminService.deleteUser(userId);
       setUsers(users.filter(u => u.id !== userId));
       setMsg('Utilisateur supprimé');
-    } catch {
-      setError('Erreur lors de la suppression');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
     }
   };
 
@@ -106,8 +109,7 @@ export function AdminPage() {
       setShowCreateForm(false);
       setMsg(`Utilisateur "${created.name}" créé avec succès`);
     } catch (err: unknown) {
-      const m = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setCreateError(m || 'Erreur lors de la création');
+      setCreateError(getErrorMessage(err));
     } finally { setCreateLoading(false); }
   };
 
@@ -119,7 +121,7 @@ export function AdminPage() {
       setConfig(updated);
       setSlotTypesText((updated.slotTypes ?? []).join('\n'));
       setMsg('Types de créneaux mis à jour');
-    } catch { setError('Erreur lors de la mise à jour'); }
+    } catch (err: unknown) { setError(getErrorMessage(err)); }
     finally { setListLoading(false); }
   };
 
@@ -131,7 +133,7 @@ export function AdminPage() {
       setConfig(updated);
       setClubsText((updated.clubs ?? []).join('\n'));
       setMsg('Clubs mis à jour');
-    } catch { setError('Erreur lors de la mise à jour'); }
+    } catch (err: unknown) { setError(getErrorMessage(err)); }
     finally { setListLoading(false); }
   };
 
@@ -141,6 +143,31 @@ export function AdminPage() {
       const next = cur.includes(role) ? cur.filter(r => r !== role) : [...cur, role];
       return { ...f, roles: next.length ? next : [role] };
     });
+  };
+
+  const startEditUser = (user: User) => {
+    setShowCreateForm(false);
+    setEditingUserId(user.id);
+    setEditForm({ email: user.email, name: user.name, phone: user.phone ?? '' });
+    setEditError('');
+  };
+
+  const cancelEditUser = () => {
+    setEditingUserId(null);
+    setEditForm({ email: '', name: '', phone: '' });
+    setEditError('');
+  };
+
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault(); setEditError(''); setEditLoading(true);
+    try {
+      const updated = await adminService.updateUser(editingUserId!, editForm);
+      setUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
+      setMsg(`Utilisateur "${updated.name}" mis à jour`);
+      cancelEditUser();
+    } catch (err: unknown) {
+      setEditError(getErrorMessage(err));
+    } finally { setEditLoading(false); }
   };
 
   return (
@@ -279,6 +306,37 @@ export function AdminPage() {
           </form>
         )}
 
+        {/* Formulaire modification */}
+        {editingUserId !== null && (
+          <form onSubmit={handleUpdateUser} className="create-user-form">
+            <h3>Modifier l'utilisateur</h3>
+            {editError && <div className="alert alert-error">{editError}</div>}
+            <div className="form-row">
+              <div className="form-group">
+                <label>Nom complet *</label>
+                <input placeholder="Jean Dupont" value={editForm.name}
+                  onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} required />
+              </div>
+              <div className="form-group">
+                <label>Email *</label>
+                <input type="email" placeholder="jean@example.com" value={editForm.email}
+                  onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} required />
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Téléphone</label>
+              <input type="tel" placeholder="+33 6 12 34 56 78" value={editForm.phone ?? ''}
+                onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))} />
+            </div>
+            <div className="form-actions">
+              <button type="button" className="btn btn-outline" onClick={cancelEditUser}>Annuler</button>
+              <button type="submit" className="btn btn-primary" disabled={editLoading}>
+                {editLoading ? 'Mise à jour...' : '✓ Enregistrer'}
+              </button>
+            </div>
+          </form>
+        )}
+
         {/* Table des utilisateurs */}
         <div className="users-table-wrapper">
           <table className="users-table">
@@ -310,10 +368,16 @@ export function AdminPage() {
                       </div>
                     </td>
                     <td>
-                      <button className="btn btn-small"
-                        style={{ color: '#dc2626', background: '#fee2e2', border: 'none' }}
-                        onClick={() => handleDeleteUser(u.id, u.name)}
-                        title="Supprimer">🗑 Supprimer</button>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button className="btn btn-small"
+                          style={{ color: '#2563eb', background: '#dbeafe', border: 'none' }}
+                          onClick={() => startEditUser(u)}
+                          title="Modifier">✏️ Modifier</button>
+                        <button className="btn btn-small"
+                          style={{ color: '#dc2626', background: '#fee2e2', border: 'none' }}
+                          onClick={() => handleDeleteUser(u.id, u.name)}
+                          title="Supprimer">🗑 Supprimer</button>
+                      </div>
                     </td>
                   </tr>
                 );

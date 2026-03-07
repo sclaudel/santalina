@@ -27,6 +27,12 @@ export interface CreateUserRequest {
   roles: UserRole[];
 }
 
+export interface UpdateUserAdminRequest {
+  email: string;
+  name: string;
+  phone?: string;
+}
+
 export interface UserSearchResult {
   id: number;
   name: string;

@@ -73,4 +73,11 @@ public class UserResource {
         userService.deleteUser(id);
         return Response.noContent().build();
     }
+
+    @PUT
+    @Path("/{id}")
+    @RolesAllowed("ADMIN")
+    public UserResponse updateUserAsAdmin(@PathParam("id") Long id, @Valid UpdateUserAdminRequest request) {
+        return userService.updateUserAsAdmin(id, request);
+    }
 }

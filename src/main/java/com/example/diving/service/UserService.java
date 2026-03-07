@@ -90,4 +90,20 @@ public class UserService {
         if (user == null) throw new NotFoundException("Utilisateur non trouvé");
         user.delete();
     }
+
+    @Transactional
+    public UserResponse updateUserAsAdmin(Long userId, UpdateUserAdminRequest request) {
+        User user = User.findById(userId);
+        if (user == null) throw new NotFoundException("Utilisateur non trouvé");
+        if (!user.email.equals(request.email())) {
+            if (User.findByEmail(request.email()) != null) {
+                throw new BadRequestException("Un compte existe déjà avec cet email");
+            }
+        }
+        user.email = request.email();
+        user.name  = request.name();
+        user.phone = request.phone();
+        user.persist();
+        return UserResponse.from(user);
+    }
 }
