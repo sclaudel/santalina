@@ -57,6 +57,12 @@ export function NavBar({ onNavigate, currentPage, selfRegistration = true }: Pro
             ⚙️ Administration
           </button>
         )}
+        <button
+          className={`nav-link ${currentPage === 'help' ? 'active' : ''}`}
+          onClick={() => onNavigate('help')}
+        >
+          📖 Aide
+        </button>
       </div>
 
       {/* Menu utilisateur desktop */}
@@ -116,6 +122,12 @@ export function NavBar({ onNavigate, currentPage, selfRegistration = true }: Pro
               ⚙️ Administration
             </button>
           )}
+          <button
+            className={currentPage === 'help' ? 'active' : ''}
+            onClick={() => { onNavigate('help'); closeMobileMenu(); }}
+          >
+            📖 Aide
+          </button>
           {isAuthenticated ? (
             <>
               <button
