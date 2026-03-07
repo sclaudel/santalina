@@ -7,6 +7,17 @@ import { adminService } from '../services/adminService';
 import { getSlotTypeStyle } from '../utils/slotTypeColors';
 import { exportFicheSecurite } from '../utils/exportFicheSecurite';
 
+/** Réinitialise le zoom iOS après fermeture d'un formulaire.
+ *  iOS Safari zoome automatiquement sur les inputs < 16px et ne dézoome jamais.
+ *  Ce hack ajoute brièvement maximum-scale=1 pour forcer le retour à l'échelle 1. */
+function resetIOSZoom() {
+  const viewport = document.querySelector<HTMLMetaElement>('meta[name="viewport"]');
+  if (!viewport) return;
+  const original = viewport.content;
+  viewport.content = original + ', maximum-scale=1';
+  setTimeout(() => { viewport.content = original; }, 300);
+}
+
 interface Props {
   slot: DiveSlot;
   maxDivers?: number;
@@ -346,6 +357,7 @@ export function SlotBlock({
       setDivers(prev => d.isDirector ? [d, ...prev] : [...prev, d]);
       setForm(EMPTY_FORM);
       setShowDiverForm(false);
+      resetIOSZoom();
       onRefresh();
     } catch (err: unknown) {
       const m = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
@@ -660,7 +672,7 @@ export function SlotBlock({
               <div className="diver-form-actions">
                 <button type="submit" disabled={saving} className="btn-diver-save">{saving ? '...' : 'Ajouter'}</button>
                 <button type="button" className="btn-diver-cancel"
-                  onClick={() => { setShowDiverForm(false); setError(''); setSearchQuery(''); setSearchResults([]); }}>
+                  onClick={() => { setShowDiverForm(false); setError(''); setSearchQuery(''); setSearchResults([]); resetIOSZoom(); }}>
                   Annuler
                 </button>
               </div>
