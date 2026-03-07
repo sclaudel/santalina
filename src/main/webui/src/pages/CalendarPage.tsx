@@ -29,6 +29,7 @@ export function CalendarPage() {
   const [childKey, setChildKey] = useState(0); // force reload des vues
 
   const canEdit = isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'DIVE_DIRECTOR');
+  const [showSidebar, setShowSidebar] = useState(false);
 
   useEffect(() => {
     adminService.getConfig().then(setConfig).catch(() => {});
@@ -76,7 +77,10 @@ export function CalendarPage() {
 
   return (
     <div className="calendar-page">
-      <aside className="calendar-sidebar">
+      <button className="btn-sidebar-toggle" onClick={() => setShowSidebar(v => !v)}>
+        {showSidebar ? '✕ Fermer' : '📅 Mini-calendrier & infos'}
+      </button>
+      <aside className={`calendar-sidebar${showSidebar ? ' sidebar-open' : ''}`}>
         <CalendarPicker selectedDate={selectedDate} onDateChange={setSelectedDate} />
         <div className="config-info">
           <h4>📊 Capacité</h4>

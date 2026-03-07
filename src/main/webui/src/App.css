@@ -684,15 +684,163 @@ body {
 }
 .month-cell:hover .month-cell-add { opacity: 1; }
 
-/* ========== RESPONSIVE ========== */
-@media (max-width: 768px) {
-  .calendar-page { flex-direction: column; }
-  .calendar-sidebar { width: 100%; min-width: 100%; border-right: none; border-bottom: 1px solid var(--gray-200); }
-  .week-grid { grid-template-columns: repeat(3, 1fr); }
-  .config-grid { grid-template-columns: repeat(2, 1fr); }
-  .navbar-brand span { display: none; }
-  .form-row { flex-direction: column; }
+/* ========== NAVBAR HAMBURGER & MOBILE MENU ========== */
+.navbar-hamburger {
+  display: none;
+  background: rgba(255,255,255,0.15); border: none; color: var(--white);
+  font-size: 22px; line-height: 1; padding: 8px 10px; border-radius: var(--radius);
+  cursor: pointer; flex-shrink: 0;
 }
+.navbar-hamburger:hover { background: rgba(255,255,255,0.25); }
+.navbar-mobile-menu {
+  display: flex; flex-direction: column;
+  position: absolute; top: 60px; left: 0; right: 0;
+  background: var(--primary); z-index: 300;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+.navbar-mobile-menu button {
+  padding: 15px 20px; text-align: left;
+  background: none; border: none; border-bottom: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.9); font-size: 15px; cursor: pointer;
+  transition: background 0.15s;
+}
+.navbar-mobile-menu button:last-child { border-bottom: none; }
+.navbar-mobile-menu button:hover,
+.navbar-mobile-menu button.active { background: rgba(255,255,255,0.15); color: var(--white); }
+.navbar-mobile-menu .mobile-menu-danger { color: #fca5a5; }
+.navbar-mobile-menu .mobile-menu-danger:hover { background: rgba(220,38,38,0.3); color: #fecaca; }
+
+/* ========== SIDEBAR TOGGLE (mobile uniquement) ========== */
+.btn-sidebar-toggle {
+  display: none;
+  width: 100%; padding: 10px 16px;
+  background: var(--primary-light); color: var(--primary);
+  border: none; border-bottom: 1px solid var(--gray-200);
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  text-align: left; transition: background 0.15s;
+}
+.btn-sidebar-toggle:hover { background: #bfdbfe; }
+
+/* ========== RESPONSIVE ========== */
+
+/* --- Tablette (≤ 768px) --- */
+@media (max-width: 768px) {
+  .page { padding: 16px 12px; }
+
+  /* Navbar */
+  .navbar { padding: 0 12px; gap: 8px; position: relative; flex-wrap: wrap; }
+  .navbar-nav { display: none; }
+  .navbar-auth-desktop { display: none; }
+  .navbar-hamburger { display: flex; align-items: center; margin-left: auto; }
+  .navbar-brand span { font-size: 15px; }
+
+  /* Sidebar calendrier */
+  .calendar-page { flex-direction: column; min-height: unset; }
+  .btn-sidebar-toggle { display: block; }
+  .calendar-sidebar {
+    width: 100%; min-width: 100%;
+    border-right: none; border-bottom: 1px solid var(--gray-200);
+    display: none;
+  }
+  .calendar-sidebar.sidebar-open { display: flex; }
+  .calendar-main { padding: 12px; overflow: visible; }
+
+  /* Grille horaire : scroll géré par la page, pas par un div interne */
+  .time-grid-wrapper { overflow: visible; }
+  .week-grid-chrono  { overflow: visible; }
+
+  /* L'en-tête des colonnes semaine reste collant sous la navbar */
+  .week-header-row { position: sticky; top: 60px; z-index: 20; }
+
+  /* Contrôles vue */
+  .view-controls { gap: 8px; flex-wrap: wrap; }
+  .period-label { font-size: 13px; }
+  .view-toggle .btn { font-size: 12px; padding: 6px 10px; }
+
+  /* Vue mois — cellules plus petites */
+  .month-cell { min-height: 64px; padding: 4px; }
+  .month-dow { font-size: 10px; padding: 4px 2px; }
+  .month-day-num { font-size: 12px; width: 20px; height: 20px; }
+  .month-slot-pill { display: none; }
+  .month-slots-count { display: none; }
+
+  /* Modales — slide depuis le bas */
+  .modal-overlay { align-items: flex-end; }
+  .modal {
+    max-width: 100%; width: 100%;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    max-height: 90vh; overflow-y: auto;
+  }
+  .slot-form-overlay { align-items: flex-end; }
+  .slot-form {
+    max-width: 100%; width: 100%;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    max-height: 90vh; overflow-y: auto;
+  }
+
+  /* Tooltip créneau — panneau bas de page */
+  .slot-tooltip {
+    position: fixed !important;
+    bottom: 0 !important; top: auto !important;
+    left: 0 !important; right: 0 !important;
+    width: 100% !important;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    max-height: 75vh; overflow-y: auto;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.2);
+  }
+
+  /* Formulaires */
+  .form-row { flex-direction: column; gap: 0; }
+  .form-actions { flex-direction: column-reverse; }
+  .form-actions .btn { width: 100%; justify-content: center; min-height: 44px; }
+
+  /* Admin */
+  .admin-section { padding: 16px; }
+  .config-grid { grid-template-columns: repeat(2, 1fr); }
+  .admin-section-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .admin-section-header h2 { margin-bottom: 0; }
+  .admin-section-header .btn { width: 100%; justify-content: center; }
+  .create-user-form { padding: 14px; }
+  .roles-checkboxes-inline { flex-direction: row; flex-wrap: wrap; gap: 4px; }
+
+  /* Cibles tactiles */
+  .btn { min-height: 40px; }
+  .btn-small { min-height: 36px; }
+  .nav-link { padding: 10px 16px; }
+}
+
+/* --- Mobile (≤ 480px) --- */
 @media (max-width: 480px) {
+  .page { padding: 12px 8px; }
+
+  /* Navbar — très petit écran */
+  .navbar-brand span { display: none; }
+
+  /* Masquer colonnes secondaires du tableau utilisateurs */
+  .users-table th:nth-child(2),
+  .users-table td:nth-child(2) { display: none; } /* email */
+  .users-table th:nth-child(3),
+  .users-table td:nth-child(3) { display: none; } /* téléphone */
+  .users-table th:nth-child(4),
+  .users-table td:nth-child(4) { display: none; } /* rôles */
+
+  /* Vue semaine — 1 seule colonne */
   .week-grid { grid-template-columns: 1fr; }
+
+  /* Grid config — 2 colonnes compactes */
+  .config-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .config-item { padding: 10px; }
+  .config-item strong { font-size: 18px; }
+
+  /* Tooltip / Modale — plein écran */
+  .modal { border-radius: 0; max-height: 100dvh; }
+  .slot-form { border-radius: 0; max-height: 100dvh; }
+
+  /* Période — tronquée si trop longue */
+  .period-label { font-size: 12px; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Formulaires d'admin */
+  .form-inline { flex-direction: column; }
+  .form-inline .btn { width: 100%; justify-content: center; }
 }
