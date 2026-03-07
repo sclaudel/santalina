@@ -4,7 +4,7 @@
 # ============================================================
 set -e
 
-echo "🌊 Build de l'application Lac Plongée"
+echo "🌊 Build de l'application"
 echo "======================================"
 
 # 1. Build du frontend React

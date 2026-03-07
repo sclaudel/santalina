@@ -16,7 +16,7 @@ public class PasswordResetMailer {
         String body = """
                 <html>
                 <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                  <h2 style="color: #1e40af;">🌊 Lac Plongée - Réinitialisation du mot de passe</h2>
+                  <h2 style="color: #1e40af;">🌊 Réinitialisation du mot de passe</h2>
                   <p>Bonjour <strong>%s</strong>,</p>
                   <p>Vous avez demandé la réinitialisation de votre mot de passe.</p>
                   <p>Cliquez sur le bouton ci-dessous pour définir un nouveau mot de passe :</p>
@@ -30,13 +30,13 @@ public class PasswordResetMailer {
                   <p>Ce lien est valable 30 minutes.</p>
                   <p>Si vous n'avez pas demandé cette réinitialisation, ignorez ce message.</p>
                   <hr style="border: 1px solid #e5e7eb; margin-top: 30px;" />
-                  <p style="color: #6b7280; font-size: 12px;">Lac Plongée - Système de réservation</p>
+                  <p style="color: #6b7280; font-size: 12px;">Système de réservation</p>
                 </body>
                 </html>
                 """.formatted(name, resetUrl);
 
         mailer.send(
-                Mail.withHtml(email, "Réinitialisation de votre mot de passe - Lac Plongée", body)
+                Mail.withHtml(email, "Réinitialisation de votre mot de passe", body)
         );
     }
 }

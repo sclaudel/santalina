@@ -6,7 +6,7 @@ REM ============================================================
 
 echo.
 echo ======================================
-echo  Mode développement - Lac Plongée
+echo  Mode développement
 echo ======================================
 echo.
 echo Backend  : http://localhost:8085

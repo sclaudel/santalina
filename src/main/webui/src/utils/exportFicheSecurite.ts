@@ -30,9 +30,9 @@ function cap(s: string): string {
  *  R28–R31   : Groupe 5
  *  R34       : Rappels réglementaires
  *
- *  Colonnes remplies : A(N°), B(Nom), C(Prénom), D(Aptitude), F(CACI vide), G(Gaz vide)
- *  Colonne M         : NE PAS TOUCHER (mise en forme du template)
- *  Colonne E (Fonction) : NE PAS REMPLIR (saisie manuelle)
+ *  Colonnes remplies : B(Nom), C(Prénom), F(CACI vide), G(Gaz vide)
+ *  Colonnes non touchées : A(N° — template), D(Aptitude — non demandée),
+ *                          E(Fonction — saisie manuelle), H–M (template d'origine)
  *
  *  Capacité : 5 groupes × 4 lignes = 20 plongeurs par page.
  *  Si plus de 20 plongeurs → page supplémentaire (copie du template).
@@ -48,8 +48,9 @@ const DIVER_ROWS: number[] = [
 ];
 const MAX_PER_PAGE = DIVER_ROWS.length; // 20
 
-// Colonnes à effacer/remplir (on exclut la colonne 13 = M)
-const COLS_TO_CLEAR = [1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12]; // A B C D F G H I J K L
+// Seules les colonnes B, C, F, G sont effacées/réécrites.
+// A, D, E et H–M ne sont pas touchées (contenu et mise en forme du template conservés).
+const COLS_TO_CLEAR = [2, 3, 6, 7]; // B C F G
 
 /** Remplit l'en-tête d'une feuille avec les infos du créneau */
 function fillHeader(
@@ -65,7 +66,7 @@ function fillHeader(
   const dpInfo   = dirLevel ? `${dirName} (${dirLevel})` : dirName;
 
   ws.getCell('B4').value =
-    `Date : ${fmtDate(slot.slotDate)}\nClub : ${slot.club ?? ''}\nNom, Prénom et Brevet du DP : ${dpInfo}`;
+    `Date : ${fmtDate(slot.slotDate)} ${slot.startTime}–${slot.endTime}\nClub : ${slot.club ?? ''}\nNom, Prénom et Brevet du DP : ${dpInfo}`;
 
   const startHour = parseInt(slot.startTime.split(':')[0], 10);
   if (startHour < 13) {
@@ -76,7 +77,9 @@ function fillHeader(
     ws.getCell('I4').value = `PM\n${slot.startTime} – ${slot.endTime}`;
   }
 
-  ws.getCell('J4').value = `${allDivers.length} / ${slot.diverCount}`;
+  // Libellé + valeur Nb Plongeurs dans la même cellule J4
+  ws.getCell('J4').value = `Nb Plongeurs\n${allDivers.length} / ${slot.diverCount}`;
+  ws.getCell('J4').alignment = { wrapText: true, vertical: 'middle', horizontal: 'center' };
 
   if (totalPages > 1) {
     const cell = ws.getCell('B2');
@@ -91,14 +94,12 @@ function fillHeader(
  * Remplit les lignes plongeurs d'une feuille.
  * @param ws         Feuille cible
  * @param pageDivers Plongeurs de cette page (max 20)
- * @param globalOffset Index global du premier plongeur de la page
  * @param modelStyles  Styles sauvegardés de la ligne modèle (R8)
  * @param modelHeight  Hauteur de la ligne modèle
  */
 function fillPageDivers(
   ws: ExcelJS.Worksheet,
   pageDivers: SlotDiver[],
-  globalOffset: number,
   modelStyles: Partial<ExcelJS.Style>[],
   modelHeight: number,
 ) {
@@ -121,14 +122,11 @@ function fillPageDivers(
       cell.value = null;
     }
 
-    // Remplir les données (pas la colonne E=Fonction, pas la colonne M)
-    ws.getCell(r, 1).value = globalOffset + i + 1;          // A : numéro
+    // Remplir uniquement Nom (B) et Prénom (C)
+    // A (N°), D (Aptitude), E (Fonction), H–M : non touchés (template d'origine)
     ws.getCell(r, 2).value = d.lastName.toUpperCase();      // B : Nom
     ws.getCell(r, 3).value = cap(d.firstName);              // C : Prénom
-    ws.getCell(r, 4).value = d.level ?? '';                 // D : Aptitude
-    // E (Fonction) : laissée vide — saisie manuelle
-    // F (CACI), G (Gaz), H-L (paramètres) : vides
-    // M : non touché (mise en forme template)
+    // F (CACI) et G (Gaz) sont effacés via COLS_TO_CLEAR mais laissés vides pour saisie manuelle
   });
 }
 
@@ -164,7 +162,7 @@ export async function exportFicheSecurite(slot: DiveSlot, divers: SlotDiver[]): 
   // ── Page 1 ─────��───────────────────────────────────────────���──────────────
   ws1.name = totalPages > 1 ? 'Page 1' : 'Fiche sécurité';
   fillHeader(ws1, slot, sorted, 1, totalPages);
-  fillPageDivers(ws1, sorted.slice(0, MAX_PER_PAGE), 0, modelStyles, modelHeight);
+  fillPageDivers(ws1, sorted.slice(0, MAX_PER_PAGE), modelStyles, modelHeight);
 
   if (slot.notes) {
     ws1.getCell('J33').value = `Notes : ${slot.notes}`;
@@ -184,7 +182,7 @@ export async function exportFicheSecurite(slot: DiveSlot, divers: SlotDiver[]): 
     wsNew.model = { ...wsTmp.model, name: `Page ${page}`, id: wsNew.id } as typeof wsNew.model;
 
     fillHeader(wsNew, slot, sorted, page, totalPages);
-    fillPageDivers(wsNew, pageDivers, offset, modelStyles, modelHeight);
+    fillPageDivers(wsNew, pageDivers, modelStyles, modelHeight);
   }
 
   // Supprimer les feuilles vides du template (Feuil2, Feuil3)

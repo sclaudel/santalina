@@ -61,7 +61,7 @@ function AppContent() {
         {currentPage === 'help' && <HelpPage />}
       </div>
       <footer className="app-footer">
-        <p>🌊 Lac Plongée — Système de réservation © {new Date().getFullYear()}</p>
+        <p>🌊 Santalina — Système de réservation © {new Date().getFullYear()}</p>
       </footer>
     </div>
   );
