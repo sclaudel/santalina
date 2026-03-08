@@ -12,7 +12,7 @@ public class AppConfigEntry extends PanacheEntityBase {
     @Column(name = "config_key")
     public String configKey;
 
-    @Column(name = "config_value", nullable = false)
+    @Column(name = "config_value", nullable = false, columnDefinition = "TEXT")
     public String configValue;
 
     @Column(name = "updated_at", nullable = false)
