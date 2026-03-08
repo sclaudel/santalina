@@ -36,6 +36,11 @@ export function AdminPage() {
   const [clubsText, setClubsText]         = useState('');
   const [listLoading, setListLoading]     = useState(false);
 
+  // Recherche et pagination utilisateurs
+  const [userSearch, setUserSearch]   = useState('');
+  const [userPage, setUserPage]       = useState(1);
+  const USER_PAGE_SIZE = 10;
+
   const loadData = async () => {
     try {
       const [u, c] = await Promise.all([adminService.getAllUsers(), adminService.getConfig()]);
@@ -151,6 +156,13 @@ export function AdminPage() {
     setEditForm({ email: user.email, name: user.name, phone: user.phone ?? '' });
     setEditError('');
   };
+
+  const filteredUsers = users.filter(u => {
+    const q = userSearch.toLowerCase();
+    return !q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || (u.phone ?? '').toLowerCase().includes(q);
+  });
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / USER_PAGE_SIZE));
+  const pagedUsers = filteredUsers.slice((userPage - 1) * USER_PAGE_SIZE, userPage * USER_PAGE_SIZE);
 
   const cancelEditUser = () => {
     setEditingUserId(null);
@@ -296,6 +308,19 @@ export function AdminPage() {
           </button>
         </div>
 
+        {/* Barre de recherche */}
+        <div className="users-search-bar">
+          <input
+            type="search"
+            placeholder="🔍 Rechercher par nom, email ou téléphone..."
+            value={userSearch}
+            onChange={e => { setUserSearch(e.target.value); setUserPage(1); }}
+          />
+          {userSearch && (
+            <span className="users-search-count">{filteredUsers.length} résultat{filteredUsers.length !== 1 ? 's' : ''}</span>
+          )}
+        </div>
+
         {/* Formulaire création */}
         {showCreateForm && (
           <form onSubmit={handleCreateUser} className="create-user-form">
@@ -390,7 +415,7 @@ export function AdminPage() {
               </tr>
             </thead>
             <tbody>
-              {users.map(u => {
+              {pagedUsers.map(u => {
                 const userRoles = u.roles ?? [u.role];
                 return (
                   <tr key={u.id}>
@@ -428,6 +453,17 @@ export function AdminPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="users-pagination">
+            <button className="btn btn-small btn-outline" onClick={() => setUserPage(p => p - 1)} disabled={userPage === 1}>‹ Préc.</button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+              <button key={p} className={`btn btn-small ${p === userPage ? 'btn-primary' : 'btn-outline'}`} onClick={() => setUserPage(p)}>{p}</button>
+            ))}
+            <button className="btn btn-small btn-outline" onClick={() => setUserPage(p => p + 1)} disabled={userPage === totalPages}>Suiv. ›</button>
+          </div>
+        )}
       </div>
     </div>
   );
