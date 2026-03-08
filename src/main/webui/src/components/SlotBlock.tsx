@@ -103,6 +103,7 @@ export function SlotBlock({
   const [form, setForm]                   = useState<SlotDiverRequest>(EMPTY_FORM);
   const [saving, setSaving]               = useState(false);
   const [error, setError]                 = useState('');
+  const [addSuccess, setAddSuccess]        = useState('');
   const [loading, setLoading]             = useState(false);
   // Édition d'un plongeur existant
   const [editingDiver, setEditingDiver]   = useState<SlotDiver | null>(null);
@@ -351,13 +352,13 @@ export function SlotBlock({
       if (!form.phone?.trim()) { setError("Le téléphone est obligatoire pour un directeur de plongée"); return; }
       if (hasDirector)         { setError("Il y a déjà un directeur de plongée sur ce créneau"); return; }
     }
-    setSaving(true); setError('');
+    setSaving(true); setError(''); setAddSuccess('');
     try {
       const d = await slotDiverService.add(slot.id, form);
       setDivers(prev => d.isDirector ? [d, ...prev] : [...prev, d]);
       setForm(EMPTY_FORM);
-      setShowDiverForm(false);
-      resetIOSZoom();
+      setAddSuccess(`✓ ${d.firstName} ${d.lastName} ajouté(e) avec succès`);
+      setTimeout(() => setAddSuccess(''), 3000);
       onRefresh();
     } catch (err: unknown) {
       const m = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
@@ -608,6 +609,7 @@ export function SlotBlock({
           ) : (
             <form onSubmit={handleAddDiver} className="diver-form">
               {error && <div className="diver-form-error">{error}</div>}
+              {addSuccess && <div className="diver-form-success">{addSuccess}</div>}
 
               {/* Recherche utilisateur existant */}
               <div className="user-search-wrapper">

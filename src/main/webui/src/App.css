@@ -400,6 +400,7 @@ body {
   border: none; border-radius: 4px; font-size: 12px; cursor: pointer;
 }
 .diver-form-error { font-size: 11px; color: var(--danger); padding: 4px; background: #fee2e2; border-radius: 4px; }
+.diver-form-success { font-size: 11px; color: #166534; padding: 4px; background: #dcfce7; border-radius: 4px; }
 .btn-delete-slot-tooltip {
   width: 100%; margin-top: 8px; padding: 6px; background: #fee2e2; color: var(--danger);
   border: 1px solid #fecaca; border-radius: 4px; cursor: pointer; font-size: 12px;
