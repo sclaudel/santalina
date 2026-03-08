@@ -44,6 +44,13 @@ export function SlotForm({ date, config, onCreated, onCancel }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const slotDate = new Date(date + 'T00:00:00');
+    if (slotDate < today) {
+      setError('Impossible de créer un créneau dans le passé');
+      return;
+    }
     const diverCount = parseInt(diverCountStr, 10);
     if (!diverCountStr || isNaN(diverCount) || diverCount < 1) {
       setError('Le nombre de plongeurs doit être au moins 1');

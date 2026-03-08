@@ -69,6 +69,9 @@ public class SlotService {
      */
     @Transactional
     public SlotResponse createSlot(SlotRequest request, User currentUser) {
+        if (request.slotDate().isBefore(LocalDate.now())) {
+            throw new BadRequestException("Impossible de créer un créneau dans le passé");
+        }
         validateSlotTimes(request.startTime(), request.endTime());
         validateDiverCount(request.diverCount());
         checkCapacity(request.slotDate(), request.startTime(), request.endTime(), request.diverCount(), null);
