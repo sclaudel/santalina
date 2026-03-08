@@ -285,6 +285,36 @@ export function HelpPage() {
       ),
     },
 
+    // ── STATISTIQUES (ADMIN) ─────────────────────────────────────────────────
+    {
+      id: 'statistiques',
+      icon: '📊',
+      title: 'Consulter les statistiques',
+      roles: ['ADMIN'],
+      content: (
+        <>
+          <p>Le tableau de bord des statistiques est accessible via <strong>📊 Statistiques</strong> dans la barre de navigation (réservé aux administrateurs).</p>
+
+          <h4>Filtres de période</h4>
+          <ul>
+            <li><strong>Année</strong> — sélectionnez une année ou « Toutes » pour afficher toutes les données.</li>
+            <li><strong>Mois</strong> — disponible uniquement si une année est sélectionnée. Permet de restreindre l'affichage à un mois précis.</li>
+          </ul>
+
+          <h4>Visualisations disponibles</h4>
+          <ul>
+            <li><strong>Cartes de totaux</strong> — nombre de créneaux, plongées inscrites et ratio moyen plongeurs / créneau sur la période.</li>
+            <li><strong>Histogramme</strong> — évolution mensuelle (si une année est choisie) ou annuelle, avec les barres Plongées et Créneaux.</li>
+            <li><strong>Camemberts par club</strong> — répartition des plongées et des créneaux entre les clubs, avec les pourcentages affichés dans la légende.</li>
+            <li><strong>Camemberts par type</strong> — répartition par type de créneau (Exploration, Formation, Apnée…), avec les pourcentages.</li>
+            <li><strong>Tableaux de détail</strong> — chiffres bruts par club et par type pour une lecture précise.</li>
+          </ul>
+
+          <div className="help-tip">💡 Survolez une tranche d'un camembert pour afficher le détail (nom, valeur et pourcentage exact) dans une infobulle.</div>
+        </>
+      ),
+    },
+
     // ── CONFIGURATION (ADMIN) ────────────────────────────────────────────────
     {
       id: 'configuration',
@@ -332,7 +362,10 @@ export function HelpPage() {
     <div className="page">
       <div className="help-page">
         <div className="help-header">
-          <h1>📖 Guide d'utilisation</h1>
+          <div className="help-header-top">
+            <h1>📖 Guide d'utilisation</h1>
+            <button className="help-print-btn" onClick={() => window.print()} title="Imprimer le guide">🖨️ Imprimer</button>
+          </div>
           <p>Retrouvez ici toutes les informations pour utiliser l'application de réservation de créneaux de plongée.</p>
           {role === 'GUEST' && (
             <div className="help-tip">💡 Connectez-vous pour accéder aux sections réservées aux plongeurs et aux directeurs.</div>
@@ -351,11 +384,9 @@ export function HelpPage() {
                 <span className="help-section-title">{section.title}</span>
                 <span className="help-section-chevron">{openSection === section.id ? '▲' : '▼'}</span>
               </button>
-              {openSection === section.id && (
-                <div className="help-section-body">
-                  {section.content}
-                </div>
-              )}
+              <div className={`help-section-body${openSection === section.id ? ' help-section-body--open' : ''}`}>
+                {section.content}
+              </div>
             </div>
           ))}
         </div>

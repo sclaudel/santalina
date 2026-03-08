@@ -4,6 +4,7 @@ import { NavBar } from './components/NavBar';
 import { CalendarPage } from './pages/CalendarPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { AdminPage } from './pages/AdminPage';
+import { StatsPage } from './pages/StatsPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { HelpPage } from './pages/HelpPage';
 import { adminService } from './services/adminService';
@@ -58,6 +59,7 @@ function AppContent() {
         {currentPage === 'calendar' && <CalendarPage />}
         {currentPage === 'profile' && isAuthenticated && <ProfilePage />}
         {currentPage === 'admin' && user?.role === 'ADMIN' && <AdminPage />}
+        {currentPage === 'stats' && user?.role === 'ADMIN' && <StatsPage />}
         {currentPage === 'help' && <HelpPage />}
       </div>
       <footer className="app-footer">

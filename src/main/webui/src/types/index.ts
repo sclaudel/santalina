@@ -96,3 +96,24 @@ export interface AppConfig {
   publicAccess: boolean;
   selfRegistration: boolean;
 }
+
+export interface PeriodStat {
+  label: string;
+  slots: number;
+  divers: number;
+}
+
+export interface GroupStat {
+  label: string;
+  slots: number;
+  divers: number;
+}
+
+export interface StatsResponse {
+  byMonth: PeriodStat[];
+  byYear: PeriodStat[];
+  byClub: GroupStat[];
+  byType: GroupStat[];
+  totalSlots: number;
+  totalDivers: number;
+}
