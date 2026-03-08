@@ -14,7 +14,8 @@ Application de réservation de créneaux de plongée en lac, développée avec *
 - 🤿 **Plongeurs** : ajout/modification/suppression de plongeurs (nom, prénom, niveau) sur chaque créneau
 - 🎯 **Capacité configurable** : max 25 plongeurs simultanés (modifiable par l'admin)
 - 🗄️ **Double base de données** : H2 fichier (dev) / PostgreSQL (prod) — couche d'abstraction Panache
-- 🐳 **Docker-ready** : Dockerfile multi-stage + docker-compose
+- � **Statistiques** (ADMIN) : tableau de bord avec camemberts, histogrammes et tableaux — par mois, par année, par club, par type de créneau, avec filtres période
+- �🐳 **Docker-ready** : Dockerfile multi-stage + docker-compose
 
 ---
 
@@ -100,8 +101,40 @@ docker compose up --build
 | `GET` | `/api/config` | Public | Config du site |
 | `PUT` | `/api/config/max-divers` | ADMIN | Max plongeurs |
 | `PUT` | `/api/config/site-name` | ADMIN | Nom du site |
+| `GET` | `/api/stats?from=YYYY-MM-DD&to=YYYY-MM-DD` | ADMIN | Statistiques agrégées (période optionnelle) |
 
 Documentation Swagger : **http://localhost:8085/q/swagger-ui**
+
+---
+
+## 📊 Statistiques (ADMIN)
+
+Accessible via le menu **Statistiques** (réservé au rôle `ADMIN`).
+
+### Filtres disponibles
+- **Année** : toutes les années ou une année spécifique
+- **Mois** : tous les mois ou un mois spécifique (si une année est sélectionnée)
+
+### Visualisations
+| Vue | Description |
+|-----|-------------|
+| Cartes de totaux | Nombre de créneaux, plongées inscrites, ratio moyen plongeurs/créneau |
+| Histogramme | Évolution par mois ou par année (barres Plongées + Créneaux) |
+| Camemberts par club | Répartition des plongées et des créneaux par club, avec % |
+| Camemberts par type | Répartition des plongées et des créneaux par type de créneau, avec % |
+| Tableaux de détail | Chiffres bruts par club et par type de créneau |
+
+### Structure de la réponse `/api/stats`
+```json
+{
+  "byMonth":  [{ "label": "2026-03", "slots": 12, "divers": 48 }],
+  "byYear":   [{ "label": "2026",    "slots": 45, "divers": 180 }],
+  "byClub":   [{ "label": "Club A",  "slots": 20, "divers": 80 }],
+  "byType":   [{ "label": "Lac",     "slots": 30, "divers": 120 }],
+  "totalSlots":  45,
+  "totalDivers": 180
+}
+```
 
 ---
 
@@ -115,8 +148,8 @@ src/main/
 │   ├── dto/             # Records Java (request/response)
 │   ├── exception/       # GlobalExceptionMapper
 │   ├── mail/            # PasswordResetMailer
-│   ├── resource/        # JAX-RS endpoints
-│   ���── security/        # JwtUtil, PasswordUtil (BCrypt)
+│   ├── resource/        # JAX-RS endpoints (dont StatsResource)
+│   ├── security/        # JwtUtil, PasswordUtil (BCrypt)
 │   ├── service/         # AuthService, SlotService, UserService, ConfigService
 │   └── startup/         # AppStartup (init admin + config)
 ├── resources/
@@ -128,8 +161,8 @@ src/main/
     └── src/
         ├── components/  # NavBar, CalendarPicker, DayView, WeekView, MonthView, SlotBlock, SlotForm, LoginModal
         ├── context/     # AuthContext (JWT + état multi-rôles)
-        ├── pages/       # CalendarPage, ProfilePage, AdminPage, ResetPasswordPage
-        ├── services/    # api.ts, authService, slotService, adminService, slotDiverService
+        ├── pages/       # CalendarPage, ProfilePage, AdminPage, ResetPasswordPage, StatsPage
+        ├── services/    # api.ts, authService, slotService, adminService, slotDiverService, statsService
         └── types/       # Types TypeScript partagés
 ```
 

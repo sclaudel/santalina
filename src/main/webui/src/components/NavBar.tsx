@@ -57,6 +57,14 @@ export function NavBar({ onNavigate, currentPage, selfRegistration = true }: Pro
             ⚙️ Administration
           </button>
         )}
+        {isAuthenticated && user?.role === 'ADMIN' && (
+          <button
+            className={`nav-link ${currentPage === 'stats' ? 'active' : ''}`}
+            onClick={() => onNavigate('stats')}
+          >
+            📊 Statistiques
+          </button>
+        )}
         <button
           className={`nav-link ${currentPage === 'help' ? 'active' : ''}`}
           onClick={() => onNavigate('help')}
@@ -120,6 +128,14 @@ export function NavBar({ onNavigate, currentPage, selfRegistration = true }: Pro
               onClick={() => { onNavigate('admin'); closeMobileMenu(); }}
             >
               ⚙️ Administration
+            </button>
+          )}
+          {isAuthenticated && user?.role === 'ADMIN' && (
+            <button
+              className={currentPage === 'stats' ? 'active' : ''}
+              onClick={() => { onNavigate('stats'); closeMobileMenu(); }}
+            >
+              📊 Statistiques
             </button>
           )}
           <button
