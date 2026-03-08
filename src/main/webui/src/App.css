@@ -286,6 +286,50 @@ body {
 }
 .slot-block-bar-fill { height: 100%; border-radius: 0 0 6px 6px; transition: width 0.3s; }
 
+/* ========== HOVER TOOLTIP plongeurs (desktop uniquement) ========== */
+.slot-hover-tooltip {
+  position: fixed; z-index: 99998;
+  background: var(--white); border-radius: var(--radius-lg);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.14); border: 1px solid var(--gray-200);
+  padding: 10px 12px; pointer-events: none;
+  animation: slotHoverFadeIn 0.12s ease;
+}
+@keyframes slotHoverFadeIn {
+  from { opacity: 0; transform: translateY(-3px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.slot-hover-tooltip-header {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 8px; margin-bottom: 5px;
+}
+.slot-hover-tooltip-title {
+  font-weight: 700; font-size: 13px; color: var(--gray-900);
+  flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.slot-hover-tooltip-time {
+  font-size: 11px; color: var(--primary); font-weight: 600; white-space: nowrap; flex-shrink: 0;
+}
+.slot-hover-tooltip-capacity {
+  font-size: 12px; font-weight: 600; margin-bottom: 7px;
+}
+.slot-hover-diver-list {
+  list-style: none; display: flex; flex-direction: column; gap: 2px;
+}
+.slot-hover-diver-item {
+  display: flex; align-items: center; gap: 5px;
+  padding: 3px 4px; border-radius: 3px; font-size: 12px;
+}
+.slot-hover-diver-director { background: #fff7ed; }
+.slot-hover-diver-name { font-weight: 600; color: var(--gray-800); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.slot-hover-diver-level { font-size: 10px; color: var(--gray-500); white-space: nowrap; flex-shrink: 0; }
+.slot-hover-tooltip-hint {
+  margin-top: 8px; font-size: 10px; color: var(--gray-400); text-align: center; font-style: italic;
+}
+/* Masqué sur les appareils tactiles (pas de hover réel) */
+@media (hover: none) {
+  .slot-hover-tooltip { display: none !important; }
+}
+
 /* ========== SLOT TOOLTIP ========== */
 .slot-tooltip {
   position: fixed; z-index: 9999;
@@ -923,6 +967,7 @@ body {
   .page, .help-page { max-width: 100%; padding: 0; margin: 0; }
   body { font-size: 12px; color: #111; }
 }
+@media (max-width: 768px) {
   .help-section-header { padding: 14px 16px; }
   .help-section-body   { padding: 16px; }
   .help-header h1 { font-size: 20px; }

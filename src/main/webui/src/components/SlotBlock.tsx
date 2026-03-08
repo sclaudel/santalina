@@ -96,9 +96,11 @@ export function SlotBlock({
   slot, height, onDelete, onRefresh,
   canEdit, currentUserId, currentUserRole, maxDivers = 25, config,
 }: Props) {
-  const [showTooltip, setShowTooltip]     = useState(false);
-  const [showDiverForm, setShowDiverForm] = useState(false);
-  const [tooltipStyle, setTooltipStyle]   = useState<React.CSSProperties>({});
+  const [showTooltip, setShowTooltip]         = useState(false);
+  const [showDiverForm, setShowDiverForm]     = useState(false);
+  const [tooltipStyle, setTooltipStyle]       = useState<React.CSSProperties>({});
+  const [showHoverTooltip, setShowHoverTooltip] = useState(false);
+  const [hoverTooltipStyle, setHoverTooltipStyle] = useState<React.CSSProperties>({});
   const [divers, setDivers]               = useState<SlotDiver[]>(slot.divers ?? []);
   const [form, setForm]                   = useState<SlotDiverRequest>(EMPTY_FORM);
   const [saving, setSaving]               = useState(false);
@@ -191,9 +193,36 @@ export function SlotBlock({
     }
   }, []);
 
+  // Calcule position du tooltip de survol
+  const computeHoverPos = useCallback(() => {
+    if (!blockRef.current) return;
+    const rect       = blockRef.current.getBoundingClientRect();
+    const spaceRight = window.innerWidth - rect.right;
+    const maxH       = Math.min(600, window.innerHeight - 24);
+    const top        = Math.max(8, Math.min(rect.top, window.innerHeight - maxH - 8));
+
+    if (spaceRight >= TOOLTIP_WIDTH + 12) {
+      setHoverTooltipStyle({ position: 'fixed', top, left: rect.right + 8, width: TOOLTIP_WIDTH, maxHeight: maxH, overflowY: 'auto', zIndex: 99998 });
+    } else {
+      setHoverTooltipStyle({ position: 'fixed', top, right: window.innerWidth - rect.left + 8, left: 'auto', width: TOOLTIP_WIDTH, maxHeight: maxH, overflowY: 'auto', zIndex: 99998 });
+    }
+  }, []);
+
+  const handleMouseEnter = useCallback(() => {
+    if (showTooltip) return;
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+    computeHoverPos();
+    setShowHoverTooltip(true);
+  }, [showTooltip, computeHoverPos]);
+
+  const handleMouseLeave = useCallback(() => {
+    setShowHoverTooltip(false);
+  }, []);
+
   // Clic sur le bloc : ouvre / ferme
   const handleBlockClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    setShowHoverTooltip(false);
     if (showTooltip) {
       setShowTooltip(false);
       setShowDiverForm(false);
@@ -373,6 +402,45 @@ export function SlotBlock({
       onRefresh();
     } catch { /* silencieux */ }
   };
+
+  // ---- Hover tooltip (desktop uniquement, lecture seule) ----
+  const hoverTooltipContent = (showHoverTooltip && !showTooltip) ? createPortal(
+    <div className="slot-hover-tooltip" style={hoverTooltipStyle}>
+      <div className="slot-hover-tooltip-header">
+        <span className="slot-hover-tooltip-title">{currentTitle || 'Créneau de plongée'}</span>
+        <span className="slot-hover-tooltip-time">{slot.startTime}–{slot.endTime}</span>
+      </div>
+      <div className="slot-hover-tooltip-capacity" style={{ color }}>
+        🤿 {usedDivers}/{currentDiverCount} plongeur{usedDivers !== 1 ? 's' : ''}
+      </div>
+      {(currentSlotType || currentClub) && (
+        <div className="slot-tooltip-tags" style={{ marginBottom: 8 }}>
+          {currentSlotType && (
+            <span className="slot-tag" style={{ background: getSlotTypeStyle(currentSlotType).tagBg, color: getSlotTypeStyle(currentSlotType).tagColor }}>
+              {currentSlotType}
+            </span>
+          )}
+          {currentClub && <span className="slot-tag slot-tag-club">🏊 {currentClub}</span>}
+        </div>
+      )}
+      {divers.length === 0 ? (
+        <p className="slot-tooltip-empty">Aucun plongeur inscrit</p>
+      ) : (
+        <ul className="slot-hover-diver-list">
+          {divers.map(d => (
+            <li key={d.id} className={`slot-hover-diver-item${d.isDirector ? ' slot-hover-diver-director' : ''}`}>
+              {d.isDirector && <span className="diver-director-badge" title="Directeur de plongée">🎖</span>}
+              <span className="diver-level-dot" style={{ background: getLevelColor(d.level) }} title={d.level} />
+              <span className="slot-hover-diver-name">{d.firstName} {d.lastName}</span>
+              <span className="slot-hover-diver-level">{d.level}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="slot-hover-tooltip-hint">Cliquer pour gérer le créneau</div>
+    </div>,
+    document.body
+  ) : null;
 
   // ---- Tooltip rendu via Portal (hors de tout parent overflow:hidden) ----
   const tooltipContent = showTooltip ? createPortal(
@@ -716,6 +784,8 @@ export function SlotBlock({
           cursor: 'pointer',
         }}
         onClick={handleBlockClick}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         <div className="slot-block-content">
           <div className="slot-block-time" style={{ color: getSlotTypeStyle(currentSlotType).color }}>{slot.startTime} – {slot.endTime}</div>
@@ -738,6 +808,7 @@ export function SlotBlock({
             style={{ width: `${Math.min(100, (usedDivers / currentDiverCount) * 100)}%`, background: color }} />
         </div>
       </div>
+      {hoverTooltipContent}
       {tooltipContent}
     </>
   );
