@@ -25,24 +25,37 @@ function PieChart({ data, valueKey }: { data: GroupStat[]; valueKey: 'slots' | '
     const start = angle;
     angle += pct * 2 * Math.PI;
     const end = angle;
-    const x1 = cx + r * Math.cos(start);
-    const y1 = cy + r * Math.sin(start);
-    const x2 = cx + r * Math.cos(end);
-    const y2 = cy + r * Math.sin(end);
-    const xi1 = cx + innerR * Math.cos(start);
-    const yi1 = cy + innerR * Math.sin(start);
-    const xi2 = cx + innerR * Math.cos(end);
-    const yi2 = cy + innerR * Math.sin(end);
-    const large = pct > 0.5 ? 1 : 0;
-    const path = `M ${xi1} ${yi1} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} L ${xi2} ${yi2} A ${innerR} ${innerR} 0 ${large} 0 ${xi1} ${yi1} Z`;
-    return { path, color: PIE_COLORS[i % PIE_COLORS.length], label: d.label, value: d[valueKey], pct };
+
+    let path: string;
+    let isFullCircle = false;
+    if (pct >= 0.9999) {
+      // Cas particulier : 100% — l'arc SVG d'un point vers lui-même est dégénéré.
+      // On trace deux demi-cercles avec fill-rule="evenodd" pour créer l'anneau.
+      isFullCircle = true;
+      path =
+        `M ${cx - r} ${cy} A ${r} ${r} 0 1 1 ${cx + r} ${cy} A ${r} ${r} 0 1 1 ${cx - r} ${cy} Z` +
+        ` M ${cx - innerR} ${cy} A ${innerR} ${innerR} 0 1 0 ${cx + innerR} ${cy} A ${innerR} ${innerR} 0 1 0 ${cx - innerR} ${cy} Z`;
+    } else {
+      const x1 = cx + r * Math.cos(start);
+      const y1 = cy + r * Math.sin(start);
+      const x2 = cx + r * Math.cos(end);
+      const y2 = cy + r * Math.sin(end);
+      const xi1 = cx + innerR * Math.cos(start);
+      const yi1 = cy + innerR * Math.sin(start);
+      const xi2 = cx + innerR * Math.cos(end);
+      const yi2 = cy + innerR * Math.sin(end);
+      const large = pct > 0.5 ? 1 : 0;
+      path = `M ${xi1} ${yi1} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} L ${xi2} ${yi2} A ${innerR} ${innerR} 0 ${large} 0 ${xi1} ${yi1} Z`;
+    }
+    return { path, isFullCircle, color: PIE_COLORS[i % PIE_COLORS.length], label: d.label, value: d[valueKey], pct };
   });
 
   return (
     <div className="pie-wrapper">
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ display: 'block', margin: '0 auto' }}>
         {slices.map((s, i) => (
-          <path key={i} d={s.path} fill={s.color} stroke="#fff" strokeWidth={1.5}>
+          <path key={i} d={s.path} fill={s.color} stroke="#fff" strokeWidth={1.5}
+            fillRule={s.isFullCircle ? 'evenodd' : undefined}>
             <title>{s.label} : {s.value} ({(s.pct * 100).toFixed(1)}%)</title>
           </path>
         ))}
@@ -128,7 +141,7 @@ export function StatsPage() {
   const [error, setError]     = useState('');
 
   // Filtres
-  const [filterYear, setFilterYear]   = useState<string>(String(CURRENT_YEAR));
+  const [filterYear, setFilterYear]   = useState<string>('all');
   const [filterMonth, setFilterMonth] = useState<string>('all');
 
   const load = useCallback(async () => {
@@ -160,7 +173,8 @@ export function StatsPage() {
 
   const periodData  = filterMonth !== 'all' ? [] : (stats?.byMonth ?? []);
   const yearData    = stats?.byYear ?? [];
-  const maxPeriod   = Math.max(1, ...periodData.map(d => Math.max(d.slots, d.divers)));
+  const barData     = filterYear !== 'all' ? periodData : yearData;
+  const maxPeriod   = Math.max(1, ...barData.map(d => Math.max(d.slots, d.divers)));
 
   const periodCols = [
     { key: 'label' as const, label: 'Période' },
@@ -231,7 +245,7 @@ export function StatsPage() {
               <div className="stats-row">
                 <div className="stats-card stats-card-wide">
                   <h3>Par {filterYear !== 'all' ? 'mois' : 'année'}</h3>
-                  <BarChart data={filterYear !== 'all' ? periodData : yearData} max={maxPeriod} />
+                  <BarChart data={barData} max={maxPeriod} />
                 </div>
                 <div className="stats-card">
                   <h3>Tableau {filterYear !== 'all' ? 'mensuel' : 'annuel'}</h3>
