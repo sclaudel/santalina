@@ -22,13 +22,13 @@ export function WeekView({ weekStart, config, onSelectDay, onAdd }: Props) {
   const canEdit = isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'DIVE_DIRECTOR');
   const today   = dayjs().format('YYYY-MM-DD');
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const data = await slotService.getByWeek(weekStart);
       setAllSlots(data);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [weekStart]);
 
@@ -86,7 +86,7 @@ export function WeekView({ weekStart, config, onSelectDay, onAdd }: Props) {
                 slots={allSlots.filter(s => s.slotDate === d)}
                 config={config}
                 onDelete={handleDelete}
-                onRefresh={load}
+                onRefresh={() => load(true)}
                 canEdit={canEdit}
                 currentUserId={user?.id}
                 currentUserRole={user?.role}

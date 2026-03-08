@@ -17,13 +17,13 @@ export function DayView({ date, config, onAdd }: Props) {
 
   const canEdit = isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'DIVE_DIRECTOR');
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const data = await slotService.getByDate(date);
       setSlots(data);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [date]);
 
@@ -67,7 +67,7 @@ export function DayView({ date, config, onAdd }: Props) {
           slots={slots}
           config={config}
           onDelete={handleDelete}
-          onRefresh={load}
+          onRefresh={() => load(true)}
           canEdit={canEdit}
           currentUserId={user?.id}
           currentUserRole={user?.role}
