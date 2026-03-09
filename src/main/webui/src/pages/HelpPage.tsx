@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { exportHelpPdf, type PdfSection } from '../utils/exportHelpPdf';
 
 interface Section {
   id: string;
@@ -14,6 +15,7 @@ export function HelpPage() {
   const [openSection, setOpenSection] = useState<string | null>('calendrier');
 
   const role = user?.role ?? 'GUEST';
+  const siteName = document.title || 'Santalina Plongée';
 
   const toggle = (id: string) => setOpenSection(prev => (prev === id ? null : id));
 
@@ -48,18 +50,32 @@ export function HelpPage() {
       content: (
         <>
           <p>La création de créneaux est réservée aux <strong>administrateurs</strong> et aux <strong>directeurs de plongée</strong>.</p>
-          <h4>Depuis la vue Jour ou Semaine</h4>
+
+          <h4>Bouton « + Nouveau créneau » (toutes les vues)</h4>
           <ol>
-            <li>Survolez (desktop) ou appuyez sur l'en-tête d'un jour dans la grille.</li>
-            <li>Cliquez sur le bouton <strong>+</strong> qui apparaît.</li>
+            <li>Cliquez sur le bouton <strong>+ Nouveau créneau</strong> en haut à droite du calendrier (visible quelle que soit la vue active).</li>
             <li>Remplissez le formulaire : heure de début, heure de fin, titre (optionnel), type de plongée, club, nombre de plongeurs, notes.</li>
             <li>Cliquez sur <strong>Créer</strong>.</li>
           </ol>
+
+          <h4>Depuis la vue Jour</h4>
+          <ol>
+            <li>Si la journée est vide, un bouton <strong>+ Créer le premier créneau</strong> apparaît au centre de la vue.</li>
+            <li>Cliquez dessus pour ouvrir le formulaire de création.</li>
+          </ol>
+
+          <h4>Depuis la vue Semaine</h4>
+          <ol>
+            <li>Survolez (sur ordinateur uniquement) ou appuyez sur l'en-tête d'une colonne de jour dans la grille.</li>
+            <li>Cliquez sur le bouton <strong>+</strong> qui apparaît dans l'en-tête.</li>
+          </ol>
+
           <h4>Depuis la vue Mois</h4>
           <ol>
-            <li>Survolez une cellule de jour.</li>
+            <li>Survolez (sur ordinateur uniquement) ou appuyez sur une cellule de jour.</li>
             <li>Cliquez sur le bouton <strong>+</strong> qui apparaît en bas à droite de la cellule.</li>
           </ol>
+
           <div className="help-tip">💡 Le créneau créé apparaît immédiatement dans le calendrier. Il est possible de modifier son titre, ses notes, son type et son club en cliquant dessus.</div>
         </>
       ),
@@ -166,7 +182,7 @@ export function HelpPage() {
         <>
           <ol>
             <li>Cliquez sur le créneau pour ouvrir le panneau de détails.</li>
-            <li>Dans la liste des plongeurs, survolez (desktop) ou appuyez (mobile) sur le nom du plongeur.</li>
+            <li>Dans la liste des plongeurs, survolez (sur ordinateur uniquement) ou appuyez (mobile) sur le nom du plongeur.</li>
             <li>Cliquez sur la croix <strong>✕</strong> à droite de son nom.</li>
           </ol>
           <p>La place est immédiatement libérée.</p>
@@ -358,13 +374,153 @@ export function HelpPage() {
     !s.roles || s.roles.includes(role)
   );
 
+  // ── Données structurées pour l'export PDF ──────────────────────────────────
+  const pdfSections: PdfSection[] = [
+    {
+      icon: '📅', title: 'Consulter le calendrier',
+      items: [
+        { type: 'paragraph', text: 'Le calendrier est la page principale de l\'application. Il affiche tous les créneaux de plongée disponibles.' },
+        { type: 'h4', text: 'Changer de vue' },
+        { type: 'ul', items: ['Jour — affiche tous les créneaux d\'une journée sur une grille horaire.', 'Semaine — affiche 7 colonnes côte à côte, une par jour.', 'Mois — vue mensuelle avec un résumé des créneaux par jour.'] },
+        { type: 'paragraph', text: 'Utilisez les boutons ◀ ▶ pour naviguer d\'une période à l\'autre, ou cliquez sur un jour dans le mini-calendrier (barre latérale à gauche) pour aller directement à cette date.' },
+        { type: 'h4', text: 'Ouvrir les détails d\'un créneau' },
+        { type: 'paragraph', text: 'Cliquez sur un bloc de créneau pour afficher le panneau de détails : horaires, nombre de plongeurs inscrits, directeur de plongée, etc.' },
+      ],
+    },
+    ...(role === 'ADMIN' || role === 'DIVE_DIRECTOR' ? [
+      {
+        icon: '➕', title: 'Créer un créneau',
+        items: [
+          { type: 'paragraph' as const, text: 'La création de créneaux est réservée aux administrateurs et aux directeurs de plongée.' },
+          { type: 'h4' as const, text: 'Bouton "+\ Nouveau créneau" (toutes les vues)' },
+          { type: 'ol' as const, items: ['Cliquez sur le bouton "+ Nouveau créneau" en haut à droite du calendrier (visible quelle que soit la vue active).', 'Remplissez le formulaire : heure de début, heure de fin, titre (optionnel), type de plongée, club, nombre de plongeurs, notes.', 'Cliquez sur Créer.'] },
+          { type: 'h4' as const, text: 'Depuis la vue Jour' },
+          { type: 'ol' as const, items: ['Si la journée est vide, un bouton "+ Créer le premier créneau" apparaît au centre de la vue.', 'Cliquez dessus pour ouvrir le formulaire de création.'] },
+          { type: 'h4' as const, text: 'Depuis la vue Semaine' },
+          { type: 'ol' as const, items: ['Survolez (sur ordinateur uniquement) ou appuyez sur l\'en-tête d\'une colonne de jour dans la grille.', 'Cliquez sur le bouton + qui apparaît dans l\'en-tête.'] },
+          { type: 'h4' as const, text: 'Depuis la vue Mois' },
+          { type: 'ol' as const, items: ['Survolez (sur ordinateur uniquement) ou appuyez sur une cellule de jour.', 'Cliquez sur le bouton + qui apparaît en bas à droite de la cellule.'] },
+          { type: 'tip' as const, text: 'Le créneau créé apparaît immédiatement dans le calendrier. Il est possible de modifier son titre, ses notes, son type et son club en cliquant dessus.' },
+        ],
+      },
+      {
+        icon: '✏️', title: 'Modifier les infos d\'un créneau',
+        items: [
+          { type: 'paragraph' as const, text: 'Après création, il est possible de modifier les informations d\'un créneau.' },
+          { type: 'ol' as const, items: ['Cliquez sur le créneau pour ouvrir le panneau de détails.', 'Cliquez sur le bouton ✏️ Modifier les infos.', 'Modifiez le titre, le type, le club, le nombre de plongeurs ou les notes.', 'Cliquez sur Enregistrer.'] },
+          { type: 'h4' as const, text: 'Modifier le nombre de places' },
+          { type: 'paragraph' as const, text: 'Dans le panneau de détails, cliquez sur l\'icône ✏️ à côté du compte « X / Y plongeurs » pour ajuster la capacité du créneau.' },
+        ],
+      },
+      {
+        icon: '🗑️', title: 'Supprimer un créneau',
+        items: [
+          { type: 'warning' as const, text: 'La suppression d\'un créneau est définitive et supprime également tous les plongeurs inscrits.' },
+          { type: 'ol' as const, items: ['Cliquez sur le créneau pour ouvrir le panneau de détails.', 'Faites défiler vers le bas et cliquez sur Supprimer le créneau.', 'La suppression est immédiate.'] },
+        ],
+      },
+      {
+        icon: '🤿', title: 'Ajouter un plongeur à un créneau',
+        items: [
+          { type: 'paragraph' as const, text: 'Seuls les administrateurs et les directeurs de plongée peuvent inscrire des plongeurs.' },
+          { type: 'ol' as const, items: ['Cliquez sur le créneau pour ouvrir le panneau de détails.', 'Cliquez sur + Ajouter un plongeur.', 'Option 1 — Utilisateur existant : tapez son nom dans le champ de recherche et sélectionnez-le.', 'Option 2 — Saisie manuelle : renseignez directement le prénom, le nom et le niveau de certification.', 'Cliquez sur Ajouter.'] },
+          { type: 'tip' as const, text: 'Le nombre de plongeurs inscrits est limité par la capacité du créneau. Quand il est atteint, le bouton d\'ajout disparaît.' },
+        ],
+      },
+      {
+        icon: '🎖️', title: 'Désigner un directeur de plongée',
+        items: [
+          { type: 'paragraph' as const, text: 'Chaque créneau peut avoir un seul directeur de plongée. Il est identifié par le badge 🎖️ dans la liste des plongeurs.' },
+          { type: 'h4' as const, text: 'Lors de l\'ajout d\'un plongeur' },
+          { type: 'ol' as const, items: ['Dans le formulaire d\'ajout, cochez 🎖 Directeur de plongée sur ce créneau.', 'Renseignez son email et son téléphone (obligatoires pour le directeur).', 'Cliquez sur Ajouter.'] },
+          { type: 'h4' as const, text: 'Sur un plongeur déjà inscrit' },
+          { type: 'ol' as const, items: ['Dans la liste des plongeurs, cliquez sur l\'icône ✏️ à côté du nom.', 'Cochez Directeur de plongée et renseignez les coordonnées.', 'Cliquez sur Enregistrer.'] },
+          { type: 'tip' as const, text: 'Les coordonnées du directeur (email, téléphone) sont exportées dans la fiche de sécurité Excel.' },
+        ],
+      },
+      {
+        icon: '❌', title: 'Retirer un plongeur d\'un créneau',
+        items: [
+          { type: 'ol' as const, items: ['Cliquez sur le créneau pour ouvrir le panneau de détails.', 'Dans la liste des plongeurs, survolez (sur ordinateur uniquement) ou appuyez (mobile) sur le nom du plongeur.', 'Cliquez sur la croix ✕ à droite de son nom.'] },
+          { type: 'paragraph' as const, text: 'La place est immédiatement libérée.' },
+        ],
+      },
+      {
+        icon: '📊', title: 'Exporter la fiche de sécurité',
+        items: [
+          { type: 'paragraph' as const, text: 'Une fiche de sécurité Excel peut être générée pour chaque créneau. Elle récapitule les plongeurs inscrits et les informations du directeur de plongée.' },
+          { type: 'ol' as const, items: ['Cliquez sur le créneau pour ouvrir le panneau de détails.', 'Cliquez sur Exporter fiche de sécurité (Excel).', 'Le fichier .xlsx est téléchargé automatiquement.'] },
+        ],
+      },
+    ] : []),
+    {
+      icon: '🔐', title: 'Se connecter / S\'inscrire',
+      items: [
+        { type: 'h4', text: 'Se connecter' },
+        { type: 'ol', items: ['Cliquez sur Connexion dans la barre de navigation.', 'Saisissez votre email et votre mot de passe.', 'Cliquez sur Se connecter.'] },
+        { type: 'h4', text: 'S\'inscrire (si activé)' },
+        { type: 'ol', items: ['Cliquez sur Connexion, puis sur Pas encore de compte ? S\'inscrire.', 'Remplissez votre prénom/nom, email, téléphone et mot de passe.', 'Votre compte est créé avec le rôle Plongeur. Un administrateur peut ensuite modifier votre rôle.'] },
+        { type: 'h4', text: 'Mot de passe oublié' },
+        { type: 'ol', items: ['Dans la fenêtre de connexion, cliquez sur Mot de passe oublié ?.', 'Saisissez votre email. Un lien de réinitialisation vous sera envoyé.'] },
+      ],
+    },
+    {
+      icon: '👤', title: 'Mon profil',
+      items: [
+        { type: 'paragraph', text: 'La page Mon profil vous permet de consulter et modifier vos informations personnelles.' },
+        { type: 'ul', items: ['Nom et email — affichés dans le menu et les listes de plongeurs.', 'Téléphone — utilisé pour contacter le directeur de plongée.', 'Mot de passe — modifiable depuis cette page.'] },
+        { type: 'paragraph', text: 'Accès : cliquez sur votre nom dans la barre de navigation → Mon profil.' },
+      ],
+    },
+    ...(role === 'ADMIN' ? [
+      {
+        icon: '👥', title: 'Gérer les utilisateurs',
+        items: [
+          { type: 'paragraph' as const, text: 'La gestion des utilisateurs est accessible dans Administration → section Utilisateurs.' },
+          { type: 'h4' as const, text: 'Créer un utilisateur' },
+          { type: 'ol' as const, items: ['Cliquez sur + Nouvel utilisateur.', 'Renseignez l\'email, le nom, le téléphone et le mot de passe provisoire.', 'Attribuez un ou plusieurs rôles : Plongeur, Directeur de plongée, ou Administrateur.', 'Cliquez sur Créer.'] },
+          { type: 'h4' as const, text: 'Modifier un utilisateur' },
+          { type: 'ol' as const, items: ['Dans le tableau des utilisateurs, cliquez sur Modifier sur la ligne concernée.', 'Modifiez l\'email, le nom ou le téléphone.', 'Cliquez sur Enregistrer.'] },
+          { type: 'h4' as const, text: 'Changer le rôle d\'un utilisateur' },
+          { type: 'ol' as const, items: ['Dans la colonne Rôles, cochez ou décochez les rôles souhaités directement dans le tableau.', 'Le changement est immédiatement pris en compte.'] },
+          { type: 'warning' as const, text: 'La suppression d\'un utilisateur ne supprime pas ses inscriptions sur les créneaux existants.' },
+        ],
+      },
+      {
+        icon: '📊', title: 'Consulter les statistiques',
+        items: [
+          { type: 'paragraph' as const, text: 'Le tableau de bord des statistiques est accessible via Statistiques dans la barre de navigation (réservé aux administrateurs).' },
+          { type: 'h4' as const, text: 'Filtres de période' },
+          { type: 'ul' as const, items: ['Année — sélectionnez une année ou « Toutes » pour afficher toutes les données.', 'Mois — disponible uniquement si une année est sélectionnée.'] },
+          { type: 'h4' as const, text: 'Visualisations disponibles' },
+          { type: 'ul' as const, items: ['Cartes de totaux — nombre de créneaux, plongées inscrites et ratio moyen.', 'Histogramme — évolution mensuelle ou annuelle.', 'Camemberts par club — répartition des plongées et des créneaux entre les clubs.', 'Camemberts par type — répartition par type de créneau.', 'Tableaux de détail — chiffres bruts par club et par type.'] },
+          { type: 'tip' as const, text: 'Survolez une tranche d\'un camembert pour afficher le détail dans une infobulle.' },
+        ],
+      },
+      {
+        icon: '⚙️', title: 'Configuration de l\'application',
+        items: [
+          { type: 'paragraph' as const, text: 'La configuration est accessible dans Administration.' },
+          { type: 'h4' as const, text: 'Configuration du lac' },
+          { type: 'ul' as const, items: ['Nom du site — affiché dans la barre de navigation et les exports.', 'Capacité max de plongeurs — valeur par défaut à la création d\'un créneau.', 'Durée min / max d\'un créneau — en heures.', 'Résolution de la grille horaire — en minutes (15, 30 ou 60).'] },
+          { type: 'h4' as const, text: 'Listes configurables' },
+          { type: 'ul' as const, items: ['Types de plongée — ex : Exploration, Formation, Apnée.', 'Clubs — liste des clubs participants.'] },
+          { type: 'h4' as const, text: 'Accès & inscriptions' },
+          { type: 'ul' as const, items: ['Accès public au calendrier — si désactivé, les visiteurs non connectés voient une page de connexion.', 'Inscription libre — si désactivé, seul un administrateur peut créer des comptes.'] },
+        ],
+      },
+    ] : []),
+  ];
+
+  const handleDownloadPdf = () => exportHelpPdf(pdfSections, siteName);
+
   return (
     <div className="page">
       <div className="help-page">
         <div className="help-header">
           <div className="help-header-top">
             <h1>📖 Guide d'utilisation</h1>
-            <button className="help-print-btn" onClick={() => window.print()} title="Imprimer le guide">🖨️ Imprimer</button>
+            <button className="help-print-btn" onClick={handleDownloadPdf} title="Télécharger le guide en PDF">📥 Télécharger PDF</button>
           </div>
           <p>Retrouvez ici toutes les informations pour utiliser l'application de réservation de créneaux de plongée.</p>
           {role === 'GUEST' && (

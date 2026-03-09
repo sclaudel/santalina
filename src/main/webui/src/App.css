@@ -958,15 +958,6 @@ body {
   font-size: 13px; color: #c2410c;
 }
 
-@media print {
-  .navbar, .app-footer, .help-print-btn, .help-section-chevron { display: none !important; }
-  .help-section-header { cursor: default; background: none !important; padding: 10px 0 4px 0; }
-  .help-section-body { display: flex !important; border-top: 1px solid #e5e7eb; padding: 8px 0 14px 0; }
-  .help-section { border: none; border-bottom: 1px solid #e5e7eb; border-radius: 0; box-shadow: none; break-inside: avoid; page-break-inside: avoid; }
-  .help-tip, .help-warning { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .page, .help-page { max-width: 100%; padding: 0; margin: 0; }
-  body { font-size: 12px; color: #111; }
-}
 @media (max-width: 768px) {
   .help-section-header { padding: 14px 16px; }
   .help-section-body   { padding: 16px; }
