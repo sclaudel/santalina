@@ -14,6 +14,11 @@ OUT_DIR = os.path.join("src", "main", "resources")
 PRIVATE_KEY_PATH = os.path.join(OUT_DIR, "privateKey.pem")
 PUBLIC_KEY_PATH = os.path.join(OUT_DIR, "publicKey.pem")
 
+# Dossier pour les Docker secrets (monté dans docker-compose.yml)
+KEYS_DIR = "keys"
+DOCKER_PRIVATE_KEY_PATH = os.path.join(KEYS_DIR, "privateKey.pem")
+DOCKER_PUBLIC_KEY_PATH  = os.path.join(KEYS_DIR, "publicKey.pem")
+
 # Génération de la clé privée RSA 2048 bits
 private_key = rsa.generate_private_key(
     public_exponent=65537,
@@ -35,16 +40,29 @@ public_pem = public_key.public_bytes(
     format=serialization.PublicFormat.SubjectPublicKeyInfo
 )
 
-# Création du dossier si besoin
+# Création des dossiers si besoin
 os.makedirs(OUT_DIR, exist_ok=True)
+os.makedirs(KEYS_DIR, exist_ok=True)
 
-# Écriture des fichiers
+# Écriture des fichiers — classpath (dev/test)
 with open(PRIVATE_KEY_PATH, "wb") as f:
     f.write(private_pem)
-    print(f"Clé privée écrite dans {PRIVATE_KEY_PATH}")
+    print(f"Clé privée (dev)    → {PRIVATE_KEY_PATH}")
 
 with open(PUBLIC_KEY_PATH, "wb") as f:
     f.write(public_pem)
-    print(f"Clé publique écrite dans {PUBLIC_KEY_PATH}")
+    print(f"Clé publique (dev)  → {PUBLIC_KEY_PATH}")
 
-print("\n✅ Génération terminée. Les clés sont prêtes à l'emploi.")
+# Écriture des fichiers — Docker secrets (prod)
+with open(DOCKER_PRIVATE_KEY_PATH, "wb") as f:
+    f.write(private_pem)
+    print(f"Clé privée (Docker) → {DOCKER_PRIVATE_KEY_PATH}")
+
+with open(DOCKER_PUBLIC_KEY_PATH, "wb") as f:
+    f.write(public_pem)
+    print(f"Clé publique (Docker) → {DOCKER_PUBLIC_KEY_PATH}")
+
+print("\n✅ Génération terminée.")
+print("   • Développement local : les clés dans src/main/resources/ sont lues par Quarkus au démarrage.")
+print("   • Production Docker   : placez le dossier keys/ sur le serveur, puis lancez docker compose up.")
+print("   ⚠️  Ne commitez jamais les fichiers .pem — ils sont dans .gitignore.")
