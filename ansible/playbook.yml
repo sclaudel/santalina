@@ -1,0 +1,36 @@
+---
+# ── Playbook principal — déploiement Santalina sur VPS ───────────────────────
+#
+# Usage :
+#   ansible-playbook -i inventory.ini playbook.yml
+#
+# Options utiles :
+#   --tags docker        → installer Docker uniquement
+#   --tags app           → déployer l'application uniquement
+#   -e "obtain_ssl=false" → démarrer sans SSL (utile si domaine non encore pointé)
+#   -e "app_image_tag=1.2.3" → déployer une version spécifique
+# ─────────────────────────────────────────────────────────────────────────────
+
+- name: Provisionner le VPS et déployer Santalina
+  hosts: vps
+  become: true
+  vars_files:
+    - vars.yml
+
+  pre_tasks:
+    - name: Vérifier que ansible_user est défini
+      ansible.builtin.assert:
+        that: ansible_user is defined and ansible_user != ''
+        fail_msg: "La variable ansible_user doit être définie dans l'inventaire ou vars.yml"
+
+    - name: Vérifier que app_domain est défini
+      ansible.builtin.assert:
+        that: app_domain is defined and app_domain != ''
+        fail_msg: "La variable app_domain doit être définie dans vars.yml"
+
+  roles:
+    - role: docker
+      tags: [docker]
+
+    - role: santalina
+      tags: [app]

@@ -1,0 +1,34 @@
+# ── Variables Ansible — exemple ───────────────────────────────────────────────
+# Copiez ce fichier en `vars.yml`, remplissez toutes les valeurs,
+# puis NE LE COMMITEZ PAS (il contient des secrets).
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Domaine public de l'application (doit pointer vers votre VPS)
+app_domain: santalina.example.com
+
+# Email pour les notifications Let's Encrypt (expiration, etc.)
+letsencrypt_email: admin@example.com
+
+# Répertoire de déploiement sur le VPS
+app_dir: /opt/santalina
+
+# Nom d'utilisateur DockerHub (identique au secret GitHub DOCKERHUB_USERNAME)
+dockerhub_username: votre_username_dockerhub
+
+# Tag de l'image à déployer ('latest' ou un numéro de version ex: '1.2.0')
+app_image_tag: latest
+
+# Obtenir automatiquement le certificat SSL Let's Encrypt lors du déploiement
+# Mettre à false si le domaine ne pointe pas encore vers le VPS
+obtain_ssl: true
+
+# ── Secrets applicatifs ────────────────────────────────────────────────────
+app_db_password: "ChangeMeDbPassword123!"
+
+app_admin_email: admin@santalina.com
+app_admin_password: "ChangeMeAdminPassword!"
+
+# ── Configuration SMTP ────────────────────────────────────────────────────
+app_mailer_from: noreply@santalina.com
+app_mailer_host: smtp.example.com
+app_mailer_port: 587
