@@ -107,18 +107,14 @@ export function SlotBlock({
   const [editForm, setEditForm]           = useState<SlotDiverRequest>(EMPTY_FORM);
   const [editSaving, setEditSaving]       = useState(false);
   const [editError, setEditError]         = useState('');
-  // Édition du nombre de plongeurs du créneau
-  const [editingDiverCount, setEditingDiverCount] = useState(false);
-  const [diverCountStr, setDiverCountStr]         = useState(String(slot.diverCount));
-  const [diverCountError, setDiverCountError]     = useState('');
-  const [diverCountSaving, setDiverCountSaving]   = useState(false);
   const [currentDiverCount, setCurrentDiverCount] = useState(slot.diverCount);
-  // Édition des infos du créneau (titre, notes, type, club)
+  // Édition des infos du créneau (titre, notes, type, club, date, horaires, capacité)
   const [editingInfo, setEditingInfo]   = useState(false);
   const [infoTitle, setInfoTitle]       = useState(slot.title ?? '');
   const [infoNotes, setInfoNotes]       = useState(slot.notes ?? '');
   const [infoSlotType, setInfoSlotType] = useState(slot.slotType ?? '');
   const [infoClub, setInfoClub]         = useState(slot.club ?? '');
+  const [infoCapacity, setInfoCapacity] = useState(String(slot.diverCount));
   const [infoSlotDate, setInfoSlotDate]   = useState(slot.slotDate);
   const [infoStartTime, setInfoStartTime] = useState(slot.startTime);
   const [infoEndTime, setInfoEndTime]     = useState(slot.endTime);
@@ -259,7 +255,6 @@ export function SlotBlock({
   const closeTooltip = () => {
     setShowTooltip(false); setShowDiverForm(false);
     setError(''); setEditingDiver(null); setEditError('');
-    setEditingDiverCount(false); setDiverCountError('');
     setEditingInfo(false); setInfoError('');
   };
 
@@ -268,16 +263,26 @@ export function SlotBlock({
     setInfoNotes(currentNotes);
     setInfoSlotType(currentSlotType);
     setInfoClub(currentClub);
+    setInfoCapacity(String(currentDiverCount));
     setInfoSlotDate(slot.slotDate);
     setInfoStartTime(slot.startTime);
     setInfoEndTime(slot.endTime);
     setInfoError('');
     setEditingInfo(true);
-    setEditingDiverCount(false);
   };
 
   const handleUpdateSlotInfo = async (e: React.FormEvent) => {
     e.preventDefault();
+    const newCapacity = parseInt(infoCapacity, 10);
+    if (!infoCapacity || isNaN(newCapacity) || newCapacity < 1) {
+      setInfoError('La capacité doit être au moins 1'); return;
+    }
+    if (newCapacity > maxDivers) {
+      setInfoError(`La capacité ne peut pas dépasser ${maxDivers}`); return;
+    }
+    if (newCapacity < usedDivers) {
+      setInfoError(`Impossible : ${usedDivers} plongeur(s) déjà inscrits`); return;
+    }
     setInfoSaving(true); setInfoError('');
     try {
       await slotService.updateSlotInfo(slot.id, {
@@ -289,6 +294,10 @@ export function SlotBlock({
         startTime: infoStartTime || undefined,
         endTime: infoEndTime || undefined,
       });
+      if (newCapacity !== currentDiverCount) {
+        await slotService.updateDiverCount(slot.id, newCapacity);
+        setCurrentDiverCount(newCapacity);
+      }
       setCurrentTitle(infoTitle);
       setCurrentNotes(infoNotes);
       setCurrentSlotType(infoSlotType);
@@ -301,32 +310,7 @@ export function SlotBlock({
     } finally { setInfoSaving(false); }
   };
 
-  const handleUpdateDiverCount = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const val = parseInt(diverCountStr, 10);
-    if (!diverCountStr || isNaN(val) || val < 1) {
-      setDiverCountError('La valeur doit être au moins 1');
-      return;
-    }
-    if (val > maxDivers) {
-      setDiverCountError(`La valeur ne peut pas dépasser ${maxDivers}`);
-      return;
-    }
-    if (val < usedDivers) {
-      setDiverCountError(`Impossible : ${usedDivers} plongeur(s) déjà inscrits`);
-      return;
-    }
-    setDiverCountSaving(true); setDiverCountError('');
-    try {
-      await slotService.updateDiverCount(slot.id, val);
-      setCurrentDiverCount(val);
-      setEditingDiverCount(false);
-      onRefresh();
-    } catch (err: unknown) {
-      const m = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setDiverCountError(m || 'Erreur lors de la modification');
-    } finally { setDiverCountSaving(false); }
-  };
+
 
   const startEdit = (d: SlotDiver) => {
     setEditingDiver(d);
@@ -469,11 +453,6 @@ export function SlotBlock({
       <div className="slot-tooltip-info">
         <span>👤 {slot.createdByName}</span>
         <span style={{ color }}>🤿 {usedDivers}/{currentDiverCount}</span>
-        {canEditThisSlot && !editingDiverCount && (
-          <button className="btn-edit-diver-count" title="Modifier la capacité"
-            onClick={() => { setDiverCountStr(String(currentDiverCount)); setEditingDiverCount(true); setDiverCountError(''); setEditingInfo(false); }}
-          >✏️ Capacité</button>
-        )}
       </div>
 
       {/* Tags type / club */}
@@ -488,23 +467,7 @@ export function SlotBlock({
         </div>
       )}
 
-      {/* Formulaire d'édition du nombre de plongeurs */}
-      {editingDiverCount && (
-        <form onSubmit={handleUpdateDiverCount} className="diver-count-edit-form">
-          {diverCountError && <div className="diver-form-error">{diverCountError}</div>}
-          <div className="diver-count-edit-row">
-            <label>Capacité (max {maxDivers}, min {usedDivers} inscrits)</label>
-            <div className="diver-count-edit-inputs">
-              <input type="number" min={usedDivers || 1} max={maxDivers}
-                value={diverCountStr} onChange={e => setDiverCountStr(e.target.value)}
-                onBlur={() => { const val = parseInt(diverCountStr, 10); if (!diverCountStr || isNaN(val) || val < 1) setDiverCountStr(String(usedDivers || 1)); }}
-                autoFocus />
-              <button type="submit" disabled={diverCountSaving} className="btn-diver-save">{diverCountSaving ? '...' : '✓'}</button>
-              <button type="button" className="btn-diver-cancel" onClick={() => { setEditingDiverCount(false); setDiverCountError(''); }}>✕</button>
-            </div>
-          </div>
-        </form>
-      )}
+
 
       {/* Formulaire d'édition des infos du créneau */}
       {editingInfo ? (
@@ -525,6 +488,11 @@ export function SlotBlock({
             <select value={infoEndTime} onChange={e => setInfoEndTime(e.target.value)}>
               {times.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
+          </div>
+          <div className="slot-info-field">
+            <label>Nombre de places (max {maxDivers}{usedDivers > 0 ? `, min ${usedDivers} inscrits` : ''})</label>
+            <input type="number" min={usedDivers || 1} max={maxDivers}
+              value={infoCapacity} onChange={e => setInfoCapacity(e.target.value)} />
           </div>
           {(config?.slotTypes ?? []).length > 0 && (
             <div className="slot-info-field">
@@ -560,9 +528,6 @@ export function SlotBlock({
       ) : (
         <>
           {currentNotes && <div className="slot-tooltip-notes">📝 {currentNotes}</div>}
-          {canEditThisSlot && !editingDiverCount && (
-            <button className="btn-edit-slot-info" onClick={startEditInfo}>✏️ Modifier le créneau</button>
-          )}
         </>
       )}
 
@@ -771,6 +736,18 @@ export function SlotBlock({
             </form>
           )}
         </div>
+      )}
+
+      {/* Bouton modifier le créneau */}
+      {canEditThisSlot && !editingInfo && (
+        <button className="btn-edit-slot-info" onClick={startEditInfo}>
+          ✏️ Modifier le créneau
+        </button>
+      )}
+      {canEditThisSlot && editingInfo && (
+        <button className="btn-edit-slot-info btn-edit-slot-cancel" onClick={() => { setEditingInfo(false); setInfoError(''); }}>
+          ✕ Annuler la modification
+        </button>
       )}
 
       {/* Bouton export fiche de sécurité */}
