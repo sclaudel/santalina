@@ -31,7 +31,8 @@ export function SlotForm({ date, config, onCreated, onCancel }: Props) {
   };
   const times = timeOptions(safeConfig.slotResolutionMinutes);
 
-  const [startTime, setStartTime]     = useState('08:00');
+  const [slotDate, setSlotDate]           = useState(date);
+  const [startTime, setStartTime]         = useState('08:00');
   const [endTime, setEndTime]         = useState('10:00');
   const [diverCountStr, setDiverCountStr] = useState('1');
   const [title, setTitle]             = useState('');
@@ -46,8 +47,8 @@ export function SlotForm({ date, config, onCreated, onCancel }: Props) {
     setError('');
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const slotDate = new Date(date + 'T00:00:00');
-    if (slotDate < today) {
+    const slotDateVal = new Date(slotDate + 'T00:00:00');
+    if (slotDateVal < today) {
       setError('Impossible de créer un créneau dans le passé');
       return;
     }
@@ -63,7 +64,7 @@ export function SlotForm({ date, config, onCreated, onCancel }: Props) {
     setLoading(true);
     try {
       const req: SlotRequest = {
-        slotDate: date, startTime, endTime, diverCount, title, notes,
+        slotDate: slotDate, startTime, endTime, diverCount, title, notes,
         slotType: slotType || undefined,
         club: club || undefined,
       };
@@ -80,9 +81,18 @@ export function SlotForm({ date, config, onCreated, onCancel }: Props) {
   return (
     <div className="slot-form-overlay" onClick={onCancel}>
       <div className="slot-form" onClick={e => e.stopPropagation()}>
-        <h3>➕ Nouveau créneau — {date}</h3>
+        <h3>➕ Nouveau créneau</h3>
         {error && <div className="alert alert-error">{error}</div>}
         <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label>Date</label>
+            <input
+              type="date"
+              value={slotDate}
+              onChange={e => setSlotDate(e.target.value)}
+              required
+            />
+          </div>
           <div className="form-row">
             <div className="form-group">
               <label>Heure de début</label>

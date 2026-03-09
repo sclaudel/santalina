@@ -62,4 +62,68 @@ class SlotServiceTest {
         assertNotNull(result);
         assertTrue(result.isEmpty());
     }
+
+    // ---- Tests de validation createSlot ----
+
+    @Test
+    void createSlot_shouldThrowBadRequest_whenDateIsInPast() {
+        var request = new org.santalina.diving.dto.SlotDto.SlotRequest(
+                LocalDate.now().minusDays(1),
+                LocalTime.of(9, 0), LocalTime.of(11, 0),
+                5, null, null, null, null);
+        assertThrows(jakarta.ws.rs.BadRequestException.class,
+                () -> slotService.createSlot(request, null));
+    }
+
+    @Test
+    void createSlot_shouldThrowBadRequest_whenStartTimeEqualsEndTime() {
+        var request = new org.santalina.diving.dto.SlotDto.SlotRequest(
+                LocalDate.now().plusDays(1),
+                LocalTime.of(9, 0), LocalTime.of(9, 0),
+                5, null, null, null, null);
+        assertThrows(jakarta.ws.rs.BadRequestException.class,
+                () -> slotService.createSlot(request, null));
+    }
+
+    @Test
+    void createSlot_shouldThrowBadRequest_whenDurationBelowMinimum() {
+        // min = 1h, duration = 30 min
+        var request = new org.santalina.diving.dto.SlotDto.SlotRequest(
+                LocalDate.now().plusDays(1),
+                LocalTime.of(9, 0), LocalTime.of(9, 30),
+                5, null, null, null, null);
+        assertThrows(jakarta.ws.rs.BadRequestException.class,
+                () -> slotService.createSlot(request, null));
+    }
+
+    @Test
+    void createSlot_shouldThrowBadRequest_whenDurationExceedsMaximum() {
+        // max = 10h, duration = 11h
+        var request = new org.santalina.diving.dto.SlotDto.SlotRequest(
+                LocalDate.now().plusDays(1),
+                LocalTime.of(0, 0), LocalTime.of(11, 0),
+                5, null, null, null, null);
+        assertThrows(jakarta.ws.rs.BadRequestException.class,
+                () -> slotService.createSlot(request, null));
+    }
+
+    @Test
+    void createSlot_shouldThrowBadRequest_whenDiverCountExceedsMax() {
+        var request = new org.santalina.diving.dto.SlotDto.SlotRequest(
+                LocalDate.now().plusDays(1),
+                LocalTime.of(9, 0), LocalTime.of(11, 0),
+                30, null, null, null, null);
+        assertThrows(jakarta.ws.rs.BadRequestException.class,
+                () -> slotService.createSlot(request, null));
+    }
+
+    // ---- Tests de validation updateSlotInfo ----
+
+    @Test
+    void updateSlotInfo_shouldThrowNotFoundException_whenSlotNotFound() {
+        var request = new org.santalina.diving.dto.SlotDto.UpdateSlotInfoRequest(
+                null, null, null, null, null, null, null);
+        assertThrows(NotFoundException.class,
+                () -> slotService.updateSlotInfo(99999L, request, null));
+    }
 }

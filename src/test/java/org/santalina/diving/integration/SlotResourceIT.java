@@ -93,4 +93,27 @@ class SlotResourceIT {
                 .then()
                 .statusCode(401);
     }
+
+    /* ── Modification d'un créneau (date / heures) ── */
+
+    @Test
+    void updateSlotInfo_shouldReturn401_withoutAuthentication() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"slotDate\":\"2099-08-01\",\"startTime\":\"10:00\",\"endTime\":\"13:00\"}")
+                .when().patch("/api/slots/1/info")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    @TestSecurity(user = "diver@test.com", roles = {"DIVER"})
+    void updateSlotInfo_shouldReturn403_whenRoleIsDiver() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"slotDate\":\"2099-08-01\",\"startTime\":\"10:00\",\"endTime\":\"13:00\"}")
+                .when().patch("/api/slots/1/info")
+                .then()
+                .statusCode(403);
+    }
 }

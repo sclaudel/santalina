@@ -106,6 +106,22 @@ public class SlotService {
             throw new ForbiddenException("Vous ne pouvez modifier que vos propres créneaux");
         }
 
+        boolean dateOrTimeChanged = request.slotDate() != null
+                || request.startTime() != null || request.endTime() != null;
+        if (dateOrTimeChanged) {
+            LocalDate newDate  = request.slotDate()  != null ? request.slotDate()  : slot.slotDate;
+            LocalTime newStart = request.startTime() != null ? request.startTime() : slot.startTime;
+            LocalTime newEnd   = request.endTime()   != null ? request.endTime()   : slot.endTime;
+            if (newDate.isBefore(LocalDate.now())) {
+                throw new BadRequestException("Impossible de déplacer un créneau dans le passé");
+            }
+            validateSlotTimes(newStart, newEnd);
+            checkCapacity(newDate, newStart, newEnd, slot.diverCount, id);
+            slot.slotDate  = newDate;
+            slot.startTime = newStart;
+            slot.endTime   = newEnd;
+        }
+
         slot.title    = request.title();
         slot.notes    = request.notes();
         slot.slotType = request.slotType();

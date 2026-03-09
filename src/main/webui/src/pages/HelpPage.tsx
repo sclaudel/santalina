@@ -54,7 +54,8 @@ export function HelpPage() {
           <h4>Bouton « + Nouveau créneau » (toutes les vues)</h4>
           <ol>
             <li>Cliquez sur le bouton <strong>+ Nouveau créneau</strong> en haut à droite du calendrier (visible quelle que soit la vue active).</li>
-            <li>Remplissez le formulaire : heure de début, heure de fin, titre (optionnel), type de plongée, club, nombre de plongeurs, notes.</li>
+            <li>Remplissez le formulaire : <strong>date</strong>, heure de début, heure de fin, titre (optionnel), type de plongée, club, nombre de plongeurs, notes.</li>
+            <li>La date est préremplie avec la date sélectionnée dans le calendrier, mais vous pouvez la modifier directement dans le formulaire.</li>
             <li>Cliquez sur <strong>Créer</strong>.</li>
           </ol>
 
@@ -76,7 +77,7 @@ export function HelpPage() {
             <li>Cliquez sur le bouton <strong>+</strong> qui apparaît en bas à droite de la cellule.</li>
           </ol>
 
-          <div className="help-tip">💡 Le créneau créé apparaît immédiatement dans le calendrier. Il est possible de modifier son titre, ses notes, son type et son club en cliquant dessus.</div>
+          <div className="help-tip">💡 La date proposée dans le formulaire correspond à votre sélection dans le calendrier. Vous pouvez la modifier avant de valider pour créer un créneau à une autre date.</div>
         </>
       ),
     },
@@ -85,17 +86,18 @@ export function HelpPage() {
     {
       id: 'modifier-creneau',
       icon: '✏️',
-      title: 'Modifier les infos d\'un créneau',
+      title: 'Modifier un créneau',
       roles: ['ADMIN', 'DIVE_DIRECTOR'],
       content: (
         <>
-          <p>Après création, il est possible de modifier les informations d'un créneau.</p>
+          <p>Après création, il est possible de modifier toutes les informations d'un créneau, y compris sa date et ses horaires (déplacement).</p>
           <ol>
             <li>Cliquez sur le créneau pour ouvrir le panneau de détails.</li>
-            <li>Cliquez sur le bouton <strong>✏️ Modifier les infos</strong>.</li>
-            <li>Modifiez le titre, le type, le club, le nombre de plongeurs ou les notes.</li>
+            <li>Cliquez sur le bouton <strong>✏️ Modifier le créneau</strong>.</li>
+            <li>Modifiez la <strong>date</strong>, l'<strong>heure de début</strong>, l'<strong>heure de fin</strong>, le titre, le type, le club ou les notes.</li>
             <li>Cliquez sur <strong>Enregistrer</strong>.</li>
           </ol>
+          <div className="help-tip">💡 Le déplacement d'un créneau respecte les mêmes règles que la création : il est impossible de choisir une date passée, et la capacité de la plage horaire cible est vérifiée automatiquement.</div>
           <h4>Modifier le nombre de places</h4>
           <p>Dans le panneau de détails, cliquez sur l'icône ✏️ à côté du compte « X / Y plongeurs » pour ajuster la capacité du créneau.</p>
         </>
@@ -392,22 +394,23 @@ export function HelpPage() {
         icon: '➕', title: 'Créer un créneau',
         items: [
           { type: 'paragraph' as const, text: 'La création de créneaux est réservée aux administrateurs et aux directeurs de plongée.' },
-          { type: 'h4' as const, text: 'Bouton "+\ Nouveau créneau" (toutes les vues)' },
-          { type: 'ol' as const, items: ['Cliquez sur le bouton "+ Nouveau créneau" en haut à droite du calendrier (visible quelle que soit la vue active).', 'Remplissez le formulaire : heure de début, heure de fin, titre (optionnel), type de plongée, club, nombre de plongeurs, notes.', 'Cliquez sur Créer.'] },
+          { type: 'h4' as const, text: 'Bouton "+ Nouveau créneau" (toutes les vues)' },
+          { type: 'ol' as const, items: ['Cliquez sur le bouton "+ Nouveau créneau" en haut à droite du calendrier.', 'Remplissez le formulaire : date, heure de début, heure de fin, titre (optionnel), type de plongée, club, nombre de plongeurs, notes.', 'La date est préremplie avec la date sélectionnée dans le calendrier, mais vous pouvez la modifier directement dans le formulaire.', 'Cliquez sur Créer.'] },
           { type: 'h4' as const, text: 'Depuis la vue Jour' },
           { type: 'ol' as const, items: ['Si la journée est vide, un bouton "+ Créer le premier créneau" apparaît au centre de la vue.', 'Cliquez dessus pour ouvrir le formulaire de création.'] },
           { type: 'h4' as const, text: 'Depuis la vue Semaine' },
           { type: 'ol' as const, items: ['Survolez (sur ordinateur uniquement) ou appuyez sur l\'en-tête d\'une colonne de jour dans la grille.', 'Cliquez sur le bouton + qui apparaît dans l\'en-tête.'] },
           { type: 'h4' as const, text: 'Depuis la vue Mois' },
           { type: 'ol' as const, items: ['Survolez (sur ordinateur uniquement) ou appuyez sur une cellule de jour.', 'Cliquez sur le bouton + qui apparaît en bas à droite de la cellule.'] },
-          { type: 'tip' as const, text: 'Le créneau créé apparaît immédiatement dans le calendrier. Il est possible de modifier son titre, ses notes, son type et son club en cliquant dessus.' },
+          { type: 'tip' as const, text: 'La date proposée dans le formulaire correspond à votre sélection dans le calendrier. Vous pouvez la modifier avant de valider pour créer un créneau à une autre date.' },
         ],
       },
       {
-        icon: '✏️', title: 'Modifier les infos d\'un créneau',
+        icon: '✏️', title: 'Modifier un créneau',
         items: [
-          { type: 'paragraph' as const, text: 'Après création, il est possible de modifier les informations d\'un créneau.' },
-          { type: 'ol' as const, items: ['Cliquez sur le créneau pour ouvrir le panneau de détails.', 'Cliquez sur le bouton ✏️ Modifier les infos.', 'Modifiez le titre, le type, le club, le nombre de plongeurs ou les notes.', 'Cliquez sur Enregistrer.'] },
+          { type: 'paragraph' as const, text: 'Après création, il est possible de modifier toutes les informations d\'un créneau, y compris sa date et ses horaires (déplacement).' },
+          { type: 'ol' as const, items: ['Cliquez sur le créneau pour ouvrir le panneau de détails.', 'Cliquez sur le bouton ✏️ Modifier le créneau.', 'Modifiez la date, l\'heure de début, l\'heure de fin, le titre, le type, le club ou les notes.', 'Cliquez sur Enregistrer.'] },
+          { type: 'tip' as const, text: 'Le déplacement d\'un créneau respecte les mêmes règles que la création : date passée impossible, capacité de la plage horaire cible vérifiée automatiquement.' },
           { type: 'h4' as const, text: 'Modifier le nombre de places' },
           { type: 'paragraph' as const, text: 'Dans le panneau de détails, cliquez sur l\'icône ✏️ à côté du compte « X / Y plongeurs » pour ajuster la capacité du créneau.' },
         ],
