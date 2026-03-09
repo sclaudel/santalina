@@ -11,6 +11,13 @@ src/main/resources/privateKey.pem
 src/main/resources/publicKey.pem
 keys/
 
+# Ansible — fichiers contenant des secrets (ip, mdp, clés ssh...)
+ansible/vars.yml
+ansible/inventory.ini
+
+# Déploiement — variables d'environnement de production
+deploy/.env
+
 # Node / React
 src/main/webui/node_modules/
 src/main/webui/dist/

@@ -1,0 +1,11 @@
+# ── Inventaire Ansible — exemple ─────────────────────────────────────────────
+# Copiez ce fichier en `inventory.ini`, remplissez les valeurs réelles
+# et ne commitez PAS le fichier résultant (il contient l'adresse IP du VPS).
+# ─────────────────────────────────────────────────────────────────────────────
+
+[vps]
+# Remplacez par l'IP ou le nom de domaine de votre VPS
+your-vps-ip ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa
+
+[vps:vars]
+ansible_python_interpreter=/usr/bin/python3

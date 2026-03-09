@@ -1,0 +1,135 @@
+---
+# ── Répertoires ───────────────────────────────────────────────────────────────
+- name: Créer le répertoire de déploiement
+  ansible.builtin.file:
+    path: "{{ app_dir }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0750"
+
+- name: Créer le répertoire des clés JWT
+  ansible.builtin.file:
+    path: "{{ app_dir }}/keys"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0700"
+
+- name: Créer le répertoire nginx
+  ansible.builtin.file:
+    path: "{{ app_dir }}/nginx"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0755"
+
+# ── Clés RSA JWT ──────────────────────────────────────────────────────────────
+- name: Vérifier si la clé privée JWT existe déjà
+  ansible.builtin.stat:
+    path: "{{ app_dir }}/keys/privateKey.pem"
+  register: jwt_private_key_stat
+
+- name: Générer la clé privée RSA 2048 bits (si absente)
+  ansible.builtin.command:
+    cmd: openssl genrsa -out {{ app_dir }}/keys/privateKey.pem 2048
+  when: not jwt_private_key_stat.stat.exists
+  become: false
+
+- name: Extraire la clé publique (si absente)
+  ansible.builtin.command:
+    cmd: >
+      openssl rsa
+      -in {{ app_dir }}/keys/privateKey.pem
+      -pubout -out {{ app_dir }}/keys/publicKey.pem
+  when: not jwt_private_key_stat.stat.exists
+  become: false
+
+- name: Restreindre les permissions des clés JWT
+  ansible.builtin.file:
+    path: "{{ app_dir }}/keys/{{ item }}"
+    mode: "0600"
+    owner: "{{ ansible_user }}"
+  loop:
+    - privateKey.pem
+    - publicKey.pem
+
+# ── Fichiers de configuration ─────────────────────────────────────────────────
+- name: Déployer le fichier .env (variables d'environnement)
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ app_dir }}/.env"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0600"
+
+- name: Déployer docker-compose.prod.yml
+  ansible.builtin.template:
+    src: docker-compose.prod.yml.j2
+    dest: "{{ app_dir }}/docker-compose.yml"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0640"
+
+# ── Nginx — phase 1 : HTTP only (pour obtenir le cert Let's Encrypt) ─────────
+- name: Déployer la configuration Nginx (HTTP uniquement, première installation)
+  ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: "{{ app_dir }}/nginx/nginx.conf"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+  vars:
+    ssl_enabled: false
+
+# ── Démarrage des services ────────────────────────────────────────────────────
+- name: Télécharger les images Docker depuis DockerHub
+  ansible.builtin.command:
+    cmd: docker compose pull
+    chdir: "{{ app_dir }}"
+  become: false
+
+- name: Démarrer tous les services
+  ansible.builtin.command:
+    cmd: docker compose up -d
+    chdir: "{{ app_dir }}"
+  become: false
+
+# ── Let's Encrypt (première obtention du certificat SSL) ─────────────────────
+- name: Obtenir le certificat SSL Let's Encrypt
+  ansible.builtin.command:
+    cmd: >
+      docker compose run --rm certbot certonly
+      --webroot -w /var/www/certbot
+      -d {{ app_domain }}
+      --email {{ letsencrypt_email }}
+      --agree-tos --non-interactive
+    chdir: "{{ app_dir }}"
+  become: false
+  register: certbot_result
+  when: obtain_ssl | default(true)
+  ignore_errors: true
+
+- name: Afficher le résultat de Let's Encrypt
+  ansible.builtin.debug:
+    msg: "Certbot : {{ certbot_result.stdout | default('pas de sortie') }}"
+  when: obtain_ssl | default(true)
+
+# ── Nginx — phase 2 : HTTPS (après obtention du cert) ────────────────────────
+- name: Déployer la configuration Nginx avec HTTPS
+  ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: "{{ app_dir }}/nginx/nginx.conf"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+  vars:
+    ssl_enabled: true
+  when: obtain_ssl | default(true) and certbot_result is succeeded
+
+- name: Recharger Nginx après obtention du certificat SSL
+  ansible.builtin.command:
+    cmd: docker compose exec nginx nginx -s reload
+    chdir: "{{ app_dir }}"
+  become: false
+  when: obtain_ssl | default(true) and certbot_result is succeeded

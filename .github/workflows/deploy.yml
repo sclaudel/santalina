@@ -1,0 +1,77 @@
+name: Deploy to VPS
+
+# Déclenché automatiquement après le succès du workflow de release
+on:
+  workflow_run:
+    workflows: ["Release — Build & Push Docker Image"]
+    types: [completed]
+
+  # Possibilité de déclencher manuellement (pour rollback ou redéploiement forcé)
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Tag de l'image à déployer (ex: 1.2.0 ou latest)"
+        required: false
+        default: "latest"
+
+jobs:
+  deploy:
+    name: Deploy new image on VPS
+    runs-on: ubuntu-latest
+
+    # Ne déployer que si le workflow de build a réussi
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      # ── Récupérer le tag de la version depuis le workflow de release ─────
+      - name: Résoudre le tag à déployer
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "TAG=${{ github.event.inputs.image_tag }}" >> "$GITHUB_OUTPUT"
+          else
+            # Extraire le tag depuis le nom de la ref du workflow parent
+            REF="${{ github.event.workflow_run.head_branch }}"
+            VERSION="${REF#v}"
+            echo "TAG=${VERSION}" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ── Déploiement via SSH ───────────────────────────────────────────────
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host:     ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key:      ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/santalina
+
+            echo "==> Mise à jour de l'image vers le tag : ${{ steps.tag.outputs.TAG }}"
+
+            # Mettre à jour le tag dans docker-compose.yml si nécessaire
+            TAG="${{ steps.tag.outputs.TAG }}"
+            if [ "$TAG" != "latest" ]; then
+              sed -i "s|/santalina:.*|/santalina:${TAG}|" docker-compose.yml
+            fi
+
+            # Télécharger la nouvelle image de l'application uniquement
+            docker compose pull app
+
+            # Redémarrer uniquement le conteneur app (sans toucher db ou nginx)
+            docker compose up -d --no-deps --force-recreate app
+
+            # Supprimer les anciennes images inutilisées pour libérer de l'espace
+            docker image prune -f
+
+            echo "==> Déploiement terminé"
+
+      # ── Notification en cas d'échec ───────────────────────────────────────
+      - name: Notifier en cas d'échec
+        if: failure()
+        run: |
+          echo "::error::Le déploiement sur le VPS a échoué."
+          echo "Vérifiez les secrets VPS_HOST, VPS_USER et VPS_SSH_KEY."
+          echo "Assurez-vous que le VPS est accessible et que Docker est installé."
