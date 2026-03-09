@@ -1,0 +1,72 @@
+name: Release — Build & Push Docker Image
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  build-and-push:
+    name: Build Quarkus & Push to DockerHub
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── Récupération du code ──────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── Setup Java 21 ─────────────────────────────────────────────────────
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      # ── Setup Node.js (build frontend) ────────────────────────────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: src/main/webui/package-lock.json
+
+      # ── Build du frontend React ───────────────────────────────────────────
+      - name: Build frontend
+        working-directory: src/main/webui
+        run: |
+          npm ci
+          npm run build
+
+      # ── Build du backend Quarkus (fast-jar) ───────────────────────────────
+      - name: Build backend (Quarkus fast-jar)
+        run: ./gradlew build -x test -Dquarkus.package.jar.type=fast-jar
+        env:
+          GRADLE_OPTS: '-Dorg.gradle.daemon=false'
+
+      # ── Extraction du numéro de version depuis le tag Git ─────────────────
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      # ── Connexion à DockerHub ─────────────────────────────────────────────
+      - name: Log in to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # ── Build et push de l'image Docker ──────────────────────────────────
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/santalina:${{ steps.version.outputs.VERSION }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/santalina:latest
+          labels: |
+            org.opencontainers.image.version=${{ steps.version.outputs.VERSION }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
