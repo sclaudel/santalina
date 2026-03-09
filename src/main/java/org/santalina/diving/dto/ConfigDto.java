@@ -16,6 +16,7 @@ public class ConfigDto {
             String siteName,
             List<String> slotTypes,
             List<String> clubs,
+            List<String> levels,
             boolean publicAccess,
             boolean selfRegistration
     ) {}

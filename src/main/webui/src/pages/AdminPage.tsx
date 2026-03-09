@@ -34,6 +34,7 @@ export function AdminPage() {
   // Listes configurables
   const [slotTypesText, setSlotTypesText] = useState('');
   const [clubsText, setClubsText]         = useState('');
+  const [levelsText, setLevelsText]       = useState('');
   const [listLoading, setListLoading]     = useState(false);
 
   // Recherche et pagination utilisateurs
@@ -53,6 +54,7 @@ export function AdminPage() {
       setNewSiteName(c.siteName ?? '');
       setSlotTypesText((c.slotTypes ?? []).join('\n'));
       setClubsText((c.clubs ?? []).join('\n'));
+      setLevelsText((c.levels ?? []).join('\n'));
     } catch {
       setError('Erreur lors du chargement des données');
     }
@@ -150,6 +152,18 @@ export function AdminPage() {
       setConfig(updated);
       setClubsText((updated.clubs ?? []).join('\n'));
       setMsg('Clubs mis à jour');
+    } catch (err: unknown) { setError(getErrorMessage(err)); }
+    finally { setListLoading(false); }
+  };
+
+  const handleUpdateLevels = async (e: React.FormEvent) => {
+    e.preventDefault(); setMsg(''); setError(''); setListLoading(true);
+    const items = levelsText.split('\n').map(s => s.trim()).filter(Boolean);
+    try {
+      const updated = await adminService.updateLevels(items);
+      setConfig(updated);
+      setLevelsText((updated.levels ?? []).join('\n'));
+      setMsg('Niveaux mis à jour');
     } catch (err: unknown) { setError(getErrorMessage(err)); }
     finally { setListLoading(false); }
   };
@@ -306,6 +320,18 @@ export function AdminPage() {
             </div>
             <button type="submit" className="btn btn-primary" disabled={listLoading}>
               {listLoading ? '...' : '💾 Enregistrer les clubs'}
+            </button>
+          </form>
+          <form onSubmit={handleUpdateLevels} style={{ flex: 1, minWidth: 280 }}>
+            <div className="form-group">
+              <label style={{ fontWeight: 700 }}>Niveaux de plongeurs</label>
+              <textarea rows={8} value={levelsText}
+                onChange={e => setLevelsText(e.target.value)}
+                placeholder={"Inconnu\nE1\nNiveau 1\n..."}
+                style={{ fontFamily: 'monospace', fontSize: 13 }} />
+            </div>
+            <button type="submit" className="btn btn-primary" disabled={listLoading}>
+              {listLoading ? '...' : '💾 Enregistrer les niveaux'}
             </button>
           </form>
         </div>
