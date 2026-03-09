@@ -9,6 +9,7 @@ build/
 # Clés RSA (NE PAS committer en production !)
 src/main/resources/privateKey.pem
 src/main/resources/publicKey.pem
+keys/
 
 # Node / React
 src/main/webui/node_modules/
