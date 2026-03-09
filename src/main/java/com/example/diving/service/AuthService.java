@@ -112,20 +112,23 @@ public class AuthService {
 
     @Transactional
     public void ensureAdminExists() {
+        // Ne créer l'admin par défaut que s'il n'existe aucun administrateur.
+        // Ainsi, si l'admin a été supprimé intentionnellement (un autre admin existait),
+        // ou si son mot de passe a été changé, il n'est ni recréé ni réinitialisé.
+        if (User.countAdmins() > 0) return;
+
         String adminEmail = (config.adminEmail() != null && !config.adminEmail().isBlank())
                 ? config.adminEmail() : "admin@santalina.com";
         String adminPassword = (config.adminPassword() != null && !config.adminPassword().isBlank())
                 ? config.adminPassword() : "Admin1234";
 
-        if (User.findByEmail(adminEmail) == null) {
-            User admin = new User();
-            admin.email        = adminEmail;
-            admin.name         = "Administrateur";
-            admin.passwordHash = PasswordUtil.hash(adminPassword);
-            admin.role         = UserRole.ADMIN;
-            admin.roles        = new java.util.HashSet<>();
-            admin.roles.add(UserRole.ADMIN);
-            admin.persist();
-        }
+        User admin = new User();
+        admin.email        = adminEmail;
+        admin.name         = "Administrateur";
+        admin.passwordHash = PasswordUtil.hash(adminPassword);
+        admin.role         = UserRole.ADMIN;
+        admin.roles        = new java.util.HashSet<>();
+        admin.roles.add(UserRole.ADMIN);
+        admin.persist();
     }
 }

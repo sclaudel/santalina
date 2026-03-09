@@ -58,7 +58,7 @@ public class SlotDiverResource {
         // Vérifier droits directeur de plongée
         if ("DIVE_DIRECTOR".equals(getRole())) {
             User currentUser = User.findByEmail(jwt.getName());
-            if (currentUser == null || !slot.createdBy.id.equals(currentUser.id)) {
+            if (currentUser == null || slot.createdBy == null || !slot.createdBy.id.equals(currentUser.id)) {
                 throw new ForbiddenException("Vous ne pouvez modifier que vos propres créneaux");
             }
         }
@@ -117,7 +117,7 @@ public class SlotDiverResource {
         String role = getRole();
         if ("DIVE_DIRECTOR".equals(role)) {
             User currentUser = User.findByEmail(jwt.getName());
-            if (currentUser == null || !slot.createdBy.id.equals(currentUser.id)) {
+            if (currentUser == null || slot.createdBy == null || !slot.createdBy.id.equals(currentUser.id)) {
                 throw new ForbiddenException("Vous ne pouvez modifier que vos propres créneaux");
             }
         }
@@ -157,7 +157,7 @@ public class SlotDiverResource {
         }
         if ("DIVE_DIRECTOR".equals(getRole())) {
             User currentUser = User.findByEmail(jwt.getName());
-            if (currentUser == null || !diver.slot.createdBy.id.equals(currentUser.id)) {
+            if (currentUser == null || diver.slot.createdBy == null || !diver.slot.createdBy.id.equals(currentUser.id)) {
                 throw new ForbiddenException("Vous ne pouvez modifier que vos propres créneaux");
             }
         }

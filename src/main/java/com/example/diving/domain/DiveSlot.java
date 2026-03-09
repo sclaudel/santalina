@@ -40,7 +40,7 @@ public class DiveSlot extends PanacheEntityBase {
     public String club;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "created_by", nullable = false)
+    @JoinColumn(name = "created_by", nullable = true)
     public User createdBy;
 
     @Column(name = "created_at", nullable = false)

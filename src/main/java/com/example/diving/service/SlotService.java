@@ -102,7 +102,7 @@ public class SlotService {
         if (slot == null) throw new NotFoundException("Créneau non trouvé");
 
         if (currentUser.role == UserRole.DIVE_DIRECTOR &&
-                !slot.createdBy.id.equals(currentUser.id)) {
+                (slot.createdBy == null || !slot.createdBy.id.equals(currentUser.id))) {
             throw new ForbiddenException("Vous ne pouvez modifier que vos propres créneaux");
         }
 
@@ -126,7 +126,7 @@ public class SlotService {
         if (slot == null) throw new NotFoundException("Créneau non trouvé");
 
         if (currentUser.role == UserRole.DIVE_DIRECTOR &&
-                !slot.createdBy.id.equals(currentUser.id)) {
+                (slot.createdBy == null || !slot.createdBy.id.equals(currentUser.id))) {
             throw new ForbiddenException("Vous ne pouvez supprimer que vos propres créneaux");
         }
 
@@ -145,7 +145,7 @@ public class SlotService {
         if (slot == null) throw new NotFoundException("Créneau non trouvé");
 
         if (currentUser.role == UserRole.DIVE_DIRECTOR &&
-                !slot.createdBy.id.equals(currentUser.id)) {
+                (slot.createdBy == null || !slot.createdBy.id.equals(currentUser.id))) {
             throw new ForbiddenException("Vous ne pouvez modifier que vos propres créneaux");
         }
 
