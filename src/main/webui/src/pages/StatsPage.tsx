@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import dayjs from 'dayjs';
 import { statsService } from '../services/statsService';
-import type { StatsResponse, PeriodStat, GroupStat } from '../types';
+import type { StatsResponse, PeriodStat, GroupStat, DpStat } from '../types';
 
 // ---- Camembert SVG sans dépendance externe ----
 const PIE_COLORS = [
@@ -143,6 +143,7 @@ export function StatsPage() {
   // Filtres
   const [filterYear, setFilterYear]   = useState<string>('all');
   const [filterMonth, setFilterMonth] = useState<string>('all');
+  const [expandedDp, setExpandedDp]   = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
@@ -232,10 +233,20 @@ export function StatsPage() {
             {stats.totalSlots > 0 && (
               <div className="stats-total-card">
                 <span className="stats-total-icon">📈</span>
-                <span className="stats-total-value">{(stats.totalDivers / stats.totalSlots).toFixed(1)}</span>
+                <span className="stats-total-value">{stats.avgDiversPerSlot.toFixed(1)}</span>
                 <span className="stats-total-label">Plongeurs / créneau moy.</span>
               </div>
             )}
+            <div className="stats-total-card">
+              <span className="stats-total-icon">🏆</span>
+              <span className="stats-total-value">{stats.totalClubs}</span>
+              <span className="stats-total-label">Clubs actifs</span>
+            </div>
+            <div className="stats-total-card">
+              <span className="stats-total-icon">🧭</span>
+              <span className="stats-total-value">{stats.byDiveDirector.length}</span>
+              <span className="stats-total-label">Directeurs de plongée</span>
+            </div>
           </div>
 
           {/* Évolution par période */}
@@ -292,6 +303,109 @@ export function StatsPage() {
               </div>
             </div>
           </div>
+
+          {/* Par jour de la semaine */}
+          <div className="stats-section">
+            <h2>📆 Fréquentation par jour de la semaine</h2>
+            <div className="stats-row">
+              <div className="stats-card stats-card-wide">
+                <h3>Créneaux et plongées par jour</h3>
+                <BarChart data={stats.byDayOfWeek} max={Math.max(1, ...stats.byDayOfWeek.map(d => Math.max(d.slots, d.divers)))} />
+              </div>
+              <div className="stats-card">
+                <h3>Tableau</h3>
+                <StatsTable data={stats.byDayOfWeek} cols={periodCols} />
+              </div>
+            </div>
+          </div>
+
+          {/* Par niveau */}
+          {stats.byLevel.length > 0 && (
+            <div className="stats-section">
+              <h2>🎓 Par niveau de plongeur</h2>
+              <div className="stats-row">
+                <div className="stats-card">
+                  <h3>Répartition des plongées par niveau</h3>
+                  <PieChart data={stats.byLevel} valueKey="divers" />
+                </div>
+                <div className="stats-card stats-card-wide">
+                  <h3>Détail par niveau</h3>
+                  <StatsTable
+                    data={stats.byLevel}
+                    cols={[
+                      { key: 'label' as const, label: 'Niveau' },
+                      { key: 'divers' as const, label: 'Plongées' },
+                    ]}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Par Directeur de Plongée */}
+          {stats.byDiveDirector.length > 0 && (
+            <div className="stats-section">
+              <h2>🧭 Par Directeur de Plongée</h2>
+              <div className="dp-list">
+                {stats.byDiveDirector.map((dp: DpStat) => {
+                  const isOpen = expandedDp === dp.name;
+                  return (
+                    <div key={dp.name} className="dp-row">
+                      <div
+                        className="dp-row-header"
+                        onClick={() => setExpandedDp(isOpen ? null : dp.name)}
+                      >
+                        <span className={`dp-chevron${isOpen ? ' open' : ''}`}>▶</span>
+                        <span className="dp-row-name">{dp.name}</span>
+                        <div className="dp-badges">
+                          <span className="dp-badge">🤿 {dp.totalDirections} direction{dp.totalDirections > 1 ? 's' : ''}</span>
+                          <span className="dp-badge dp-badge-green">📈 {dp.avgDiversPerSlot.toFixed(1)} plg./session moy.</span>
+                        </div>
+                      </div>
+                      {isOpen && (
+                        <div className="dp-detail">
+                          <div className="dp-detail-section">
+                            <h4>Par année</h4>
+                            <table className="dp-mini-table">
+                              <thead>
+                                <tr><th>Année</th><th>Directions</th><th>Moy. plongeurs</th></tr>
+                              </thead>
+                              <tbody>
+                                {dp.byYear.map(row => (
+                                  <tr key={row.label}>
+                                    <td>{row.label}</td>
+                                    <td>{row.directions}</td>
+                                    <td>{row.avgDivers.toFixed(1)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                          <div className="dp-detail-section">
+                            <h4>Par mois</h4>
+                            <table className="dp-mini-table">
+                              <thead>
+                                <tr><th>Mois</th><th>Directions</th><th>Moy. plongeurs</th></tr>
+                              </thead>
+                              <tbody>
+                                {dp.byMonth.map(row => (
+                                  <tr key={row.label}>
+                                    <td>{row.label}</td>
+                                    <td>{row.directions}</td>
+                                    <td>{row.avgDivers.toFixed(1)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </>
       ) : null}
     </div>

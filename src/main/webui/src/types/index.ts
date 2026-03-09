@@ -109,6 +109,20 @@ export interface GroupStat {
   divers: number;
 }
 
+export interface DpPeriodStat {
+  label: string;
+  directions: number;
+  avgDivers: number;
+}
+
+export interface DpStat {
+  name: string;
+  totalDirections: number;
+  avgDiversPerSlot: number;
+  byYear: DpPeriodStat[];
+  byMonth: DpPeriodStat[];
+}
+
 export interface StatsResponse {
   byMonth: PeriodStat[];
   byYear: PeriodStat[];
@@ -116,4 +130,9 @@ export interface StatsResponse {
   byType: GroupStat[];
   totalSlots: number;
   totalDivers: number;
+  totalClubs: number;
+  avgDiversPerSlot: number;
+  byDayOfWeek: PeriodStat[];
+  byLevel: GroupStat[];
+  byDiveDirector: DpStat[];
 }
