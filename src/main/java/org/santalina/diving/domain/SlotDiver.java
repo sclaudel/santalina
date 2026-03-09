@@ -49,4 +49,9 @@ public class SlotDiver extends PanacheEntityBase {
     public static boolean hasDirector(Long slotId) {
         return count("slot.id = ?1 and isDirector = true", slotId) > 0;
     }
+
+    public static List<SlotDiver> findBySlotIds(List<Long> slotIds) {
+        if (slotIds.isEmpty()) return List.of();
+        return list("slot.id in ?1", slotIds);
+    }
 }

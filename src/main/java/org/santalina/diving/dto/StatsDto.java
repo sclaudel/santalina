@@ -16,12 +16,31 @@ public class StatsDto {
             int divers
     ) {}
 
+    public record DpPeriodStat(
+            String label,
+            int    directions,
+            double avgDivers
+    ) {}
+
+    public record DpStat(
+            String             name,
+            int                totalDirections,
+            double             avgDiversPerSlot,
+            List<DpPeriodStat> byYear,
+            List<DpPeriodStat> byMonth
+    ) {}
+
     public record StatsResponse(
             List<PeriodStat> byMonth,
             List<PeriodStat> byYear,
             List<GroupStat>  byClub,
             List<GroupStat>  byType,
-            int totalSlots,
-            int totalDivers
+            int              totalSlots,
+            int              totalDivers,
+            int              totalClubs,
+            double           avgDiversPerSlot,
+            List<PeriodStat> byDayOfWeek,
+            List<GroupStat>  byLevel,
+            List<DpStat>     byDiveDirector
     ) {}
 }
