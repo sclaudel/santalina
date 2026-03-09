@@ -19,7 +19,6 @@ import org.santalina.diving.security.JwtUtil;
 import org.santalina.diving.security.PasswordUtil;
 import org.santalina.diving.service.AuthService;
 import org.santalina.diving.service.ConfigService;
-import org.santalina.diving.config.DivingConfig;
 
 import java.util.Set;
 
@@ -47,17 +46,10 @@ class AuthServiceTest {
     @InjectMock
     PasswordResetMailer mailer;
 
-    @InjectMock
-    DivingConfig divingConfig;
-
     @BeforeEach
     void setup() {
         when(configService.isSelfRegistration()).thenReturn(true);
         when(jwtUtil.generateToken(any())).thenReturn("mock-jwt-token");
-        when(divingConfig.resetTokenExpiryMinutes()).thenReturn(30);
-        when(divingConfig.jwtExpiryHours()).thenReturn(24);
-        when(divingConfig.adminEmail()).thenReturn("admin@santalina.com");
-        when(divingConfig.adminPassword()).thenReturn("Admin1234");
     }
 
     @Test

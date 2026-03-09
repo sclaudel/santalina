@@ -58,9 +58,10 @@ class SlotResourceIT {
     /* ── Création de créneau (ADMIN) ── */
 
     @Test
-    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
-    void createSlot_shouldReturn401_whenUserNotFoundInDB() {
-        // L'utilisateur @TestSecurity n'existe pas en base H2 → NotAuthorizedException
+    @TestSecurity(user = "diver@test.com", roles = {"DIVER"})
+    void createSlot_shouldReturn403_whenRoleIsDiver() {
+        // Un DIVER n'a pas le droit de créer un créneau (@RolesAllowed ADMIN/DIVE_DIRECTOR)
+        // le refus est fait avant tout appel à jwt.getName()
         given()
                 .contentType(ContentType.JSON)
                 .body("""
@@ -69,7 +70,7 @@ class SlotResourceIT {
                       """)
                 .when().post("/api/slots")
                 .then()
-                .statusCode(anyOf(is(401), is(403)));
+                .statusCode(403);
     }
 
     @Test
