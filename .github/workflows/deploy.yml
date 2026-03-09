@@ -19,10 +19,12 @@ jobs:
     name: Deploy new image on VPS
     runs-on: ubuntu-latest
 
-    # Ne déployer que si le workflow de build a réussi
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'success'
+    # Désactivé temporairement — VPS non encore provisionné.
+    # Pour réactiver : remplacer `if: false` par la condition commentée ci-dessous.
+    if: false
+    # if: >
+    #   github.event_name == 'workflow_dispatch' ||
+    #   github.event.workflow_run.conclusion == 'success'
 
     steps:
       # ── Récupérer le tag de la version depuis le workflow de release ─────
