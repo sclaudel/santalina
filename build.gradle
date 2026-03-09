@@ -31,7 +31,7 @@ dependencies {
     testImplementation 'io.quarkus:quarkus-test-security'
 }
 
-group = 'com.example'
+group = 'org.santalina'
 version = '1.0-SNAPSHOT'
 
 java {
