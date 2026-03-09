@@ -54,6 +54,13 @@ public class ConfigResource {
     }
 
     @PUT
+    @Path("/levels")
+    @RolesAllowed("ADMIN")
+    public ConfigResponse updateLevels(@Valid UpdateListRequest request) {
+        return configService.updateLevels(request.items());
+    }
+
+    @PUT
     @Path("/public-access")
     @RolesAllowed("ADMIN")
     public ConfigResponse updatePublicAccess(@Valid UpdateBooleanRequest request) {

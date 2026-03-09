@@ -22,12 +22,18 @@ public class ConfigService {
     private static final String KEY_SITE_NAME   = "site.name";
     private static final String KEY_SLOT_TYPES       = "slot.types";
     private static final String KEY_CLUBS             = "slot.clubs";
+    private static final String KEY_LEVELS            = "diver.levels";
     private static final String KEY_PUBLIC_ACCESS     = "public.access";
     private static final String KEY_SELF_REGISTRATION = "self.registration";
 
     private static final String DEFAULT_SLOT_TYPES =
         "Club - Plongée|Club - Apnée|Club - Nage avec Palme|CODEP - Plongée|CODEP - Apnée|CODEP - Nage avec Palme|Externe - SDIS - Gendarmerie";
-    private static final String DEFAULT_CLUBS = "";
+    private static final String DEFAULT_CLUBS  = "";
+    private static final String DEFAULT_LEVELS =
+        "Inconnu|E1|E2|Niveau 1|Niveau 2|Niveau 3|Niveau 4|Guide de Palanquée" +
+        "|MF1|MF2|Moniteur|Directeur de plongée" +
+        "|PADI Open Water|PADI Advanced|PADI Rescue" +
+        "|Prepa-N1|Prepa-N2|Prepa-N3|Prepa-N4|Prepa-MF1|Prepa-MF2";
 
     @Inject
     DivingConfig divingConfig;
@@ -57,6 +63,9 @@ public class ConfigService {
     public List<String> getClubs() {
         return parseList(getStringValue(KEY_CLUBS, DEFAULT_CLUBS));
     }
+    public List<String> getLevels() {
+        return parseList(getStringValue(KEY_LEVELS, DEFAULT_LEVELS));
+    }
     public boolean isPublicAccess() {
         return Boolean.parseBoolean(getStringValue(KEY_PUBLIC_ACCESS, "true"));
     }
@@ -68,7 +77,7 @@ public class ConfigService {
         return new ConfigResponse(
                 getMaxDivers(), getSlotMinHours(), getSlotMaxHours(),
                 getSlotResolutionMinutes(), getSiteName(),
-                getSlotTypes(), getClubs(),
+                getSlotTypes(), getClubs(), getLevels(),
                 isPublicAccess(), isSelfRegistration()
         );
     }
@@ -93,6 +102,11 @@ public class ConfigService {
     @Transactional
     public ConfigResponse updateClubs(List<String> clubs) {
         forceUpsert(KEY_CLUBS, serializeList(clubs));
+        return getConfig();
+    }
+    @Transactional
+    public ConfigResponse updateLevels(List<String> levels) {
+        forceUpsert(KEY_LEVELS, serializeList(levels));
         return getConfig();
     }
     @Transactional
@@ -128,6 +142,7 @@ public class ConfigService {
         upsertIfMissing(KEY_SITE_NAME,  "Carrière de Saint-Lin");
         upsertIfMissing(KEY_SLOT_TYPES,       DEFAULT_SLOT_TYPES);
         upsertIfMissing(KEY_CLUBS,             DEFAULT_CLUBS);
+        upsertIfMissing(KEY_LEVELS,            DEFAULT_LEVELS);
         upsertIfMissing(KEY_PUBLIC_ACCESS,     "true");
         upsertIfMissing(KEY_SELF_REGISTRATION, "true");
     }

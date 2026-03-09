@@ -30,22 +30,6 @@ interface Props {
   currentUserRole?: string;
 }
 
-const LEVELS = [
-  // Niveaux fédéraux
-  'E1', 'E2',
-  'Niveau 1', 'Niveau 2', 'Niveau 3', 'Niveau 4',
-  'Guide de Palanquée',
-  // Monitorat
-  'MF1', 'MF2',
-  'Moniteur',
-  'Directeur de plongée',
-  // PADI
-  'PADI Open Water', 'PADI Advanced', 'PADI Rescue',
-  // Préparations
-  'Prepa-N1', 'Prepa-N2', 'Prepa-N3', 'Prepa-N4',
-  'Prepa-MF1', 'Prepa-MF2',
-];
-
 const LEVEL_COLORS: Record<string, string> = {
   // Niveaux fédéraux
   'E1':                   '#93c5fd',
@@ -77,7 +61,7 @@ const TOOLTIP_WIDTH = 320;
 
 
 const EMPTY_FORM: SlotDiverRequest = {
-  firstName: '', lastName: '', level: 'E1',
+  firstName: '', lastName: '', level: 'Inconnu',
   email: '', phone: '', isDirector: false,
 };
 
@@ -619,7 +603,7 @@ export function SlotBlock({
                         </div>
                         <select value={editForm.level}
                           onChange={e => setEditForm(f => ({ ...f, level: e.target.value }))}>
-                          {LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
+                          {(config?.levels ?? []).map(l => <option key={l} value={l}>{l}</option>)}
                         </select>
 
                         {/* Case directeur indépendante du niveau */}
@@ -711,7 +695,7 @@ export function SlotBlock({
                   onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))} />
               </div>
               <select value={form.level} onChange={e => setForm(f => ({ ...f, level: e.target.value }))}>
-                {LEVELS.map(l => (
+                {(config?.levels ?? []).map(l => (
                   <option key={l} value={l}>{l}</option>
                 ))}
               </select>
