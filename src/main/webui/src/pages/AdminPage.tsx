@@ -41,6 +41,9 @@ export function AdminPage() {
   const [userPage, setUserPage]       = useState(1);
   const USER_PAGE_SIZE = 10;
 
+  // Nombre total d'administrateurs (permet de protéger le dernier)
+  const adminCount = users.filter(u => (u.roles ?? [u.role]).includes('ADMIN')).length;
+
   const loadData = async () => {
     try {
       const [u, c] = await Promise.all([adminService.getAllUsers(), adminService.getConfig()]);
@@ -85,6 +88,10 @@ export function AdminPage() {
       ? current.filter(r => r !== role)
       : [...current, role];
     if (next.length === 0) { setError('Un utilisateur doit avoir au moins un rôle'); return; }
+    if (role === 'ADMIN' && current.includes('ADMIN') && adminCount <= 1) {
+      setError('Impossible de retirer le rôle administrateur du dernier administrateur');
+      return;
+    }
     try {
       const updated = await adminService.updateRoles(user.id, next);
       setUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
@@ -95,6 +102,11 @@ export function AdminPage() {
   };
 
   const handleDeleteUser = async (userId: number, name: string) => {
+    const target = users.find(u => u.id === userId);
+    if (target && (target.roles ?? [target.role]).includes('ADMIN') && adminCount <= 1) {
+      setError('Impossible de supprimer le dernier administrateur');
+      return;
+    }
     if (!confirm(`Supprimer l'utilisateur "${name}" ?`)) return;
     try {
       await adminService.deleteUser(userId);
@@ -417,6 +429,7 @@ export function AdminPage() {
             <tbody>
               {pagedUsers.map(u => {
                 const userRoles = u.roles ?? [u.role];
+                const isLastAdmin = userRoles.includes('ADMIN') && adminCount <= 1;
                 return (
                   <tr key={u.id}>
                     <td><strong>{u.name}</strong></td>
@@ -424,15 +437,21 @@ export function AdminPage() {
                     <td>{u.phone || <span style={{ color: '#9ca3af' }}>—</span>}</td>
                     <td>
                       <div className="roles-checkboxes-inline">
-                        {ALL_ROLES.map(r => (
-                          <label key={r.value} className="role-checkbox-label small"
-                            title={`${userRoles.includes(r.value) ? 'Retirer' : 'Ajouter'} le rôle ${r.label}`}>
-                            <input type="checkbox"
-                              checked={userRoles.includes(r.value)}
-                              onChange={() => handleRoleToggle(u, r.value)} />
-                            <span>{r.label}</span>
-                          </label>
-                        ))}
+                        {ALL_ROLES.map(r => {
+                          const disableAdminRemoval = r.value === 'ADMIN' && userRoles.includes('ADMIN') && adminCount <= 1;
+                          return (
+                            <label key={r.value} className="role-checkbox-label small"
+                              title={disableAdminRemoval
+                                ? 'Dernier administrateur — impossible de retirer ce rôle'
+                                : `${userRoles.includes(r.value) ? 'Retirer' : 'Ajouter'} le rôle ${r.label}`}>
+                              <input type="checkbox"
+                                checked={userRoles.includes(r.value)}
+                                onChange={() => handleRoleToggle(u, r.value)}
+                                disabled={disableAdminRemoval} />
+                              <span>{r.label}</span>
+                            </label>
+                          );
+                        })}
                       </div>
                     </td>
                     <td>
@@ -442,9 +461,14 @@ export function AdminPage() {
                           onClick={() => startEditUser(u)}
                           title="Modifier">✏️ Modifier</button>
                         <button className="btn btn-small"
-                          style={{ color: '#dc2626', background: '#fee2e2', border: 'none' }}
+                          style={isLastAdmin
+                            ? { color: '#9ca3af', background: '#f3f4f6', border: 'none', cursor: 'not-allowed' }
+                            : { color: '#dc2626', background: '#fee2e2', border: 'none' }}
                           onClick={() => handleDeleteUser(u.id, u.name)}
-                          title="Supprimer">🗑 Supprimer</button>
+                          disabled={isLastAdmin}
+                          title={isLastAdmin ? 'Dernier administrateur — impossible de supprimer' : 'Supprimer'}>
+                          🗑 Supprimer
+                        </button>
                       </div>
                     </td>
                   </tr>

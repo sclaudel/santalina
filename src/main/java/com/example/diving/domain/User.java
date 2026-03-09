@@ -71,6 +71,10 @@ public class User extends PanacheEntityBase {
         return find("email", email).firstResult();
     }
 
+    public static long countAdmins() {
+        return count("role", UserRole.ADMIN);
+    }
+
     public static User findByResetToken(String token) {
         return find("resetToken", token).firstResult();
     }

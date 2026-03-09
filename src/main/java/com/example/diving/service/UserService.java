@@ -62,6 +62,11 @@ public class UserService {
     public UserResponse updateRoles(Long userId, UpdateRolesRequest request) {
         User user = User.findById(userId);
         if (user == null) throw new NotFoundException("Utilisateur non trouvé");
+        if (user.hasRole(UserRole.ADMIN)
+                && !request.roles().contains(UserRole.ADMIN)
+                && User.countAdmins() <= 1) {
+            throw new BadRequestException("Impossible de retirer le rôle administrateur du dernier administrateur");
+        }
         user.roles = new HashSet<>(request.roles());
         user.role  = user.primaryRole(); // synchroniser le rôle principal
         user.persist();
@@ -88,6 +93,9 @@ public class UserService {
     public void deleteUser(Long userId) {
         User user = User.findById(userId);
         if (user == null) throw new NotFoundException("Utilisateur non trouvé");
+        if (user.hasRole(UserRole.ADMIN) && User.countAdmins() <= 1) {
+            throw new BadRequestException("Impossible de supprimer le dernier administrateur");
+        }
         user.delete();
     }
 
