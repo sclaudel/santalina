@@ -31,7 +31,10 @@ public class SlotDto {
             String title,
             String notes,
             String slotType,
-            String club
+            String club,
+            LocalDate slotDate,
+            @JsonFormat(pattern = "HH:mm") LocalTime startTime,
+            @JsonFormat(pattern = "HH:mm") LocalTime endTime
     ) {}
 
     public record SlotResponse(

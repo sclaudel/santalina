@@ -6,6 +6,9 @@ export interface SlotInfoUpdate {
   notes?: string;
   slotType?: string;
   club?: string;
+  slotDate?: string;
+  startTime?: string;
+  endTime?: string;
 }
 
 export const slotService = {

@@ -76,6 +76,17 @@ function getCapacityColor(used: number, max: number): string {
   return '#10b981';
 }
 
+function timeOptions(resolutionMinutes: number): string[] {
+  const res = (resolutionMinutes > 0 && isFinite(resolutionMinutes)) ? resolutionMinutes : 15;
+  const opts: string[] = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += res) {
+      opts.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+    }
+  }
+  return opts;
+}
+
 export function SlotBlock({
   slot, height, onDelete, onRefresh,
   canEdit, currentUserId, currentUserRole, maxDivers = 25, config,
@@ -108,6 +119,9 @@ export function SlotBlock({
   const [infoNotes, setInfoNotes]       = useState(slot.notes ?? '');
   const [infoSlotType, setInfoSlotType] = useState(slot.slotType ?? '');
   const [infoClub, setInfoClub]         = useState(slot.club ?? '');
+  const [infoSlotDate, setInfoSlotDate]   = useState(slot.slotDate);
+  const [infoStartTime, setInfoStartTime] = useState(slot.startTime);
+  const [infoEndTime, setInfoEndTime]     = useState(slot.endTime);
   const [infoSaving, setInfoSaving]     = useState(false);
   const [infoError, setInfoError]       = useState('');
   // Valeurs courantes affichées (mises à jour après sauvegarde)
@@ -124,6 +138,8 @@ export function SlotBlock({
   const [editSearchQuery, setEditSearchQuery]     = useState('');
   const [editSearchResults, setEditSearchResults] = useState<UserSearchResult[]>([]);
   const [editSearchLoading, setEditSearchLoading] = useState(false);
+
+  const times = timeOptions(config?.slotResolutionMinutes ?? 15);
 
   const blockRef   = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -252,6 +268,9 @@ export function SlotBlock({
     setInfoNotes(currentNotes);
     setInfoSlotType(currentSlotType);
     setInfoClub(currentClub);
+    setInfoSlotDate(slot.slotDate);
+    setInfoStartTime(slot.startTime);
+    setInfoEndTime(slot.endTime);
     setInfoError('');
     setEditingInfo(true);
     setEditingDiverCount(false);
@@ -266,6 +285,9 @@ export function SlotBlock({
         notes: infoNotes || undefined,
         slotType: infoSlotType || undefined,
         club: infoClub || undefined,
+        slotDate: infoSlotDate || undefined,
+        startTime: infoStartTime || undefined,
+        endTime: infoEndTime || undefined,
       });
       setCurrentTitle(infoTitle);
       setCurrentNotes(infoNotes);
@@ -488,6 +510,22 @@ export function SlotBlock({
       {editingInfo ? (
         <form onSubmit={handleUpdateSlotInfo} className="slot-info-edit-form">
           {infoError && <div className="diver-form-error">{infoError}</div>}
+          <div className="slot-info-field">
+            <label>Date</label>
+            <input type="date" value={infoSlotDate} onChange={e => setInfoSlotDate(e.target.value)} required />
+          </div>
+          <div className="slot-info-field">
+            <label>Heure de début</label>
+            <select value={infoStartTime} onChange={e => setInfoStartTime(e.target.value)}>
+              {times.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+          <div className="slot-info-field">
+            <label>Heure de fin</label>
+            <select value={infoEndTime} onChange={e => setInfoEndTime(e.target.value)}>
+              {times.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
           {(config?.slotTypes ?? []).length > 0 && (
             <div className="slot-info-field">
               <label>Type de créneau</label>
@@ -523,7 +561,7 @@ export function SlotBlock({
         <>
           {currentNotes && <div className="slot-tooltip-notes">📝 {currentNotes}</div>}
           {canEditThisSlot && !editingDiverCount && (
-            <button className="btn-edit-slot-info" onClick={startEditInfo}>✏️ Modifier titre / notes / type / club</button>
+            <button className="btn-edit-slot-info" onClick={startEditInfo}>✏️ Modifier le créneau</button>
           )}
         </>
       )}
