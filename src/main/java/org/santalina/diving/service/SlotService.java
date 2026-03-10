@@ -73,6 +73,7 @@ public class SlotService {
             throw new BadRequestException("Impossible de créer un créneau dans le passé");
         }
         validateSlotTimes(request.startTime(), request.endTime());
+        checkSlotTimeWindow(request.startTime(), request.endTime());
         validateDiverCount(request.diverCount());
         checkCapacity(request.slotDate(), request.startTime(), request.endTime(), request.diverCount(), null);
 
@@ -116,6 +117,7 @@ public class SlotService {
                 throw new BadRequestException("Impossible de déplacer un créneau dans le passé");
             }
             validateSlotTimes(newStart, newEnd);
+            checkSlotTimeWindow(newStart, newEnd);
             checkCapacity(newDate, newStart, newEnd, slot.diverCount, id);
             slot.slotDate  = newDate;
             slot.startTime = newStart;
@@ -183,6 +185,30 @@ public class SlotService {
     }
 
     // ---- Validation helpers ----
+
+    /**
+     * Vérifie que les heures du créneau (startTime) respectent la fenêtre horaire
+     * configurée par l'admin. La restriction porte sur les heures du créneau lui-même,
+     * indépendamment de l'heure à laquelle la demande est soumise (les plongeurs
+     * peuvent s'inscrire sur un créneau à n'importe quel moment de la journée).
+     * booking.open.hour  = -1 → pas de restriction d'ouverture
+     * booking.close.hour = -1 → pas de restriction de fermeture
+     */
+    private void checkSlotTimeWindow(LocalTime startTime, LocalTime endTime) {
+        int openHour  = configService.getBookingOpenHour();
+        int closeHour = configService.getBookingCloseHour();
+
+        if (openHour == -1 && closeHour == -1) return;
+
+        if (openHour != -1 && startTime.getHour() < openHour) {
+            throw new BadRequestException(
+                "Le créneau ne peut pas démarrer avant " + String.format("%02d:00", openHour));
+        }
+        if (closeHour != -1 && startTime.getHour() >= closeHour) {
+            throw new BadRequestException(
+                "Le créneau ne peut pas démarrer à partir de " + String.format("%02d:00", closeHour));
+        }
+    }
 
     private void validateSlotTimes(LocalTime start, LocalTime end) {
         if (!start.isBefore(end)) {

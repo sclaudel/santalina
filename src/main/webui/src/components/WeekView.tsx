@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import dayjs from 'dayjs';
 import type { DiveSlot, AppConfig } from '../types';
 import { slotService } from '../services/slotService';
@@ -44,6 +44,18 @@ export function WeekView({ weekStart, config, onSelectDay, onAdd }: Props) {
     dayjs(weekStart).add(i, 'day').format('YYYY-MM-DD')
   );
 
+  // Plage horaire dynamique : 1h de marge avant le premier début et après la dernière fin
+  const { startHour, endHour } = useMemo(() => {
+    if (!allSlots.length) return { startHour: 6, endHour: 22 };
+    const toMin = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+    const minStart = Math.min(...allSlots.map(s => toMin(s.startTime)));
+    const maxEnd   = Math.max(...allSlots.map(s => toMin(s.endTime)));
+    return {
+      startHour: Math.max(0,  Math.floor(minStart / 60) - 1),
+      endHour:   Math.min(24, Math.ceil(maxEnd   / 60) + 1),
+    };
+  }, [allSlots]);
+
   return (
     <div className="week-view-chrono">
       {/* En-tête des 7 jours */}
@@ -74,9 +86,9 @@ export function WeekView({ weekStart, config, onSelectDay, onAdd }: Props) {
       ) : (
         <div className="week-grid-chrono">
           <div className="week-time-axis">
-            {Array.from({ length: 17 }, (_, i) => i + 6).map(h => (
-              <div key={h} className="week-time-label" style={{ top: (h - 6) * 60 * 2 + 'px' }}>
-                {String(h).padStart(2, '0')}:00
+            {Array.from({ length: endHour - startHour + 1 }, (_, i) => startHour + i).map(h => (
+              <div key={h} className="week-time-label" style={{ top: (h - startHour) * 60 * 2 + 'px' }}>
+                {h === 24 ? '00:00' : `${String(h).padStart(2, '0')}:00`}
               </div>
             ))}
           </div>
@@ -90,6 +102,8 @@ export function WeekView({ weekStart, config, onSelectDay, onAdd }: Props) {
                 canEdit={canEdit}
                 currentUserId={user?.id}
                 currentUserRole={user?.role}
+                startHour={startHour}
+                endHour={endHour}
               />
             </div>
           ))}

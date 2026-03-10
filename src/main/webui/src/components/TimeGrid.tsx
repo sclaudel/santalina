@@ -10,11 +10,15 @@ interface Props {
   canEdit: boolean;
   currentUserId?: number;
   currentUserRole?: string;
+  /** Heure de début de la grille (fournie par WeekView pour aligner les colonnes) */
+  startHour?: number;
+  /** Heure de fin de la grille (fournie par WeekView pour aligner les colonnes) */
+  endHour?: number;
 }
 
-const START_HOUR = 6;   // 06:00
-const END_HOUR   = 22;  // 22:00
-const PX_PER_MIN = 2;   // 2px par minute → 1h = 120px
+const DEFAULT_START = 6;   // 06:00 par défaut
+const DEFAULT_END   = 22;  // 22:00 par défaut
+const PX_PER_MIN    = 2;   // 2px par minute → 1h = 120px
 
 function timeToMinutes(t: string): number {
   const [h, m] = t.split(':').map(Number);
@@ -71,11 +75,30 @@ function computeColumns(slots: DiveSlot[]): Map<number, { col: number; totalCols
   return result;
 }
 
-export function TimeGrid({ slots, config, onDelete, onRefresh, canEdit, currentUserId, currentUserRole }: Props) {
+export function TimeGrid({ slots, config, onDelete, onRefresh, canEdit, currentUserId, currentUserRole, startHour: startHourProp, endHour: endHourProp }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const totalMinutes = (END_HOUR - START_HOUR) * 60;
+
+  // Calcul dynamique de la plage horaire visible :
+  // – si fourni par le parent (WeekView), on l'utilise tel quel pour aligner toutes les colonnes
+  // – sinon on calcule depuis les créneaux du jour (vue Jour), avec 1h de marge
+  const { startHour, endHour } = useMemo(() => {
+    if (startHourProp !== undefined && endHourProp !== undefined) {
+      return { startHour: startHourProp, endHour: endHourProp };
+    }
+    if (!slots.length) {
+      return { startHour: startHourProp ?? DEFAULT_START, endHour: endHourProp ?? DEFAULT_END };
+    }
+    const minStart = Math.min(...slots.map(s => timeToMinutes(s.startTime)));
+    const maxEnd   = Math.max(...slots.map(s => timeToMinutes(s.endTime)));
+    return {
+      startHour: startHourProp ?? Math.max(0, Math.floor(minStart / 60) - 1),
+      endHour:   endHourProp   ?? Math.min(24, Math.ceil(maxEnd / 60) + 1),
+    };
+  }, [slots, startHourProp, endHourProp]);
+
+  const totalMinutes = (endHour - startHour) * 60;
   const totalHeight  = totalMinutes * PX_PER_MIN;
-  const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
+  const hours = Array.from({ length: endHour - startHour + 1 }, (_, i) => startHour + i);
 
   const columns = useMemo(() => computeColumns(slots), [slots]);
 
@@ -89,9 +112,9 @@ export function TimeGrid({ slots, config, onDelete, onRefresh, canEdit, currentU
             <div
               key={h}
               className="time-axis-label"
-              style={{ top: (h - START_HOUR) * 60 * PX_PER_MIN - 8 + 'px' }}
+              style={{ top: (h - startHour) * 60 * PX_PER_MIN - 8 + 'px' }}
             >
-              {String(h).padStart(2, '0')}:00
+              {h === 24 ? '00:00' : `${String(h).padStart(2, '0')}:00`}
             </div>
           ))}
         </div>
@@ -103,7 +126,7 @@ export function TimeGrid({ slots, config, onDelete, onRefresh, canEdit, currentU
             <div
               key={h}
               className={`time-grid-line ${h % 2 === 0 ? 'even' : 'odd'}`}
-              style={{ top: (h - START_HOUR) * 60 * PX_PER_MIN + 'px' }}
+              style={{ top: (h - startHour) * 60 * PX_PER_MIN + 'px' }}
             />
           ))}
           {/* Demi-heures */}
@@ -111,7 +134,7 @@ export function TimeGrid({ slots, config, onDelete, onRefresh, canEdit, currentU
             <div
               key={h + 0.5}
               className="time-grid-line half"
-              style={{ top: (h - START_HOUR) * 60 * PX_PER_MIN + 30 * PX_PER_MIN + 'px' }}
+              style={{ top: (h - startHour) * 60 * PX_PER_MIN + 30 * PX_PER_MIN + 'px' }}
             />
           ))}
 
@@ -119,7 +142,7 @@ export function TimeGrid({ slots, config, onDelete, onRefresh, canEdit, currentU
           {slots.map(slot => {
             const startMin = timeToMinutes(slot.startTime);
             const endMin   = timeToMinutes(slot.endTime);
-            const top      = (startMin - START_HOUR * 60) * PX_PER_MIN;
+            const top      = (startMin - startHour * 60) * PX_PER_MIN;
             const height   = Math.max((endMin - startMin) * PX_PER_MIN, 30);
             const layout   = columns.get(slot.id) ?? { col: 0, totalCols: 1 };
             const widthPct = 100 / layout.totalCols;

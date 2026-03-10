@@ -73,4 +73,11 @@ public class ConfigResource {
     public ConfigResponse updateSelfRegistration(@Valid UpdateBooleanRequest request) {
         return configService.updateSelfRegistration(request.value());
     }
+
+    @PUT
+    @Path("/booking-hours")
+    @RolesAllowed("ADMIN")
+    public ConfigResponse updateBookingHours(@Valid UpdateBookingHoursRequest request) {
+        return configService.updateBookingHours(request.bookingOpenHour(), request.bookingCloseHour());
+    }
 }

@@ -18,7 +18,9 @@ public class ConfigDto {
             List<String> clubs,
             List<String> levels,
             boolean publicAccess,
-            boolean selfRegistration
+            boolean selfRegistration,
+            int bookingOpenHour,
+            int bookingCloseHour
     ) {}
 
     public record UpdateMaxDiversRequest(
@@ -35,5 +37,10 @@ public class ConfigDto {
 
     public record UpdateBooleanRequest(
             @NotNull Boolean value
+    ) {}
+
+    public record UpdateBookingHoursRequest(
+            @NotNull @Min(-1) @jakarta.validation.constraints.Max(23) Integer bookingOpenHour,
+            @NotNull @Min(-1) @jakarta.validation.constraints.Max(23) Integer bookingCloseHour
     ) {}
 }
