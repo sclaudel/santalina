@@ -106,6 +106,71 @@
     chdir: "{{ app_dir }}"
   become: false
 
+# ── Import optionnel de données existantes ────────────────────────────────────
+- name: Attendre que PostgreSQL soit prêt
+  ansible.builtin.command:
+    cmd: docker compose exec -T db pg_isready -U santalina
+    chdir: "{{ app_dir }}"
+  become: false
+  register: pg_ready
+  retries: 15
+  delay: 3
+  until: pg_ready.rc == 0
+  when: db_seed_file is defined and db_seed_file != ''
+
+- name: Copier le script SQL de données sur le serveur
+  ansible.builtin.copy:
+    src: "{{ db_seed_file }}"
+    dest: "{{ app_dir }}/seed.sql"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0600"
+  when: db_seed_file is defined and db_seed_file != ''
+
+- name: Injecter les données dans la base PostgreSQL
+  ansible.builtin.command:
+    cmd: >-
+      docker compose exec -T db
+      psql -U santalina -d santalina
+      -f /tmp/seed.sql
+    chdir: "{{ app_dir }}"
+  become: false
+  register: seed_result
+  environment:
+    PGPASSWORD: "{{ app_db_password }}"
+  when: db_seed_file is defined and db_seed_file != ''
+  # Pour exécuter: passer -e "db_seed_file=/chemin/local/vers/dump.sql"
+  # Note: copier d'abord le fichier dans le conteneur via docker cp
+  changed_when: seed_result.rc == 0
+
+- name: (correctif) Injecter via docker cp + psql
+  block:
+    - name: Copier le fichier SQL dans le conteneur db
+      ansible.builtin.command:
+        cmd: docker cp {{ app_dir }}/seed.sql santalina-db:/tmp/seed.sql
+        chdir: "{{ app_dir }}"
+      become: false
+
+    - name: Exécuter le script SQL dans le conteneur
+      ansible.builtin.command:
+        cmd: >-
+          docker compose exec -T db
+          psql -U santalina -d santalina -f /tmp/seed.sql
+        chdir: "{{ app_dir }}"
+      become: false
+      register: seed_result
+      changed_when: true
+
+    - name: Afficher le résultat de l'import SQL
+      ansible.builtin.debug:
+        msg: "Import SQL : {{ seed_result.stdout_lines | default([]) }}"
+
+    - name: Supprimer le fichier SQL temporaire du serveur
+      ansible.builtin.file:
+        path: "{{ app_dir }}/seed.sql"
+        state: absent
+  when: db_seed_file is defined and db_seed_file != ''
+
 # ── Let's Encrypt (première obtention du certificat SSL) ─────────────────────
 - name: Vérifier si le certificat SSL existe déjà dans le volume certbot
   ansible.builtin.command:

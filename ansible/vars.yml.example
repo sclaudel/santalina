@@ -32,3 +32,9 @@ app_admin_password: "ChangeMeAdminPassword!"
 app_mailer_from: noreply@santalina.com
 app_mailer_host: smtp.example.com
 app_mailer_port: 587
+
+# ── Import de données existantes (optionnel) ───────────────────────────────
+# Chemin local (sur votre machine) vers un dump SQL à injecter au premier déploiement.
+# Laisser commenté ou vide pour démarrer avec une base vierge.
+# Peut aussi être passé en ligne de commande : -e "db_seed_file=/chemin/vers/dump.sql"
+# db_seed_file: "/chemin/local/vers/dump.sql"
