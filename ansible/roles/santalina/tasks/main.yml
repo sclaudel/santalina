@@ -127,23 +127,7 @@
     mode: "0600"
   when: db_seed_file is defined and db_seed_file != ''
 
-- name: Injecter les données dans la base PostgreSQL
-  ansible.builtin.command:
-    cmd: >-
-      docker compose exec -T db
-      psql -U santalina -d santalina
-      -f /tmp/seed.sql
-    chdir: "{{ app_dir }}"
-  become: false
-  register: seed_result
-  environment:
-    PGPASSWORD: "{{ app_db_password }}"
-  when: db_seed_file is defined and db_seed_file != ''
-  # Pour exécuter: passer -e "db_seed_file=/chemin/local/vers/dump.sql"
-  # Note: copier d'abord le fichier dans le conteneur via docker cp
-  changed_when: seed_result.rc == 0
-
-- name: (correctif) Injecter via docker cp + psql
+- name: Injecter via docker cp + psql
   block:
     - name: Copier le fichier SQL dans le conteneur db
       ansible.builtin.command:
