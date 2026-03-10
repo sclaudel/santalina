@@ -126,18 +126,6 @@
     msg: "Certbot : {{ certbot_result.stdout | default('pas de sortie') }}"
   when: obtain_ssl | default(true)
 
-- name: Vérifier la présence du certificat SSL dans le volume Docker
-  ansible.builtin.command:
-    cmd: >
-      docker compose exec -T certbot
-      ls /etc/letsencrypt/live/{{ app_domain }}/fullchain.pem
-    chdir: "{{ app_dir }}"
-  become: false
-  register: ssl_cert_check
-  failed_when: false
-  changed_when: false
-  when: obtain_ssl | default(true)
-
 # ── Nginx — phase 2 : HTTPS (après obtention du cert) ────────────────────────
 - name: Déployer la configuration Nginx avec HTTPS
   ansible.builtin.template:
@@ -148,11 +136,11 @@
     mode: "0644"
   vars:
     ssl_enabled: true
-  when: obtain_ssl | default(true) and (ssl_cert_check.rc | default(1)) == 0
+  when: obtain_ssl | default(true) and (certbot_result.rc | default(1)) == 0
 
 - name: Redémarrer Nginx pour activer la configuration HTTPS
   ansible.builtin.command:
     cmd: docker compose restart nginx
     chdir: "{{ app_dir }}"
   become: false
-  when: obtain_ssl | default(true) and (ssl_cert_check.rc | default(1)) == 0
+  when: obtain_ssl | default(true) and (certbot_result.rc | default(1)) == 0
