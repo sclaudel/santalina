@@ -34,12 +34,14 @@ services:
       MAILER_FROM: ${MAILER_FROM}
       MAILER_HOST: ${MAILER_HOST}
       MAILER_PORT: ${MAILER_PORT}
-      MP_JWT_VERIFY_PUBLICKEY: ${MP_JWT_VERIFY_PUBLICKEY}
-      SMALLRYE_JWT_SIGN_KEY: ${SMALLRYE_JWT_SIGN_KEY}
+      # Clés JWT RSA — montage volume en lecture seule
+      JWT_PUBLIC_KEY_PATH: file:/deployments/keys/publicKey.pem
+      JWT_PRIVATE_KEY_PATH: file:/deployments/keys/privateKey.pem
     depends_on:
       db:
         condition: service_healthy
     volumes:
+      - ./keys:/deployments/keys:ro
       - app_data:/deployments/data
     healthcheck:
       test: ["CMD-SHELL", "nc -z localhost 8085 || exit 1"]

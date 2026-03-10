@@ -35,15 +35,14 @@ services:
       MAILER_FROM: ${MAILER_FROM}
       MAILER_HOST: ${MAILER_HOST}
       MAILER_PORT: ${MAILER_PORT}
-      JWT_PRIVATE_KEY_PATH: /run/secrets/jwt_private_key
-      JWT_PUBLIC_KEY_PATH: /run/secrets/jwt_public_key
-    secrets:
-      - jwt_private_key
-      - jwt_public_key
+      # Clés JWT RSA — montage volume en lecture seule
+      JWT_PUBLIC_KEY_PATH: file:/deployments/keys/publicKey.pem
+      JWT_PRIVATE_KEY_PATH: file:/deployments/keys/privateKey.pem
     depends_on:
       db:
         condition: service_healthy
     volumes:
+      - ./keys:/deployments/keys:ro
       - app_data:/deployments/data
     networks:
       - internal
@@ -80,13 +79,6 @@ services:
         certbot renew --quiet --webroot -w /var/www/certbot;
         sleep 12h & wait $${!};
       done;'
-
-# ── Docker secrets (clés RSA JWT) ────────────────────────────────────────────
-secrets:
-  jwt_private_key:
-    file: ./keys/privateKey.pem
-  jwt_public_key:
-    file: ./keys/publicKey.pem
 
 # ── Réseau interne ────────────────────────────────────────────────────────────
 networks:

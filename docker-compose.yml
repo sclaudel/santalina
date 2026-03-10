@@ -42,13 +42,14 @@ services:
       MAILER_PORT: 1025
       # Capacité du lac
       APP_DIVING_MAX_DIVERS: 25
-      # Clés JWT RSA (contenu PEM encodé en base64, généré par generate_keys.py dans .env)
-      MP_JWT_VERIFY_PUBLICKEY: ${MP_JWT_VERIFY_PUBLICKEY}
-      SMALLRYE_JWT_SIGN_KEY: ${SMALLRYE_JWT_SIGN_KEY}
+      # Clés JWT RSA — chemin vers les fichiers montent en volume
+      JWT_PUBLIC_KEY_PATH: file:/deployments/keys/publicKey.pem
+      JWT_PRIVATE_KEY_PATH: file:/deployments/keys/privateKey.pem
     depends_on:
       db:
         condition: service_healthy
     volumes:
+      - ./keys:/deployments/keys:ro
       - app_data:/deployments/data
 
   # ---- Mailhog (serveur SMTP de test) ----
