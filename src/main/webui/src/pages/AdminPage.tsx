@@ -37,6 +37,11 @@ export function AdminPage() {
   const [levelsText, setLevelsText]       = useState('');
   const [listLoading, setListLoading]     = useState(false);
 
+  // Heures de réservation
+  const [bookingOpenHour, setBookingOpenHour]   = useState<number>(-1);
+  const [bookingCloseHour, setBookingCloseHour] = useState<number>(-1);
+  const [bookingHoursLoading, setBookingHoursLoading] = useState(false);
+
   // Recherche et pagination utilisateurs
   const [userSearch, setUserSearch]   = useState('');
   const [userPage, setUserPage]       = useState(1);
@@ -55,6 +60,8 @@ export function AdminPage() {
       setSlotTypesText((c.slotTypes ?? []).join('\n'));
       setClubsText((c.clubs ?? []).join('\n'));
       setLevelsText((c.levels ?? []).join('\n'));
+      setBookingOpenHour(c.bookingOpenHour ?? -1);
+      setBookingCloseHour(c.bookingCloseHour ?? -1);
     } catch {
       setError('Erreur lors du chargement des données');
     }
@@ -166,6 +173,20 @@ export function AdminPage() {
       setMsg('Niveaux mis à jour');
     } catch (err: unknown) { setError(getErrorMessage(err)); }
     finally { setListLoading(false); }
+  };
+
+  const handleUpdateBookingHours = async (e: React.FormEvent) => {
+    e.preventDefault(); setMsg(''); setError(''); setBookingHoursLoading(true);
+    try {
+      const updated = await adminService.updateBookingHours(bookingOpenHour, bookingCloseHour);
+      setConfig(updated);
+      setBookingOpenHour(updated.bookingOpenHour ?? -1);
+      setBookingCloseHour(updated.bookingCloseHour ?? -1);
+      const openLabel  = bookingOpenHour  === -1 ? 'illimitée' : `à partir de ${String(bookingOpenHour).padStart(2,'0')}h00`;
+      const closeLabel = bookingCloseHour === -1 ? 'illimitée' : `jusqu\'à ${String(bookingCloseHour).padStart(2,'0')}h00`;
+      setMsg(`Fenêtre de réservation mise à jour : ${openLabel}, ${closeLabel}`);
+    } catch (err: unknown) { setError(getErrorMessage(err)); }
+    finally { setBookingHoursLoading(false); }
   };
 
   const toggleCreateRole = (role: UserRole) => {
@@ -288,6 +309,76 @@ export function AdminPage() {
               {config?.selfRegistration ? '✅ Activée' : '🔴 Désactivée'}
             </button>
           </label>
+
+          {/* Fenêtre horaire de réservation */}
+          <div className="toggle-setting" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 12 }}>
+            <div className="toggle-setting-info">
+              <strong>🕐 Plage horaire des créneaux</strong>
+              <span>
+                Interdit la création de créneaux dont l'heure de début se situe en dehors de la plage définie.
+                Les inscriptions des plongeurs ne sont pas concernées.
+                Mettre <strong>-1</strong> pour désactiver la restriction (pas de limite).
+              </span>
+            </div>
+            {config && (
+              <div style={{ fontSize: 13, color: '#6b7280' }}>
+                Actuellement&nbsp;:&nbsp;
+                {config.bookingOpenHour === -1 && config.bookingCloseHour === -1
+                  ? <span style={{ color: '#16a34a' }}>aucune restriction horaire</span>
+                  : <>
+                    {config.bookingOpenHour !== -1
+                      ? <span>ouvert à partir de <strong>{String(config.bookingOpenHour).padStart(2,'0')}h00</strong></span>
+                      : <span>ouverture illimitée</span>}
+                    {' · '}
+                    {config.bookingCloseHour !== -1
+                      ? <span>fermé à partir de <strong>{String(config.bookingCloseHour).padStart(2,'0')}h00</strong></span>
+                      : <span>fermeture illimitée</span>}
+                  </>
+                }
+              </div>
+            )}
+            <form onSubmit={handleUpdateBookingHours} className="form form-inline" style={{ gap: 16, flexWrap: 'wrap' }}>
+              <div className="form-group" style={{ minWidth: 160 }}>
+                <label>Ouverture</label>
+                <select
+                  value={bookingOpenHour}
+                  onChange={e => setBookingOpenHour(Number(e.target.value))}
+                >
+                  <option value={-1}>— Pas de limite —</option>
+                  {Array.from({ length: 24 }, (_, h) => {
+                    const forbidden = bookingCloseHour !== -1 && h >= bookingCloseHour;
+                    return (
+                      <option key={h} value={h} disabled={forbidden}
+                        style={forbidden ? { color: '#9ca3af' } : {}}>
+                        {String(h).padStart(2, '0')}h00
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+              <div className="form-group" style={{ minWidth: 160 }}>
+                <label>Fermeture</label>
+                <select
+                  value={bookingCloseHour}
+                  onChange={e => setBookingCloseHour(Number(e.target.value))}
+                >
+                  <option value={-1}>— Pas de limite —</option>
+                  {Array.from({ length: 24 }, (_, h) => {
+                    const forbidden = bookingOpenHour !== -1 && h <= bookingOpenHour;
+                    return (
+                      <option key={h} value={h} disabled={forbidden}
+                        style={forbidden ? { color: '#9ca3af' } : {}}>
+                        {String(h).padStart(2, '0')}h00
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+              <button type="submit" className="btn btn-primary" disabled={bookingHoursLoading} style={{ alignSelf: 'flex-end' }}>
+                {bookingHoursLoading ? '...' : '💾 Enregistrer'}
+              </button>
+            </form>
+          </div>
         </div>
       </div>
 

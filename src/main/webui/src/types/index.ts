@@ -96,6 +96,8 @@ export interface AppConfig {
   levels: string[];
   publicAccess: boolean;
   selfRegistration: boolean;
+  bookingOpenHour: number;
+  bookingCloseHour: number;
 }
 
 export interface PeriodStat {

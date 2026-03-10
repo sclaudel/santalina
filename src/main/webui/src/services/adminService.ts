@@ -70,4 +70,9 @@ export const adminService = {
     const res = await api.put<AppConfig>('/config/self-registration', { value });
     return res.data;
   },
+
+  async updateBookingHours(bookingOpenHour: number, bookingCloseHour: number): Promise<AppConfig> {
+    const res = await api.put<AppConfig>('/config/booking-hours', { bookingOpenHour, bookingCloseHour });
+    return res.data;
+  },
 };

@@ -20,6 +20,11 @@ function timeOptions(resolutionMinutes: number): string[] {
   return opts;
 }
 
+function toMinutes(time: string): number {
+  const [h, m] = time.split(':').map(Number);
+  return h * 60 + m;
+}
+
 export function SlotForm({ date, config, onCreated, onCancel }: Props) {
   const safeConfig = {
     maxDivers: config?.maxDivers > 0 ? config.maxDivers : 25,
@@ -28,12 +33,21 @@ export function SlotForm({ date, config, onCreated, onCancel }: Props) {
     slotMaxHours: config?.slotMaxHours > 0 ? config.slotMaxHours : 10,
     slotTypes: config?.slotTypes ?? [],
     clubs: config?.clubs ?? [],
+    bookingOpenHour: config?.bookingOpenHour ?? -1,
+    bookingCloseHour: config?.bookingCloseHour ?? -1,
   };
   const times = timeOptions(safeConfig.slotResolutionMinutes);
 
   const [slotDate, setSlotDate]           = useState(date);
   const [startTime, setStartTime]         = useState('08:00');
-  const [endTime, setEndTime]         = useState('10:00');
+  const [endTime, setEndTime]         = useState(() => {
+    const startMin = toMinutes('08:00');
+    const valid = times.find(t => {
+      const d = toMinutes(t) - startMin;
+      return d >= safeConfig.slotMinHours * 60 && d <= safeConfig.slotMaxHours * 60;
+    });
+    return valid ?? '10:00';
+  });
   const [diverCountStr, setDiverCountStr] = useState('1');
   const [title, setTitle]             = useState('');
   const [notes, setNotes]             = useState('');
@@ -41,6 +55,21 @@ export function SlotForm({ date, config, onCreated, onCancel }: Props) {
   const [club, setClub]               = useState(safeConfig.clubs[0] ?? '');
   const [error, setError]             = useState('');
   const [loading, setLoading]         = useState(false);
+
+  const handleStartTimeChange = (newStart: string) => {
+    setStartTime(newStart);
+    const startMin = toMinutes(newStart);
+    const diff = toMinutes(endTime) - startMin;
+    const minDiff = safeConfig.slotMinHours * 60;
+    const maxDiff = safeConfig.slotMaxHours * 60;
+    if (diff < minDiff || diff > maxDiff) {
+      const valid = times.find(t => {
+        const d = toMinutes(t) - startMin;
+        return d >= minDiff && d <= maxDiff;
+      });
+      if (valid) setEndTime(valid);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,14 +125,36 @@ export function SlotForm({ date, config, onCreated, onCancel }: Props) {
           <div className="form-row">
             <div className="form-group">
               <label>Heure de début</label>
-              <select value={startTime} onChange={e => setStartTime(e.target.value)}>
-                {times.map(t => <option key={t} value={t}>{t}</option>)}
+              <select value={startTime} onChange={e => handleStartTimeChange(e.target.value)}>
+                {times.map(t => {
+                  const h = parseInt(t.split(':')[0], 10);
+                  const forbidden =
+                    (safeConfig.bookingOpenHour  !== -1 && h <  safeConfig.bookingOpenHour) ||
+                    (safeConfig.bookingCloseHour !== -1 && h >= safeConfig.bookingCloseHour);
+                  return (
+                    <option key={t} value={t} disabled={forbidden}
+                      style={forbidden ? { color: '#9ca3af' } : {}}>
+                      {t}
+                    </option>
+                  );
+                })}
               </select>
             </div>
             <div className="form-group">
               <label>Heure de fin</label>
               <select value={endTime} onChange={e => setEndTime(e.target.value)}>
-                {times.map(t => <option key={t} value={t}>{t}</option>)}
+                {times.map(t => {
+                  const diff = toMinutes(t) - toMinutes(startTime);
+                  const disabled =
+                    diff < safeConfig.slotMinHours * 60 ||
+                    diff > safeConfig.slotMaxHours * 60;
+                  return (
+                    <option key={t} value={t} disabled={disabled}
+                      style={disabled ? { color: '#9ca3af' } : {}}>
+                      {t}
+                    </option>
+                  );
+                })}
               </select>
             </div>
           </div>

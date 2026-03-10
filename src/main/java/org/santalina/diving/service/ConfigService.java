@@ -25,6 +25,8 @@ public class ConfigService {
     private static final String KEY_LEVELS            = "diver.levels";
     private static final String KEY_PUBLIC_ACCESS     = "public.access";
     private static final String KEY_SELF_REGISTRATION = "self.registration";
+    private static final String KEY_BOOKING_OPEN_HOUR  = "booking.open.hour";
+    private static final String KEY_BOOKING_CLOSE_HOUR = "booking.close.hour";
 
     private static final String DEFAULT_SLOT_TYPES =
         "Club - Plongée|Club - Apnée|Club - Nage avec Palme|CODEP - Plongée|CODEP - Apnée|CODEP - Nage avec Palme|Externe - SDIS - Gendarmerie";
@@ -72,13 +74,22 @@ public class ConfigService {
     public boolean isSelfRegistration() {
         return Boolean.parseBoolean(getStringValue(KEY_SELF_REGISTRATION, "true"));
     }
+    /** -1 = pas de restriction d'heure d'ouverture */
+    public int getBookingOpenHour() {
+        return getIntValueWithNegative(KEY_BOOKING_OPEN_HOUR, -1);
+    }
+    /** -1 = pas de restriction d'heure de fermeture */
+    public int getBookingCloseHour() {
+        return getIntValueWithNegative(KEY_BOOKING_CLOSE_HOUR, -1);
+    }
 
     public ConfigResponse getConfig() {
         return new ConfigResponse(
                 getMaxDivers(), getSlotMinHours(), getSlotMaxHours(),
                 getSlotResolutionMinutes(), getSiteName(),
                 getSlotTypes(), getClubs(), getLevels(),
-                isPublicAccess(), isSelfRegistration()
+                isPublicAccess(), isSelfRegistration(),
+                getBookingOpenHour(), getBookingCloseHour()
         );
     }
 
@@ -119,6 +130,12 @@ public class ConfigService {
         forceUpsert(KEY_SELF_REGISTRATION, String.valueOf(value));
         return getConfig();
     }
+    @Transactional
+    public ConfigResponse updateBookingHours(int openHour, int closeHour) {
+        forceUpsert(KEY_BOOKING_OPEN_HOUR,  String.valueOf(openHour));
+        forceUpsert(KEY_BOOKING_CLOSE_HOUR, String.valueOf(closeHour));
+        return getConfig();
+    }
 
     // ---- Init au démarrage ----
 
@@ -145,6 +162,8 @@ public class ConfigService {
         upsertIfMissing(KEY_LEVELS,            DEFAULT_LEVELS);
         upsertIfMissing(KEY_PUBLIC_ACCESS,     "true");
         upsertIfMissing(KEY_SELF_REGISTRATION, "true");
+        upsertIfMissing(KEY_BOOKING_OPEN_HOUR,  "-1");
+        upsertIfMissing(KEY_BOOKING_CLOSE_HOUR, "-1");
     }
 
     // ---- Helpers privés ----
@@ -169,6 +188,17 @@ public class ConfigService {
             try {
                 int val = Integer.parseInt(entry.configValue);
                 if (val > 0) return val;
+            } catch (NumberFormatException ignored) {}
+        }
+        return defaultVal;
+    }
+
+    /** Comme getIntValue mais accepte les valeurs négatives (ex: -1 = désactivé). */
+    private int getIntValueWithNegative(String key, int defaultVal) {
+        AppConfigEntry entry = AppConfigEntry.findByKey(key);
+        if (entry != null && entry.configValue != null) {
+            try {
+                return Integer.parseInt(entry.configValue);
             } catch (NumberFormatException ignored) {}
         }
         return defaultVal;
