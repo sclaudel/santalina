@@ -147,7 +147,27 @@
 
     - name: Afficher le résultat de l'import SQL
       ansible.builtin.debug:
-        msg: "Import SQL : {{ seed_result.stdout_lines | default([]) }}"
+        msg:
+          stdout: "{{ seed_result.stdout_lines | default([]) }}"
+          stderr: "{{ seed_result.stderr_lines | default([]) }}"
+
+    - name: Vérifier le nombre de lignes importées (tables principales)
+      ansible.builtin.command:
+        cmd: >-
+          docker compose exec -T db
+          psql -U santalina -d santalina -t -c
+          "SELECT 'app_user=' || COUNT(*) FROM app_user
+           UNION ALL SELECT 'dive_slot=' || COUNT(*) FROM dive_slot
+           UNION ALL SELECT 'app_config=' || COUNT(*) FROM app_config;"
+        chdir: "{{ app_dir }}"
+      become: false
+      register: row_counts
+      changed_when: false
+      failed_when: false
+
+    - name: Afficher le nombre de lignes par table
+      ansible.builtin.debug:
+        msg: "Lignes après import : {{ row_counts.stdout_lines | default([]) }}"
 
     - name: Supprimer le fichier SQL temporaire du serveur
       ansible.builtin.file:
