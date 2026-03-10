@@ -16,9 +16,13 @@ dayjs.locale('fr');
 
 type ViewMode = 'day' | 'week' | 'month';
 
+function isMobile(): boolean {
+  return window.innerWidth < 768;
+}
+
 export function CalendarPage() {
   const { user, isAuthenticated }   = useAuth();
-  const [viewMode, setViewMode]     = useState<ViewMode>('week');
+  const [viewMode, setViewMode]     = useState<ViewMode>(() => isMobile() ? 'day' : 'week');
   const [selectedDate, setSelectedDate] = useState(dayjs().format('YYYY-MM-DD'));
   const [config, setConfig] = useState<AppConfig>({
     maxDivers: 25, slotMinHours: 1, slotMaxHours: 10, slotResolutionMinutes: 15,
