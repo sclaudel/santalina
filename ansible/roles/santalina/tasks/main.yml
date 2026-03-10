@@ -96,10 +96,20 @@
   become: false
 
 # ── Let's Encrypt (première obtention du certificat SSL) ─────────────────────
+- name: Attendre que Nginx soit opérationnel sur le port 80
+  ansible.builtin.wait_for:
+    host: "{{ app_domain }}"
+    port: 80
+    delay: 5
+    timeout: 60
+  when: obtain_ssl | default(true)
+
 - name: Obtenir le certificat SSL Let's Encrypt
   ansible.builtin.command:
     cmd: >
-      docker compose run --rm certbot certonly
+      docker compose run --rm
+      --entrypoint certbot
+      certbot certonly
       --webroot -w /var/www/certbot
       -d {{ app_domain }}
       --email {{ letsencrypt_email }}
