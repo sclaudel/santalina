@@ -96,20 +96,10 @@
   become: false
 
 # ── Let's Encrypt (première obtention du certificat SSL) ─────────────────────
-- name: Attendre que Nginx soit opérationnel sur le port 80
-  ansible.builtin.wait_for:
-    host: "{{ app_domain }}"
-    port: 80
-    delay: 5
-    timeout: 60
-  when: obtain_ssl | default(true)
-
 - name: Obtenir le certificat SSL Let's Encrypt
   ansible.builtin.command:
     cmd: >
-      docker compose run --rm
-      --entrypoint certbot
-      certbot certonly
+      docker compose run --rm certbot certonly
       --webroot -w /var/www/certbot
       -d {{ app_domain }}
       --email {{ letsencrypt_email }}
@@ -122,22 +112,8 @@
 
 - name: Afficher le résultat de Let's Encrypt
   ansible.builtin.debug:
-    msg:
-      stdout: "{{ certbot_result.stdout | default('(vide)') }}"
-      stderr: "{{ certbot_result.stderr | default('(vide)') }}"
-      rc: "{{ certbot_result.rc | default(-1) }}"
+    msg: "Certbot : {{ certbot_result.stdout | default('pas de sortie') }}"
   when: obtain_ssl | default(true)
-
-# ── Attendre que Quarkus soit prêt avant de basculer en HTTPS ────────────────
-- name: Attendre que l'application Quarkus réponde (via nginx port 80)
-  ansible.builtin.uri:
-    url: "http://{{ app_domain }}/q/health/live"
-    status_code: 200
-    timeout: 10
-  register: health_probe
-  until: health_probe.status == 200
-  retries: 18
-  delay: 10
 
 # ── Nginx — phase 2 : HTTPS (après obtention du cert) ────────────────────────
 - name: Déployer la configuration Nginx avec HTTPS
@@ -149,19 +125,11 @@
     mode: "0644"
   vars:
     ssl_enabled: true
-  when: obtain_ssl | default(true) and certbot_result is defined and certbot_result is succeeded
+  when: obtain_ssl | default(true) and certbot_result is succeeded
 
-- name: Redémarrer Nginx pour appliquer la configuration HTTPS
+- name: Recharger Nginx après obtention du certificat SSL
   ansible.builtin.command:
-    cmd: docker compose restart nginx
+    cmd: docker compose exec nginx nginx -s reload
     chdir: "{{ app_dir }}"
   become: false
-  when: obtain_ssl | default(true) and certbot_result is defined and certbot_result is succeeded
-
-- name: Vérifier que HTTPS est opérationnel
-  ansible.builtin.wait_for:
-    host: "{{ app_domain }}"
-    port: 443
-    delay: 3
-    timeout: 30
-  when: obtain_ssl | default(true) and certbot_result is defined and certbot_result is succeeded
+  when: obtain_ssl | default(true) and certbot_result is succeeded

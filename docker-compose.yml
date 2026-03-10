@@ -42,14 +42,16 @@ services:
       MAILER_PORT: 1025
       # Capacité du lac
       APP_DIVING_MAX_DIVERS: 25
-      # Clés JWT RSA — chemin vers les fichiers montent en volume
-      JWT_PUBLIC_KEY_PATH: file:/deployments/keys/publicKey.pem
-      JWT_PRIVATE_KEY_PATH: file:/deployments/keys/privateKey.pem
+      # Chemins des clés JWT injectées via Docker secrets
+      JWT_PRIVATE_KEY_PATH: /run/secrets/jwt_private_key
+      JWT_PUBLIC_KEY_PATH: /run/secrets/jwt_public_key
+    secrets:
+      - jwt_private_key
+      - jwt_public_key
     depends_on:
       db:
         condition: service_healthy
     volumes:
-      - ./keys:/deployments/keys:ro
       - app_data:/deployments/data
 
   # ---- Mailhog (serveur SMTP de test) ----
@@ -60,6 +62,15 @@ services:
     ports:
       - "1025:1025"   # SMTP
       - "8025:8025"   # Interface web
+
+# ---- Docker secrets (fichiers montés en lecture seule dans /run/secrets/) ----
+# Générer les clés une fois avec : python generate_keys.py
+# Les fichiers doivent se trouver dans le dossier keys/ à la racine du projet.
+secrets:
+  jwt_private_key:
+    file: ./keys/privateKey.pem
+  jwt_public_key:
+    file: ./keys/publicKey.pem
 
 volumes:
   postgres_data:

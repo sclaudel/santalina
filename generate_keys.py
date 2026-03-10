@@ -14,7 +14,7 @@ OUT_DIR = os.path.join("src", "main", "resources")
 PRIVATE_KEY_PATH = os.path.join(OUT_DIR, "privateKey.pem")
 PUBLIC_KEY_PATH = os.path.join(OUT_DIR, "publicKey.pem")
 
-# Dossier pour les clés Docker (Ansible les lit depuis ce dossier)
+# Dossier pour les Docker secrets (monté dans docker-compose.yml)
 KEYS_DIR = "keys"
 DOCKER_PRIVATE_KEY_PATH = os.path.join(KEYS_DIR, "privateKey.pem")
 DOCKER_PUBLIC_KEY_PATH  = os.path.join(KEYS_DIR, "publicKey.pem")
@@ -63,6 +63,6 @@ with open(DOCKER_PUBLIC_KEY_PATH, "wb") as f:
     print(f"Clé publique (Docker) → {DOCKER_PUBLIC_KEY_PATH}")
 
 print("\n✅ Génération terminée.")
-print("   • Développement local  : les clés dans src/main/resources/ sont lues par Quarkus au démarrage.")
-print("   • Docker local/prod    : les clés dans keys/ sont montées en volume lecture seule dans le conteneur.")
+print("   • Développement local : les clés dans src/main/resources/ sont lues par Quarkus au démarrage.")
+print("   • Production Docker   : placez le dossier keys/ sur le serveur, puis lancez docker compose up.")
 print("   ⚠️  Ne commitez jamais les fichiers .pem — ils sont dans .gitignore.")
