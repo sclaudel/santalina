@@ -69,6 +69,9 @@
     groups: docker
     append: true
 
+- name: Réinitialiser la connexion SSH pour activer le groupe docker
+  ansible.builtin.meta: reset_connection
+
 # ── Pare-feu UFW ──────────────────────────────────────────────────────────────
 - name: Autoriser SSH (port 22)
   community.general.ufw:
