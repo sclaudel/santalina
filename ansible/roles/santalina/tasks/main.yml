@@ -30,17 +30,18 @@
     path: "{{ app_dir }}/keys/privateKey.pem"
   register: jwt_private_key_stat
 
-- name: Générer la clé privée RSA 2048 bits (si absente)
+- name: Générer la clé privée RSA 2048 bits PKCS8 (si absente)
   ansible.builtin.command:
-    cmd: openssl genrsa -out {{ app_dir }}/keys/privateKey.pem 2048
+    cmd: >-
+      openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048
+      -out {{ app_dir }}/keys/privateKey.pem
   when: not jwt_private_key_stat.stat.exists
   become: false
 
 - name: Extraire la clé publique (si absente)
   ansible.builtin.command:
-    cmd: >
-      openssl rsa
-      -in {{ app_dir }}/keys/privateKey.pem
+    cmd: >-
+      openssl pkey -in {{ app_dir }}/keys/privateKey.pem
       -pubout -out {{ app_dir }}/keys/publicKey.pem
   when: not jwt_private_key_stat.stat.exists
   become: false
@@ -127,9 +128,9 @@
     ssl_enabled: true
   when: obtain_ssl | default(true) and certbot_result is succeeded
 
-- name: Recharger Nginx après obtention du certificat SSL
+- name: Redémarrer Nginx pour activer la configuration HTTPS
   ansible.builtin.command:
-    cmd: docker compose exec nginx nginx -s reload
+    cmd: docker compose restart nginx
     chdir: "{{ app_dir }}"
   become: false
   when: obtain_ssl | default(true) and certbot_result is succeeded
