@@ -262,12 +262,24 @@
     chdir: "{{ app_dir }}"
   become: false
   register: certbot_result
+  failed_when: false
   when: obtain_ssl | default(true) and not ssl_cert_exists
 
 - name: Afficher le résultat de Let's Encrypt
   ansible.builtin.debug:
     msg: "Certbot : {{ certbot_result.stdout | default('') }}"
   when: obtain_ssl | default(true) and not ssl_cert_exists
+
+- name: Avertir en cas d'échec Let's Encrypt (rate limit ou autre)
+  ansible.builtin.debug:
+    msg: >-
+      AVERTISSEMENT : Let's Encrypt a échoué (code {{ certbot_result.rc | default('?') }}).
+      {{ certbot_result.stderr | default('') }}
+      → Relancez demain ou utilisez -e "obtain_ssl=false" -e "self_signed_ssl=true" pour continuer avec un certificat auto-signé.
+  when: >
+    obtain_ssl | default(true)
+    and not ssl_cert_exists
+    and (certbot_result.rc | default(0)) != 0
 
 # ── Nginx — activer HTTPS après obtention du certificat ──────────────────────
 # Cette phase n'est nécessaire que lors du premier déploiement quand le cert
