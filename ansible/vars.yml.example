@@ -34,9 +34,38 @@ app_admin_email: admin@santalina.com
 app_admin_password: "ChangeMeAdminPassword!"
 
 # ── Configuration SMTP ────────────────────────────────────────────────────
+# Adresse d'expédition (doit correspondre au domaine déclaré dans app_domain ou son parent)
 app_mailer_from: noreply@santalina.com
-app_mailer_host: smtp.example.com
-app_mailer_port: 587
+
+# Relay SMTP externe optionnel (laisser commenté pour envoi direct depuis le serveur)
+# Si renseigné, le conteneur Postfix local relaie vers ce serveur au lieu d'envoyer directement.
+# Exemple : app_smtp_relayhost: "[smtp.sendgrid.net]:587"
+# app_smtp_relayhost: ""
+
+# ── Configuration fail2ban ─────────────────────────────────────────────────
+# Port SSH exposé sur le serveur (changer si SSH n'est pas sur le port par défaut)
+# fail2ban_ssh_port: ssh
+
+# Durée globale du bannissement (ex : 10m, 1h, 1d)
+# fail2ban_bantime: "1h"
+
+# Fenêtre de détection des tentatives
+# fail2ban_findtime: "10m"
+
+# Nombre de tentatives avant bannissement (global)
+# fail2ban_maxretry: 5
+
+# Paramètres spécifiques SSH (par défaut plus restrictifs)
+# fail2ban_ssh_maxretry: 3
+# fail2ban_ssh_bantime: "1h"
+
+# Paramètres spécifiques brute-force endpoint /api/auth/login
+# fail2ban_auth_maxretry: 5
+# fail2ban_auth_bantime: "1h"
+# fail2ban_auth_findtime: "10m"
+
+# Durée de bannissement pour les bots/scans détectés
+# fail2ban_botsearch_bantime: "24h"
 
 # ── Import de données existantes (optionnel) ───────────────────────────────
 # Chemin local (sur votre machine) vers un dump SQL à injecter au premier déploiement.
