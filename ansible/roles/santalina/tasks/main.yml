@@ -71,6 +71,16 @@
     - privateKey.pem
     - publicKey.pem
 
+- name: Lire le contenu de la clé publique JWT
+  ansible.builtin.slurp:
+    src: "{{ app_dir }}/keys/publicKey.pem"
+  register: jwt_public_key_content
+
+- name: Lire le contenu de la clé privée JWT
+  ansible.builtin.slurp:
+    src: "{{ app_dir }}/keys/privateKey.pem"
+  register: jwt_private_key_content
+
 # ── Fichiers de configuration ─────────────────────────────────────────────────
 - name: Déployer le fichier .env (variables d'environnement)
   ansible.builtin.template:

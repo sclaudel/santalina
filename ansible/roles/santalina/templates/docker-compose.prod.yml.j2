@@ -34,16 +34,15 @@ services:
       MAILER_FROM: ${MAILER_FROM}
       MAILER_HOST: ${MAILER_HOST}
       MAILER_PORT: ${MAILER_PORT}
-      # Chemins vers les clés JWT montées en volume (identique à deploy/docker-compose.prod.yml)
-      JWT_PRIVATE_KEY_PATH: /run/keys/privateKey.pem
-      JWT_PUBLIC_KEY_PATH: /run/keys/publicKey.pem
+      MP_JWT_VERIFY_PUBLICKEY: |
+{{ jwt_public_key_content.content | b64decode | trim | indent(8, first=True) }}
+      SMALLRYE_JWT_SIGN_KEY: |
+{{ jwt_private_key_content.content | b64decode | trim | indent(8, first=True) }}
     depends_on:
       db:
         condition: service_healthy
     volumes:
       - app_data:/deployments/data
-      # Clés JWT générées par Ansible — montées en lecture seule dans le conteneur
-      - ./keys:/run/keys:ro
     networks:
       - internal
 
