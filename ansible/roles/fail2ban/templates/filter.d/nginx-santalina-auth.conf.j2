@@ -1,0 +1,8 @@
+[INCLUDES]
+before = nginx-common.conf
+
+[Definition]
+# Détecte les réponses 401 sur l'endpoint d'authentification
+failregex = ^<HOST> .* "POST /api/auth/login HTTP/\d\.\d" (401|403) .*$
+
+ignoreregex =

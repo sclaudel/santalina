@@ -1,0 +1,58 @@
+[DEFAULT]
+# ── Paramètres globaux ────────────────────────────────────────────────────────
+# Durée du bannissement (ex : 10m, 1h, 1d)
+bantime   = {{ fail2ban_bantime  | default('1h') }}
+# Fenêtre de détection des tentatives
+findtime  = {{ fail2ban_findtime | default('10m') }}
+# Nombre de tentatives avant bannissement
+maxretry  = {{ fail2ban_maxretry | default(5) }}
+banaction = iptables-multiport
+backend   = auto
+
+
+# ── Jail SSH ──────────────────────────────────────────────────────────────────
+[sshd]
+enabled  = true
+port     = {{ fail2ban_ssh_port | default('ssh') }}
+filter   = sshd
+logpath  = %(sshd_log)s
+backend  = %(sshd_backend)s
+maxretry = {{ fail2ban_ssh_maxretry | default(3) }}
+bantime  = {{ fail2ban_ssh_bantime | default('1h') }}
+
+
+# ── Jail Nginx — authentification HTTP basique ────────────────────────────────
+[nginx-http-auth]
+enabled  = true
+filter   = nginx-http-auth
+port     = http,https
+logpath  = {{ app_dir }}/logs/nginx/error.log
+
+
+# ── Jail Nginx — dépassement de limite de requêtes (limit_req_zone) ───────────
+[nginx-limit-req]
+enabled  = true
+filter   = nginx-limit-req
+port     = http,https
+logpath  = {{ app_dir }}/logs/nginx/error.log
+
+
+# ── Jail Nginx — scan de bots/vuln (botsearch) ───────────────────────────────
+[nginx-botsearch]
+enabled  = true
+filter   = nginx-botsearch
+port     = http,https
+logpath  = {{ app_dir }}/logs/nginx/access.log
+maxretry = 2
+bantime  = {{ fail2ban_botsearch_bantime | default('24h') }}
+
+
+# ── Jail applicative — brute-force endpoint /api/auth/login ──────────────────
+[santalina-auth]
+enabled  = true
+filter   = nginx-santalina-auth
+port     = http,https
+logpath  = {{ app_dir }}/logs/nginx/access.log
+maxretry = {{ fail2ban_auth_maxretry | default(5) }}
+bantime  = {{ fail2ban_auth_bantime  | default('1h') }}
+findtime = {{ fail2ban_auth_findtime | default('10m') }}

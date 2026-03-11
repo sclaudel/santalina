@@ -32,8 +32,9 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       MAILER_FROM: ${MAILER_FROM}
-      MAILER_HOST: ${MAILER_HOST}
-      MAILER_PORT: ${MAILER_PORT}
+      # Pointe vers le conteneur SMTP local sur le réseau interne
+      MAILER_HOST: smtp
+      MAILER_PORT: "25"
       JWT_PRIVATE_KEY_PATH: /run/secrets/jwt_private_key
       JWT_PUBLIC_KEY_PATH: /run/secrets/jwt_public_key
     secrets:
@@ -42,8 +43,26 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      smtp:
+        condition: service_started
     volumes:
       - app_data:/deployments/data
+    networks:
+      - internal
+
+  # ── SMTP local — relay sortant uniquement (inaccessible depuis Internet) ───
+  smtp:
+    image: boky/postfix
+    container_name: santalina-smtp
+    restart: unless-stopped
+    environment:
+      HOSTNAME: {{ app_domain }}
+      # Domaine autorisé à envoyer des mails (extrait de l'adresse expéditeur)
+      ALLOWED_SENDER_DOMAINS: "{{ app_mailer_from | regex_replace('^.*@(.*)$', '\\1') }}"
+{% if app_smtp_relayhost is defined and app_smtp_relayhost %}
+      # Relay SMTP externe optionnel
+      RELAYHOST: "{{ app_smtp_relayhost }}"
+{% endif %}
     networks:
       - internal
 
@@ -60,6 +79,8 @@ services:
       # Bind mounts : les certificats restent sur le VPS même après docker compose down -v
       - ./letsencrypt:/etc/letsencrypt:ro
       - ./certbot-www:/var/www/certbot:ro
+      # Logs nginx accessibles depuis l'hôte pour fail2ban
+      - ./logs/nginx:/var/log/nginx
 {% if self_signed_ssl | default(false) %}
       # Certificat auto-signé (ignoré si Let's Encrypt est utilisé)
       - ./certs:/etc/certs:ro

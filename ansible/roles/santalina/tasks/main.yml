@@ -40,6 +40,14 @@
     group: "{{ ansible_user }}"
     mode: "0755"
 
+- name: Créer le répertoire des logs nginx (lu par fail2ban sur l'hôte)
+  ansible.builtin.file:
+    path: "{{ app_dir }}/logs/nginx"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0755"
+
 # ── Clés RSA JWT ──────────────────────────────────────────────────────────────
 - name: Vérifier si la clé privée JWT existe déjà
   ansible.builtin.stat:
