@@ -110,6 +110,51 @@
   ansible.builtin.set_fact:
     ssl_cert_exists: "{{ ssl_cert_stat.stat.exists }}"
 
+# ── Certificat auto-signé (ignoré automatiquement si Let's Encrypt est présent) ─
+- name: Créer le répertoire des certificats auto-signés
+  ansible.builtin.file:
+    path: "{{ app_dir }}/certs"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: self_signed_ssl | default(false) and not ssl_cert_exists
+
+- name: Vérifier si le certificat auto-signé existe déjà
+  ansible.builtin.stat:
+    path: "{{ app_dir }}/certs/selfsigned.crt"
+  register: selfsigned_cert_stat
+  when: self_signed_ssl | default(false) and not ssl_cert_exists
+
+- name: Générer un certificat auto-signé TLS (si absent et Let's Encrypt absent)
+  ansible.builtin.command:
+    cmd: >-
+      openssl req -x509 -nodes -newkey rsa:2048
+      -keyout {{ app_dir }}/certs/selfsigned.key
+      -out {{ app_dir }}/certs/selfsigned.crt
+      -days 365
+      -subj "/CN={{ app_domain }}"
+  when: >
+    self_signed_ssl | default(false)
+    and not ssl_cert_exists
+    and not (selfsigned_cert_stat.stat.exists | default(false))
+
+- name: Restreindre les permissions du certificat auto-signé
+  ansible.builtin.file:
+    path: "{{ app_dir }}/certs/{{ item }}"
+    mode: "0600"
+    owner: root
+  loop:
+    - selfsigned.crt
+    - selfsigned.key
+  when: self_signed_ssl | default(false) and not ssl_cert_exists
+
+# ── Déterminer le mode SSL actif ──────────────────────────────────────────────
+- name: Déterminer le mode SSL actif (letsencrypt / selfsigned / none)
+  ansible.builtin.set_fact:
+    ssl_mode: >-
+      {{ 'letsencrypt' if ssl_cert_exists else ('selfsigned' if (self_signed_ssl | default(false)) else 'none') }}
+
 # ── Nginx — déployer directement la bonne configuration ──────────────────────
 # Si le certificat existe déjà (re-déploiement), nginx démarre directement en
 # HTTPS sans passer par une phase HTTP-only inutile.
@@ -121,7 +166,7 @@
     group: "{{ ansible_user }}"
     mode: "0644"
   vars:
-    ssl_enabled: "{{ ssl_cert_exists }}"
+    ssl_mode: "{{ ssl_mode }}"
 
 # ── Démarrage des services ────────────────────────────────────────────────────
 - name: Télécharger les images Docker depuis DockerHub
@@ -235,7 +280,7 @@
     group: "{{ ansible_user }}"
     mode: "0644"
   vars:
-    ssl_enabled: true
+    ssl_mode: letsencrypt
   when: obtain_ssl | default(true) and not ssl_cert_exists and (certbot_result.rc | default(1)) == 0
 
 - name: Redémarrer Nginx pour activer la configuration HTTPS

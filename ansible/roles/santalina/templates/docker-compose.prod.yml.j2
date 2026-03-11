@@ -59,6 +59,10 @@ services:
       # Bind mounts : les certificats restent sur le VPS même après docker compose down -v
       - ./letsencrypt:/etc/letsencrypt:ro
       - ./certbot-www:/var/www/certbot:ro
+{% if self_signed_ssl | default(false) %}
+      # Certificat auto-signé (ignoré si Let's Encrypt est utilisé)
+      - ./certs:/etc/certs:ro
+{% endif %}
     depends_on:
       - app
     networks:

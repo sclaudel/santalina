@@ -22,6 +22,11 @@ app_image_tag: latest
 # Mettre à false si le domaine ne pointe pas encore vers le VPS
 obtain_ssl: true
 
+# Générer un certificat auto-signé si Let's Encrypt n'est pas disponible
+# Utile pour tester localement ou quand le domaine ne pointe pas encore vers le VPS
+# Automatiquement ignoré si un certificat Let's Encrypt est déjà présent
+self_signed_ssl: false
+
 # ── Secrets applicatifs ────────────────────────────────────────────────────
 app_db_password: "ChangeMeDbPassword123!"
 
