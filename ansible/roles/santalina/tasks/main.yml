@@ -24,6 +24,22 @@
     group: "{{ ansible_user }}"
     mode: "0755"
 
+- name: Créer le répertoire letsencrypt (bind mount — persiste après docker compose down -v)
+  ansible.builtin.file:
+    path: "{{ app_dir }}/letsencrypt"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Créer le répertoire certbot-www (challenge ACME)
+  ansible.builtin.file:
+    path: "{{ app_dir }}/certbot-www"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0755"
+
 # ── Clés RSA JWT ──────────────────────────────────────────────────────────────
 - name: Vérifier si la clé privée JWT existe déjà
   ansible.builtin.stat:
@@ -83,12 +99,11 @@
     mode: "0640"
 
 # ── Vérification préalable du certificat SSL ──────────────────────────────────
-# On lit directement le volume Docker sur le système de fichiers hôte (root requis).
-# Cela évite tout recours à `docker compose run` dont la sortie stdout peut
-# contenir des lignes parasites qui faussent la comparaison.
-- name: Vérifier si le certificat SSL existe déjà (volume Docker)
+# Le certificat est stocké dans un bind mount ({{ app_dir }}/letsencrypt) sur le VPS.
+# Ce répertoire n'est jamais supprimé par docker compose down, même avec -v.
+- name: Vérifier si le certificat SSL existe déjà (bind mount VPS)
   ansible.builtin.stat:
-    path: "/var/lib/docker/volumes/{{ app_dir | basename }}_certbot_certs/_data/live/{{ app_domain }}/fullchain.pem"
+    path: "{{ app_dir }}/letsencrypt/live/{{ app_domain }}/fullchain.pem"
   register: ssl_cert_stat
 
 - name: Mémoriser l'état du certificat SSL
@@ -203,7 +218,6 @@
   become: false
   register: certbot_result
   when: obtain_ssl | default(true) and not ssl_cert_exists
-  ignore_errors: true
 
 - name: Afficher le résultat de Let's Encrypt
   ansible.builtin.debug:
