@@ -42,6 +42,13 @@ app_mailer_from: noreply@santalina.com
 # Exemple : app_smtp_relayhost: "[smtp.sendgrid.net]:587"
 # app_smtp_relayhost: ""
 
+# Désactiver l'envoi de mails (mode mock)
+# Mettre à true tant que le domaine/SPF/DKIM ne sont pas configurés.
+# Les emails seront logués dans l'application sans être envoyés.
+# Remettre à false (ou supprimer) une fois l'authentification email en place.
+# Voir : ansible/docs/smtp-authentication.md
+mail_disabled: false
+
 # ── Niveaux de log applicatifs ────────────────────────────────────────────
 # Valeurs valides : TRACE, DEBUG, INFO, WARN, ERROR
 # app_log_level      : niveau racine (laisser INFO en prod, DEBUG pour investiguer)

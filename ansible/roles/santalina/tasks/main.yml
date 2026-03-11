@@ -190,6 +190,45 @@
     chdir: "{{ app_dir }}"
   become: false
 
+# ── DKIM — récupération de la clé publique ────────────────────────────────────
+- name: Attendre que le conteneur SMTP soit prêt (génération des clés DKIM)
+  ansible.builtin.command:
+    cmd: docker inspect --format="{{ '{{' }}.State.Health.Status{{ '}}' }}" santalina-smtp
+    chdir: "{{ app_dir }}"
+  become: false
+  register: smtp_status
+  retries: 12
+  delay: 5
+  until: smtp_status.rc == 0
+  ignore_errors: true
+  when: not (mail_disabled | default(false))
+
+- name: Récupérer la clé publique DKIM générée
+  ansible.builtin.command:
+    cmd: >-
+      docker exec santalina-smtp
+      sh -c 'cat /etc/opendkim/domainkeys/*.txt 2>/dev/null || echo "Clé DKIM non encore générée"'
+    chdir: "{{ app_dir }}"
+  become: false
+  register: dkim_public_key
+  ignore_errors: true
+  when: not (mail_disabled | default(false))
+
+- name: Afficher la clé publique DKIM (à copier dans le DNS)
+  ansible.builtin.debug:
+    msg:
+      - "════════════════════════════════════════════════════════════"
+      - "  ACTION REQUISE — Enregistrement DNS DKIM à créer"
+      - "════════════════════════════════════════════════════════════"
+      - "  Type  : TXT"
+      - "  Nom   : mail._domainkey.{{ app_domain }}"
+      - "  Valeur:"
+      - "{{ dkim_public_key.stdout | default('(clé non disponible)') }}"
+      - "────────────────────────────────────────────────────────────"
+      - "  Voir aussi : ansible/docs/smtp-authentication.md"
+      - "════════════════════════════════════════════════════════════"
+  when: not (mail_disabled | default(false)) and dkim_public_key is defined
+
 # ── Import optionnel de données existantes ────────────────────────────────────
 - name: Attendre que PostgreSQL soit prêt
   ansible.builtin.command:

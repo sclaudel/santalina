@@ -39,6 +39,10 @@ services:
       MAILER_START_TLS: DISABLED
       MAILER_SSL: "false"
       MAILER_TRUST_ALL: "false"
+{% if mail_disabled | default(false) %}
+      # Mode mail désactivé : les emails sont logués sans être envoyés (DNS/SMTP non prêts)
+      QUARKUS_MAILER_MOCK: "true"
+{% endif %}
       # Niveaux de log (TRACE|DEBUG|INFO|WARN|ERROR)
       LOG_LEVEL: "{{ app_log_level | default('INFO') }}"
       APP_LOG_LEVEL: "{{ app_app_log_level | default('INFO') }}"
@@ -67,10 +71,15 @@ services:
       HOSTNAME: {{ app_domain }}
       # Domaine autorisé à envoyer des mails (extrait de l'adresse expéditeur)
       ALLOWED_SENDER_DOMAINS: "{{ app_mailer_from | regex_replace('^.*@(.*)$', '\\1') }}"
+      # Gènère automatiquement une paire de clés DKIM au démarrage si absente
+      DKIM_AUTOGENERATE: "true"
 {% if app_smtp_relayhost is defined and app_smtp_relayhost %}
       # Relay SMTP externe optionnel
       RELAYHOST: "{{ app_smtp_relayhost }}"
 {% endif %}
+    volumes:
+      # Persistance des clés DKIM — NE PAS supprimer ce volume !
+      - dkim_keys:/etc/opendkim/domainkeys
     networks:
       - internal
 
@@ -129,3 +138,6 @@ secrets:
 volumes:
   postgres_data:
   app_data:
+  # Clés DKIM — volume nommé pour éviter toute suppression accidentelle
+  # Voir ansible/docs/smtp-authentication.md
+  dkim_keys:
