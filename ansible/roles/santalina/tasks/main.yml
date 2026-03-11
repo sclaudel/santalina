@@ -62,11 +62,12 @@
   when: not jwt_private_key_stat.stat.exists
   become: false
 
-- name: Restreindre les permissions des clés JWT
+- name: Définir les permissions des clés JWT
   ansible.builtin.file:
     path: "{{ app_dir }}/keys/{{ item }}"
-    mode: "0600"
+    mode: "0644"
     owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
   loop:
     - privateKey.pem
     - publicKey.pem
