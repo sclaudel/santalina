@@ -35,6 +35,10 @@ services:
       # Pointe vers le conteneur SMTP local sur le réseau interne
       MAILER_HOST: smtp
       MAILER_PORT: "25"
+      # STARTTLS désactivé : connexion interne Docker, pas de TLS nécessaire
+      MAILER_START_TLS: DISABLED
+      MAILER_SSL: "false"
+      MAILER_TRUST_ALL: "false"
       # Niveaux de log (TRACE|DEBUG|INFO|WARN|ERROR)
       LOG_LEVEL: "{{ app_log_level | default('INFO') }}"
       APP_LOG_LEVEL: "{{ app_app_log_level | default('INFO') }}"

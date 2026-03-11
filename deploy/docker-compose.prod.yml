@@ -35,6 +35,11 @@ services:
       MAILER_FROM: ${MAILER_FROM}
       MAILER_HOST: ${MAILER_HOST}
       MAILER_PORT: ${MAILER_PORT}
+      # DISABLED pour un SMTP interne sans TLS (ex: Postfix local)
+      # OPTIONAL ou REQUIRED pour un relay externe (ex: SendGrid, OVH, Gmail)
+      MAILER_START_TLS: ${MAILER_START_TLS:-DISABLED}
+      MAILER_SSL: ${MAILER_SSL:-false}
+      MAILER_TRUST_ALL: ${MAILER_TRUST_ALL:-false}
       # Niveaux de log (TRACE|DEBUG|INFO|WARN|ERROR)
       # LOG_LEVEL      : niveau racine (défaut : INFO)
       # APP_LOG_LEVEL  : code org.santalina uniquement (défaut : INFO)
