@@ -82,8 +82,23 @@
     group: "{{ ansible_user }}"
     mode: "0640"
 
-# ── Nginx — phase 1 : HTTP only (pour obtenir le cert Let's Encrypt) ─────────
-- name: Déployer la configuration Nginx (HTTP uniquement, première installation)
+# ── Vérification préalable du certificat SSL ──────────────────────────────────
+# On lit directement le volume Docker sur le système de fichiers hôte (root requis).
+# Cela évite tout recours à `docker compose run` dont la sortie stdout peut
+# contenir des lignes parasites qui faussent la comparaison.
+- name: Vérifier si le certificat SSL existe déjà (volume Docker)
+  ansible.builtin.stat:
+    path: "/var/lib/docker/volumes/{{ app_dir | basename }}_certbot_certs/_data/live/{{ app_domain }}/fullchain.pem"
+  register: ssl_cert_stat
+
+- name: Mémoriser l'état du certificat SSL
+  ansible.builtin.set_fact:
+    ssl_cert_exists: "{{ ssl_cert_stat.stat.exists }}"
+
+# ── Nginx — déployer directement la bonne configuration ──────────────────────
+# Si le certificat existe déjà (re-déploiement), nginx démarre directement en
+# HTTPS sans passer par une phase HTTP-only inutile.
+- name: Déployer la configuration Nginx (HTTPS si cert présent, HTTP sinon)
   ansible.builtin.template:
     src: nginx.conf.j2
     dest: "{{ app_dir }}/nginx/nginx.conf"
@@ -91,7 +106,7 @@
     group: "{{ ansible_user }}"
     mode: "0644"
   vars:
-    ssl_enabled: false
+    ssl_enabled: "{{ ssl_cert_exists }}"
 
 # ── Démarrage des services ────────────────────────────────────────────────────
 - name: Télécharger les images Docker depuis DockerHub
@@ -175,19 +190,7 @@
         state: absent
   when: db_seed_file is defined and db_seed_file != ''
 
-# ── Let's Encrypt (première obtention du certificat SSL) ─────────────────────
-- name: Vérifier si le certificat SSL existe déjà dans le volume certbot
-  ansible.builtin.command:
-    cmd: >
-      docker compose run --rm --entrypoint sh certbot
-      -c "test -f /etc/letsencrypt/live/{{ app_domain }}/fullchain.pem && echo EXISTS"
-    chdir: "{{ app_dir }}"
-  become: false
-  register: ssl_cert_existing
-  failed_when: false
-  changed_when: false
-  when: obtain_ssl | default(true)
-
+# ── Let's Encrypt (uniquement si le certificat est absent) ───────────────────
 - name: Obtenir le certificat SSL Let's Encrypt (uniquement si absent)
   ansible.builtin.command:
     cmd: >
@@ -199,16 +202,18 @@
     chdir: "{{ app_dir }}"
   become: false
   register: certbot_result
-  when: obtain_ssl | default(true) and (ssl_cert_existing.stdout | default('') != 'EXISTS')
+  when: obtain_ssl | default(true) and not ssl_cert_exists
   ignore_errors: true
 
 - name: Afficher le résultat de Let's Encrypt
   ansible.builtin.debug:
-    msg: "Certbot : {{ certbot_result.stdout | default('certificat déjà présent, aucune demande effectuée') }}"
-  when: obtain_ssl | default(true)
+    msg: "Certbot : {{ certbot_result.stdout | default('') }}"
+  when: obtain_ssl | default(true) and not ssl_cert_exists
 
-# ── Nginx — phase 2 : HTTPS (après obtention ou détection du cert) ────────────
-- name: Déployer la configuration Nginx avec HTTPS
+# ── Nginx — activer HTTPS après obtention du certificat ──────────────────────
+# Cette phase n'est nécessaire que lors du premier déploiement quand le cert
+# vient d'être obtenu. Lors des re-déploiements, nginx démarre déjà en HTTPS.
+- name: Déployer la configuration Nginx avec HTTPS (post-certbot)
   ansible.builtin.template:
     src: nginx.conf.j2
     dest: "{{ app_dir }}/nginx/nginx.conf"
@@ -217,19 +222,11 @@
     mode: "0644"
   vars:
     ssl_enabled: true
-  when: >
-    obtain_ssl | default(true) and (
-      (ssl_cert_existing.stdout | default('')) == 'EXISTS' or
-      (certbot_result.rc | default(1)) == 0
-    )
+  when: obtain_ssl | default(true) and not ssl_cert_exists and (certbot_result.rc | default(1)) == 0
 
 - name: Redémarrer Nginx pour activer la configuration HTTPS
   ansible.builtin.command:
     cmd: docker compose restart nginx
     chdir: "{{ app_dir }}"
   become: false
-  when: >
-    obtain_ssl | default(true) and (
-      (ssl_cert_existing.stdout | default('')) == 'EXISTS' or
-      (certbot_result.rc | default(1)) == 0
-    )
+  when: obtain_ssl | default(true) and not ssl_cert_exists and (certbot_result.rc | default(1)) == 0
