@@ -6,6 +6,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
+import org.jboss.logging.Logger;
 
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -16,6 +17,8 @@ import java.util.stream.Collectors;
  */
 @Provider
 public class ValidationExceptionMapper implements ExceptionMapper<ConstraintViolationException> {
+
+    private static final Logger LOG = Logger.getLogger(ValidationExceptionMapper.class);
 
     @Override
     public Response toResponse(ConstraintViolationException exception) {
@@ -28,6 +31,7 @@ public class ValidationExceptionMapper implements ExceptionMapper<ConstraintViol
             message = "Erreur de validation";
         }
 
+        LOG.debugf("400 Validation error: %s", message);
         return Response.status(400)
                 .type(MediaType.APPLICATION_JSON)
                 .entity(Map.of("status", 400, "message", message))

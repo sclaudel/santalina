@@ -4,15 +4,22 @@ import io.quarkus.mailer.Mail;
 import io.quarkus.mailer.Mailer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.jboss.logging.Logger;
+import org.santalina.diving.config.DivingConfig;
 
 @ApplicationScoped
 public class PasswordResetMailer {
 
+    private static final Logger LOG = Logger.getLogger(PasswordResetMailer.class);
+
     @Inject
     Mailer mailer;
 
+    @Inject
+    DivingConfig config;
+
     public void sendResetEmail(String email, String name, String token) {
-        String resetUrl = "http://localhost:8085/reset-password?token=" + token;
+        String resetUrl = config.baseUrl() + "/reset-password?token=" + token;
         String body = """
                 <html>
                 <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -35,8 +42,15 @@ public class PasswordResetMailer {
                 </html>
                 """.formatted(name, resetUrl);
 
-        mailer.send(
-                Mail.withHtml(email, "Réinitialisation de votre mot de passe", body)
-        );
+        LOG.infof("Envoi email de réinitialisation à %s", email);
+        try {
+            mailer.send(
+                    Mail.withHtml(email, "Réinitialisation de votre mot de passe", body)
+            );
+            LOG.infof("Email de réinitialisation envoyé avec succès à %s", email);
+        } catch (Exception e) {
+            LOG.errorf(e, "Échec de l'envoi de l'email de réinitialisation à %s", email);
+            throw e;
+        }
     }
 }

@@ -9,12 +9,16 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 
+import org.jboss.logging.Logger;
+
 import java.text.Normalizer;
 import java.util.HashSet;
 import java.util.List;
 
 @ApplicationScoped
 public class UserService {
+
+    private static final Logger LOG = Logger.getLogger(UserService.class);
 
     public UserResponse getProfile(String email) {
         User user = User.findByEmail(email);
@@ -65,17 +69,20 @@ public class UserService {
         if (user.hasRole(UserRole.ADMIN)
                 && !request.roles().contains(UserRole.ADMIN)
                 && User.countAdmins() <= 1) {
+            LOG.warnf("Tentative de retrait du rôle admin du dernier administrateur (userId=%d)", userId);
             throw new BadRequestException("Impossible de retirer le rôle administrateur du dernier administrateur");
         }
         user.roles = new HashSet<>(request.roles());
         user.role  = user.primaryRole(); // synchroniser le rôle principal
         user.persist();
+        LOG.infof("Rôles mis à jour pour userId=%d : %s", userId, user.roles);
         return UserResponse.from(user);
     }
 
     @Transactional
     public UserResponse createUser(CreateUserRequest request) {
         if (User.findByEmail(request.email()) != null) {
+            LOG.warnf("Tentative de création avec un email déjà utilisé : %s", request.email());
             throw new BadRequestException("Un compte existe déjà avec cet email");
         }
         User user = new User();
@@ -86,6 +93,7 @@ public class UserService {
         user.roles        = new HashSet<>(request.roles());
         user.role         = user.primaryRole();
         user.persist();
+        LOG.infof("Utilisateur créé par admin : %s (roles=%s)", user.email, user.roles);
         return UserResponse.from(user);
     }
 
@@ -94,8 +102,10 @@ public class UserService {
         User user = User.findById(userId);
         if (user == null) throw new NotFoundException("Utilisateur non trouvé");
         if (user.hasRole(UserRole.ADMIN) && User.countAdmins() <= 1) {
+            LOG.warnf("Tentative de suppression du dernier administrateur (userId=%d)", userId);
             throw new BadRequestException("Impossible de supprimer le dernier administrateur");
         }
+        LOG.infof("Suppression de l'utilisateur : %s (userId=%d)", user.email, userId);
         user.delete();
     }
 

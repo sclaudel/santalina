@@ -14,11 +14,15 @@ import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotAuthorizedException;
 import jakarta.ws.rs.NotFoundException;
 
+import org.jboss.logging.Logger;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @ApplicationScoped
 public class AuthService {
+
+    private static final Logger LOG = Logger.getLogger(AuthService.class);
 
     @Inject
     JwtUtil jwtUtil;
@@ -35,9 +39,11 @@ public class AuthService {
     @Transactional
     public LoginResponse register(RegisterRequest request) {
         if (!configService.isSelfRegistration()) {
+            LOG.warnf("Tentative d'inscription refusée (inscriptions désactivées) pour %s", request.email());
             throw new BadRequestException("Les inscriptions sont désactivées");
         }
         if (User.findByEmail(request.email()) != null) {
+            LOG.warnf("Tentative d'inscription avec un email déjà utilisé : %s", request.email());
             throw new BadRequestException("Un compte existe déjà avec cet email");
         }
         User user = new User();
@@ -49,6 +55,7 @@ public class AuthService {
         user.roles        = new java.util.HashSet<>();
         user.roles.add(UserRole.DIVER);
         user.persist();
+        LOG.infof("Nouvel utilisateur inscrit : %s", user.email);
         String token = jwtUtil.generateToken(user);
         return new LoginResponse(token, user.email, user.name, user.primaryRole(), user.id);
     }
@@ -57,6 +64,7 @@ public class AuthService {
     public LoginResponse login(LoginRequest request) {
         User user = User.findByEmail(request.email());
         if (user == null || !PasswordUtil.verify(request.password(), user.passwordHash)) {
+            LOG.warnf("Échec de connexion pour : %s", request.email());
             throw new NotAuthorizedException("Email ou mot de passe incorrect");
         }
         // Synchroniser roles depuis role si vide (migration)
@@ -65,6 +73,7 @@ public class AuthService {
             user.roles.add(user.role);
             user.persist();
         }
+        LOG.infof("Connexion réussie pour : %s", user.email);
         String token = jwtUtil.generateToken(user);
         return new LoginResponse(token, user.email, user.name, user.primaryRole(), user.id);
     }
@@ -74,6 +83,7 @@ public class AuthService {
         User user = User.findByEmail(request.email());
         if (user == null) {
             // Ne pas révéler si l'email existe ou non
+            LOG.debugf("Demande de réinitialisation pour email inconnu : %s", request.email());
             return;
         }
         String token = UUID.randomUUID().toString();
@@ -81,6 +91,7 @@ public class AuthService {
         user.resetToken = token;
         user.resetTokenExpiry = LocalDateTime.now().plusMinutes(expiryMinutes);
         user.persist();
+        LOG.infof("Token de réinitialisation généré pour : %s (expiration dans %d min)", user.email, expiryMinutes);
         mailer.sendResetEmail(user.email, user.name, token);
     }
 
@@ -88,15 +99,18 @@ public class AuthService {
     public void confirmPasswordReset(PasswordResetConfirm request) {
         User user = User.findByResetToken(request.token());
         if (user == null) {
+            LOG.warnf("Tentative de réinitialisation avec un token invalide");
             throw new NotFoundException("Token invalide");
         }
         if (user.resetTokenExpiry == null || user.resetTokenExpiry.isBefore(LocalDateTime.now())) {
+            LOG.warnf("Token de réinitialisation expiré pour : %s", user.email);
             throw new BadRequestException("Token expiré");
         }
         user.passwordHash = PasswordUtil.hash(request.newPassword());
         user.resetToken = null;
         user.resetTokenExpiry = null;
         user.persist();
+        LOG.infof("Mot de passe réinitialisé avec succès pour : %s", user.email);
     }
 
     @Transactional
@@ -104,10 +118,12 @@ public class AuthService {
         User user = User.findByEmail(email);
         if (user == null) throw new NotFoundException("Utilisateur non trouvé");
         if (!PasswordUtil.verify(request.currentPassword(), user.passwordHash)) {
+            LOG.warnf("Changement de mot de passe refusé (mot de passe actuel incorrect) pour : %s", email);
             throw new BadRequestException("Mot de passe actuel incorrect");
         }
         user.passwordHash = PasswordUtil.hash(request.newPassword());
         user.persist();
+        LOG.infof("Mot de passe changé avec succès pour : %s", email);
     }
 
     @Transactional

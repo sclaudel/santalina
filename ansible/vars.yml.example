@@ -42,6 +42,15 @@ app_mailer_from: noreply@santalina.com
 # Exemple : app_smtp_relayhost: "[smtp.sendgrid.net]:587"
 # app_smtp_relayhost: ""
 
+# ── Niveaux de log applicatifs ────────────────────────────────────────────
+# Valeurs valides : TRACE, DEBUG, INFO, WARN, ERROR
+# app_log_level      : niveau racine (laisser INFO en prod, DEBUG pour investiguer)
+# app_app_log_level  : code org.santalina uniquement (surcharge app_log_level)
+# app_mailer_log_level : couches SMTP — passer à DEBUG pour diagnostiquer l'envoi de mail
+# app_log_level: INFO
+# app_app_log_level: INFO
+# app_mailer_log_level: INFO
+
 # ── Configuration fail2ban ─────────────────────────────────────────────────
 # Port SSH exposé sur le serveur (changer si SSH n'est pas sur le port par défaut)
 # fail2ban_ssh_port: ssh

@@ -14,12 +14,16 @@ import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
 
+import org.jboss.logging.Logger;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
 @ApplicationScoped
 public class SlotService {
+
+    private static final Logger LOG = Logger.getLogger(SlotService.class);
 
 
     @Inject
@@ -88,7 +92,8 @@ public class SlotService {
         slot.club = request.club();
         slot.createdBy = currentUser;
         slot.persist();
-
+        LOG.infof("Créneau créé (id=%d) le %s de %s à %s par %s",
+                slot.id, slot.slotDate, slot.startTime, slot.endTime, currentUser.email);
         return SlotResponse.from(slot);
     }
 
@@ -145,9 +150,12 @@ public class SlotService {
 
         if (currentUser.role == UserRole.DIVE_DIRECTOR &&
                 (slot.createdBy == null || !slot.createdBy.id.equals(currentUser.id))) {
+            LOG.warnf("Suppression refusée : %s tente de supprimer le créneau id=%d qui ne lui appartient pas",
+                    currentUser.email, id);
             throw new ForbiddenException("Vous ne pouvez supprimer que vos propres créneaux");
         }
 
+        LOG.infof("Créneau supprimé (id=%d) par %s", id, currentUser.email);
         slot.delete();
     }
 

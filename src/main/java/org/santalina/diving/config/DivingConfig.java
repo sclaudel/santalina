@@ -42,4 +42,8 @@ public interface DivingConfig {
     @WithName("admin.password")
     @WithDefault("Admin1234")
     String adminPassword();
+
+    @WithName("base-url")
+    @WithDefault("http://localhost:8085")
+    String baseUrl();
 }

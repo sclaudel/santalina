@@ -35,6 +35,10 @@ services:
       # Pointe vers le conteneur SMTP local sur le réseau interne
       MAILER_HOST: smtp
       MAILER_PORT: "25"
+      # Niveaux de log (TRACE|DEBUG|INFO|WARN|ERROR)
+      LOG_LEVEL: "{{ app_log_level | default('INFO') }}"
+      APP_LOG_LEVEL: "{{ app_app_log_level | default('INFO') }}"
+      MAILER_LOG_LEVEL: "{{ app_mailer_log_level | default('INFO') }}"
       JWT_PRIVATE_KEY_PATH: /run/secrets/jwt_private_key
       JWT_PUBLIC_KEY_PATH: /run/secrets/jwt_public_key
     secrets:

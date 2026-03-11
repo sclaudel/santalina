@@ -35,6 +35,13 @@ services:
       MAILER_FROM: ${MAILER_FROM}
       MAILER_HOST: ${MAILER_HOST}
       MAILER_PORT: ${MAILER_PORT}
+      # Niveaux de log (TRACE|DEBUG|INFO|WARN|ERROR)
+      # LOG_LEVEL      : niveau racine (défaut : INFO)
+      # APP_LOG_LEVEL  : code org.santalina uniquement (défaut : INFO)
+      # MAILER_LOG_LEVEL : couches SMTP — mettre DEBUG pour diagnostiquer l'envoi (défaut : INFO)
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      APP_LOG_LEVEL: ${APP_LOG_LEVEL:-INFO}
+      MAILER_LOG_LEVEL: ${MAILER_LOG_LEVEL:-INFO}
       JWT_PRIVATE_KEY_PATH: /run/secrets/jwt_private_key
       JWT_PUBLIC_KEY_PATH: /run/secrets/jwt_public_key
     secrets:
