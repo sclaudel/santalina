@@ -5,10 +5,11 @@
 #   ansible-playbook -i inventory.ini playbook.yml
 #
 # Options utiles :
-#   --tags docker        → installer Docker uniquement
-#   --tags app           → déployer l'application uniquement
-#   -e "obtain_ssl=false" → démarrer sans SSL (utile si domaine non encore pointé)
-#   -e "app_image_tag=1.2.3" → déployer une version spécifique
+#   --tags docker              → installer Docker uniquement
+#   --tags app                 → déployer l'application uniquement
+#   -e "obtain_ssl=false"      → démarrer sans SSL (utile si domaine non encore pointé)
+#   -e "self_signed_ssl=true"  → générer un certificat auto-signé (ignoré si Let's Encrypt présent)
+#   -e "app_image_tag=1.2.3"   → déployer une version spécifique
 # ─────────────────────────────────────────────────────────────────────────────
 
 - name: Provisionner le VPS et déployer Santalina

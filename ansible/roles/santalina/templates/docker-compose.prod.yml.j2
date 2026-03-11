@@ -57,8 +57,13 @@ services:
       - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - certbot_certs:/etc/letsencrypt:ro
-      - certbot_www:/var/www/certbot:ro
+      # Bind mounts : les certificats restent sur le VPS même après docker compose down -v
+      - ./letsencrypt:/etc/letsencrypt:ro
+      - ./certbot-www:/var/www/certbot:ro
+{% if self_signed_ssl | default(false) %}
+      # Certificat auto-signé (ignoré si Let's Encrypt est utilisé)
+      - ./certs:/etc/certs:ro
+{% endif %}
     depends_on:
       - app
     networks:
@@ -70,8 +75,9 @@ services:
     container_name: santalina-certbot
     restart: unless-stopped
     volumes:
-      - certbot_certs:/etc/letsencrypt
-      - certbot_www:/var/www/certbot
+      # Bind mounts : persistance garantie même après docker compose down -v
+      - ./letsencrypt:/etc/letsencrypt
+      - ./certbot-www:/var/www/certbot
     # Vérifie le renouvellement toutes les 12 heures
     entrypoint: >
       /bin/sh -c 'trap exit TERM;
@@ -80,20 +86,17 @@ services:
         sleep 12h & wait $${!};
       done;'
 
-# ── Docker secrets (clés RSA JWT) ────────────────────────────────────────────
+# ── Réseau interne (app/db non accessibles depuis Internet) ──────────────────
+networks:
+  internal:
+    driver: bridge
+    
 secrets:
   jwt_private_key:
     file: ./keys/privateKey.pem
   jwt_public_key:
     file: ./keys/publicKey.pem
 
-# ── Réseau interne (app/db non accessibles depuis Internet) ──────────────────
-networks:
-  internal:
-    driver: bridge
-
 volumes:
   postgres_data:
   app_data:
-  certbot_certs:
-  certbot_www:

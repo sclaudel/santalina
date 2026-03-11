@@ -24,35 +24,63 @@
     group: "{{ ansible_user }}"
     mode: "0755"
 
+- name: Créer le répertoire letsencrypt (bind mount — persiste après docker compose down -v)
+  ansible.builtin.file:
+    path: "{{ app_dir }}/letsencrypt"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Créer le répertoire certbot-www (challenge ACME)
+  ansible.builtin.file:
+    path: "{{ app_dir }}/certbot-www"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0755"
+
 # ── Clés RSA JWT ──────────────────────────────────────────────────────────────
 - name: Vérifier si la clé privée JWT existe déjà
   ansible.builtin.stat:
     path: "{{ app_dir }}/keys/privateKey.pem"
   register: jwt_private_key_stat
 
-- name: Générer la clé privée RSA 2048 bits (si absente)
+- name: Générer la clé privée RSA 2048 bits PKCS8 (si absente)
   ansible.builtin.command:
-    cmd: openssl genrsa -out {{ app_dir }}/keys/privateKey.pem 2048
+    cmd: >-
+      openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048
+      -out {{ app_dir }}/keys/privateKey.pem
   when: not jwt_private_key_stat.stat.exists
   become: false
 
 - name: Extraire la clé publique (si absente)
   ansible.builtin.command:
-    cmd: >
-      openssl rsa
-      -in {{ app_dir }}/keys/privateKey.pem
+    cmd: >-
+      openssl pkey -in {{ app_dir }}/keys/privateKey.pem
       -pubout -out {{ app_dir }}/keys/publicKey.pem
   when: not jwt_private_key_stat.stat.exists
   become: false
 
-- name: Restreindre les permissions des clés JWT
+- name: Définir les permissions des clés JWT
   ansible.builtin.file:
     path: "{{ app_dir }}/keys/{{ item }}"
-    mode: "0600"
+    mode: "0644"
     owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
   loop:
     - privateKey.pem
     - publicKey.pem
+
+- name: Lire le contenu de la clé publique JWT
+  ansible.builtin.slurp:
+    src: "{{ app_dir }}/keys/publicKey.pem"
+  register: jwt_public_key_content
+
+- name: Lire le contenu de la clé privée JWT
+  ansible.builtin.slurp:
+    src: "{{ app_dir }}/keys/privateKey.pem"
+  register: jwt_private_key_content
 
 # ── Fichiers de configuration ─────────────────────────────────────────────────
 - name: Déployer le fichier .env (variables d'environnement)
@@ -71,8 +99,67 @@
     group: "{{ ansible_user }}"
     mode: "0640"
 
-# ── Nginx — phase 1 : HTTP only (pour obtenir le cert Let's Encrypt) ─────────
-- name: Déployer la configuration Nginx (HTTP uniquement, première installation)
+# ── Vérification préalable du certificat SSL ──────────────────────────────────
+# Le certificat est stocké dans un bind mount ({{ app_dir }}/letsencrypt) sur le VPS.
+# Ce répertoire n'est jamais supprimé par docker compose down, même avec -v.
+- name: Vérifier si le certificat SSL existe déjà (bind mount VPS)
+  ansible.builtin.stat:
+    path: "{{ app_dir }}/letsencrypt/live/{{ app_domain }}/fullchain.pem"
+  register: ssl_cert_stat
+
+- name: Mémoriser l'état du certificat SSL
+  ansible.builtin.set_fact:
+    ssl_cert_exists: "{{ ssl_cert_stat.stat.exists }}"
+
+# ── Certificat auto-signé (ignoré automatiquement si Let's Encrypt est présent) ─
+- name: Créer le répertoire des certificats auto-signés
+  ansible.builtin.file:
+    path: "{{ app_dir }}/certs"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: self_signed_ssl | default(false) and not ssl_cert_exists
+
+- name: Vérifier si le certificat auto-signé existe déjà
+  ansible.builtin.stat:
+    path: "{{ app_dir }}/certs/selfsigned.crt"
+  register: selfsigned_cert_stat
+  when: self_signed_ssl | default(false) and not ssl_cert_exists
+
+- name: Générer un certificat auto-signé TLS (si absent et Let's Encrypt absent)
+  ansible.builtin.command:
+    cmd: >-
+      openssl req -x509 -nodes -newkey rsa:2048
+      -keyout {{ app_dir }}/certs/selfsigned.key
+      -out {{ app_dir }}/certs/selfsigned.crt
+      -days 365
+      -subj "/CN={{ app_domain }}"
+  when: >
+    self_signed_ssl | default(false)
+    and not ssl_cert_exists
+    and not (selfsigned_cert_stat.stat.exists | default(false))
+
+- name: Restreindre les permissions du certificat auto-signé
+  ansible.builtin.file:
+    path: "{{ app_dir }}/certs/{{ item }}"
+    mode: "0600"
+    owner: root
+  loop:
+    - selfsigned.crt
+    - selfsigned.key
+  when: self_signed_ssl | default(false) and not ssl_cert_exists
+
+# ── Déterminer le mode SSL actif ──────────────────────────────────────────────
+- name: Déterminer le mode SSL actif (letsencrypt / selfsigned / none)
+  ansible.builtin.set_fact:
+    ssl_mode: >-
+      {{ 'letsencrypt' if ssl_cert_exists else ('selfsigned' if (self_signed_ssl | default(false)) else 'none') }}
+
+# ── Nginx — déployer directement la bonne configuration ──────────────────────
+# Si le certificat existe déjà (re-déploiement), nginx démarre directement en
+# HTTPS sans passer par une phase HTTP-only inutile.
+- name: Déployer la configuration Nginx (HTTPS si cert présent, HTTP sinon)
   ansible.builtin.template:
     src: nginx.conf.j2
     dest: "{{ app_dir }}/nginx/nginx.conf"
@@ -80,7 +167,7 @@
     group: "{{ ansible_user }}"
     mode: "0644"
   vars:
-    ssl_enabled: false
+    ssl_mode: "{{ ssl_mode }}"
 
 # ── Démarrage des services ────────────────────────────────────────────────────
 - name: Télécharger les images Docker depuis DockerHub
@@ -95,28 +182,110 @@
     chdir: "{{ app_dir }}"
   become: false
 
-# ── Let's Encrypt (première obtention du certificat SSL) ─────────────────────
-- name: Obtenir le certificat SSL Let's Encrypt
+# ── Import optionnel de données existantes ────────────────────────────────────
+- name: Attendre que PostgreSQL soit prêt
+  ansible.builtin.command:
+    cmd: docker compose exec -T db pg_isready -U santalina
+    chdir: "{{ app_dir }}"
+  become: false
+  register: pg_ready
+  retries: 15
+  delay: 3
+  until: pg_ready.rc == 0
+  when: db_seed_file is defined and db_seed_file != ''
+
+- name: Copier le script SQL de données sur le serveur
+  ansible.builtin.copy:
+    src: "{{ db_seed_file }}"
+    dest: "{{ app_dir }}/seed.sql"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0600"
+  when: db_seed_file is defined and db_seed_file != ''
+
+- name: Injecter via docker cp + psql
+  block:
+    - name: Copier le fichier SQL dans le conteneur db
+      ansible.builtin.command:
+        cmd: docker cp {{ app_dir }}/seed.sql santalina-db:/tmp/seed.sql
+        chdir: "{{ app_dir }}"
+      become: false
+
+    - name: Exécuter le script SQL dans le conteneur
+      ansible.builtin.command:
+        cmd: >-
+          docker compose exec -T db
+          psql -U santalina -d santalina -f /tmp/seed.sql
+        chdir: "{{ app_dir }}"
+      become: false
+      register: seed_result
+      changed_when: true
+
+    - name: Afficher le résultat de l'import SQL
+      ansible.builtin.debug:
+        msg:
+          stdout: "{{ seed_result.stdout_lines | default([]) }}"
+          stderr: "{{ seed_result.stderr_lines | default([]) }}"
+
+    - name: Vérifier le nombre de lignes importées (tables principales)
+      ansible.builtin.command:
+        cmd: >-
+          docker compose exec -T db
+          psql -U santalina -d santalina -t -c
+          "SELECT 'app_user=' || COUNT(*) FROM app_user
+           UNION ALL SELECT 'dive_slot=' || COUNT(*) FROM dive_slot
+           UNION ALL SELECT 'app_config=' || COUNT(*) FROM app_config;"
+        chdir: "{{ app_dir }}"
+      become: false
+      register: row_counts
+      changed_when: false
+      failed_when: false
+
+    - name: Afficher le nombre de lignes par table
+      ansible.builtin.debug:
+        msg: "Lignes après import : {{ row_counts.stdout_lines | default([]) }}"
+
+    - name: Supprimer le fichier SQL temporaire du serveur
+      ansible.builtin.file:
+        path: "{{ app_dir }}/seed.sql"
+        state: absent
+  when: db_seed_file is defined and db_seed_file != ''
+
+# ── Let's Encrypt (uniquement si le certificat est absent) ───────────────────
+- name: Obtenir le certificat SSL Let's Encrypt (uniquement si absent)
   ansible.builtin.command:
     cmd: >
-      docker compose run --rm certbot certonly
+      docker compose run --rm --entrypoint certbot certbot certonly
       --webroot -w /var/www/certbot
       -d {{ app_domain }}
       --email {{ letsencrypt_email }}
-      --agree-tos --non-interactive
+      --agree-tos --non-interactive --no-eff-email
     chdir: "{{ app_dir }}"
   become: false
   register: certbot_result
-  when: obtain_ssl | default(true)
-  ignore_errors: true
+  failed_when: false
+  when: obtain_ssl | default(true) and not ssl_cert_exists
 
 - name: Afficher le résultat de Let's Encrypt
   ansible.builtin.debug:
-    msg: "Certbot : {{ certbot_result.stdout | default('pas de sortie') }}"
-  when: obtain_ssl | default(true)
+    msg: "Certbot : {{ certbot_result.stdout | default('') }}"
+  when: obtain_ssl | default(true) and not ssl_cert_exists
 
-# ── Nginx — phase 2 : HTTPS (après obtention du cert) ────────────────────────
-- name: Déployer la configuration Nginx avec HTTPS
+- name: Avertir en cas d'échec Let's Encrypt (rate limit ou autre)
+  ansible.builtin.debug:
+    msg: >-
+      AVERTISSEMENT : Let's Encrypt a échoué (code {{ certbot_result.rc | default('?') }}).
+      {{ certbot_result.stderr | default('') }}
+      → Relancez demain ou utilisez -e "obtain_ssl=false" -e "self_signed_ssl=true" pour continuer avec un certificat auto-signé.
+  when: >
+    obtain_ssl | default(true)
+    and not ssl_cert_exists
+    and (certbot_result.rc | default(0)) != 0
+
+# ── Nginx — activer HTTPS après obtention du certificat ──────────────────────
+# Cette phase n'est nécessaire que lors du premier déploiement quand le cert
+# vient d'être obtenu. Lors des re-déploiements, nginx démarre déjà en HTTPS.
+- name: Déployer la configuration Nginx avec HTTPS (post-certbot)
   ansible.builtin.template:
     src: nginx.conf.j2
     dest: "{{ app_dir }}/nginx/nginx.conf"
@@ -124,12 +293,12 @@
     group: "{{ ansible_user }}"
     mode: "0644"
   vars:
-    ssl_enabled: true
-  when: obtain_ssl | default(true) and certbot_result is succeeded
+    ssl_mode: letsencrypt
+  when: obtain_ssl | default(true) and not ssl_cert_exists and (certbot_result.rc | default(1)) == 0
 
-- name: Recharger Nginx après obtention du certificat SSL
+- name: Redémarrer Nginx pour activer la configuration HTTPS
   ansible.builtin.command:
-    cmd: docker compose exec nginx nginx -s reload
+    cmd: docker compose restart nginx
     chdir: "{{ app_dir }}"
   become: false
-  when: obtain_ssl | default(true) and certbot_result is succeeded
+  when: obtain_ssl | default(true) and not ssl_cert_exists and (certbot_result.rc | default(1)) == 0
