@@ -34,10 +34,11 @@ services:
       MAILER_FROM: ${MAILER_FROM}
       MAILER_HOST: ${MAILER_HOST}
       MAILER_PORT: ${MAILER_PORT}
-      MP_JWT_VERIFY_PUBLICKEY: |
-{{ jwt_public_key_content.content | b64decode | trim | indent(8, first=True) }}
-      SMALLRYE_JWT_SIGN_KEY: |
-{{ jwt_private_key_content.content | b64decode | trim | indent(8, first=True) }}
+      JWT_PRIVATE_KEY_PATH: /run/secrets/jwt_private_key
+      JWT_PUBLIC_KEY_PATH: /run/secrets/jwt_public_key
+    secrets:
+      - jwt_private_key
+      - jwt_public_key
     depends_on:
       db:
         condition: service_healthy
@@ -89,6 +90,12 @@ services:
 networks:
   internal:
     driver: bridge
+    
+secrets:
+  jwt_private_key:
+    file: ./keys/privateKey.pem
+  jwt_public_key:
+    file: ./keys/publicKey.pem
 
 volumes:
   postgres_data:
