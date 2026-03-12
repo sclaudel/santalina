@@ -28,8 +28,8 @@
   ansible.builtin.file:
     path: "{{ app_dir }}/letsencrypt"
     state: directory
-    owner: root
-    group: root
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
     mode: "0755"
 
 - name: Créer le répertoire certbot-www (challenge ACME)
