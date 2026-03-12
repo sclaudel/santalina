@@ -79,6 +79,7 @@ public class SlotService {
         validateSlotTimes(request.startTime(), request.endTime());
         checkSlotTimeWindow(request.startTime(), request.endTime());
         validateDiverCount(request.diverCount());
+        checkExclusiveConflict(request.slotDate(), request.startTime(), request.endTime(), request.slotType(), null);
         checkCapacity(request.slotDate(), request.startTime(), request.endTime(), request.diverCount(), null);
 
         DiveSlot slot = new DiveSlot();
@@ -123,6 +124,8 @@ public class SlotService {
             }
             validateSlotTimes(newStart, newEnd);
             checkSlotTimeWindow(newStart, newEnd);
+            String newSlotType = request.slotType() != null ? request.slotType() : slot.slotType;
+            checkExclusiveConflict(newDate, newStart, newEnd, newSlotType, id);
             checkCapacity(newDate, newStart, newEnd, slot.diverCount, id);
             slot.slotDate  = newDate;
             slot.startTime = newStart;
@@ -242,13 +245,40 @@ public class SlotService {
     }
 
     private void validateDiverCount(int count) {
-        if (count < 1) {
-            throw new BadRequestException("Le nombre de plongeurs doit être d'au moins 1");
+        if (count < 2) {
+            throw new BadRequestException("Le nombre de plongeurs doit être d'au moins 2");
         }
         int maxDivers = configService.getMaxDivers();
         if (count > maxDivers) {
             throw new BadRequestException("Le nombre de plongeurs ne peut pas dépasser " + maxDivers);
         }
+    }
+
+    /**
+     * Vérifie les conflits de types exclusifs :
+     * - Si le nouveau créneau est d'un type exclusif, aucun créneau ne peut se chevaucher.
+     * - Si un créneau existant chevauchant est d'un type exclusif, la création est bloquée.
+     */
+    private void checkExclusiveConflict(LocalDate date, LocalTime start, LocalTime end,
+                                         String slotType, Long excludeSlotId) {
+        List<String> exclusiveTypes = configService.getExclusiveSlotTypes();
+        if (exclusiveTypes.isEmpty()) return;
+
+        List<DiveSlot> overlapping = DiveSlot.findOverlapping(date, start, end, excludeSlotId);
+        if (overlapping.isEmpty()) return;
+
+        // Le nouveau créneau est d'un type exclusif → aucun chevauchement toléré
+        if (slotType != null && exclusiveTypes.contains(slotType)) {
+            throw new BadRequestException(
+                "Le type \"" + slotType + "\" est exclusif : aucun autre créneau ne peut se chevaucher sur ce créneau");
+        }
+
+        // Un créneau existant est d'un type exclusif → le nouveau est bloqué
+        overlapping.stream()
+            .filter(s -> s.slotType != null && exclusiveTypes.contains(s.slotType))
+            .findFirst()
+            .ifPresent(s -> { throw new BadRequestException(
+                "Un créneau de type exclusif \"" + s.slotType + "\" occupe déjà ce créneau horaire"); });
     }
 
     /**

@@ -54,4 +54,14 @@ public class SlotDiver extends PanacheEntityBase {
         if (slotIds.isEmpty()) return List.of();
         return list("slot.id in ?1", slotIds);
     }
+
+    public static boolean existsBySlotAndName(Long slotId, String firstName, String lastName) {
+        return count("slot.id = ?1 and lower(firstName) = lower(?2) and lower(lastName) = lower(?3)",
+                slotId, firstName, lastName) > 0;
+    }
+
+    public static boolean existsBySlotAndNameExcluding(Long slotId, String firstName, String lastName, Long excludeId) {
+        return count("slot.id = ?1 and lower(firstName) = lower(?2) and lower(lastName) = lower(?3) and id != ?4",
+                slotId, firstName, lastName, excludeId) > 0;
+    }
 }

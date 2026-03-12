@@ -75,4 +75,9 @@ export const adminService = {
     const res = await api.put<AppConfig>('/config/booking-hours', { bookingOpenHour, bookingCloseHour });
     return res.data;
   },
+
+  async updateExclusiveSlotTypes(items: string[]): Promise<AppConfig> {
+    const res = await api.put<AppConfig>('/config/exclusive-slot-types', { items });
+    return res.data;
+  },
 };

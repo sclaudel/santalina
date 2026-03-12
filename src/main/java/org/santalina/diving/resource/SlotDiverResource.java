@@ -51,10 +51,6 @@ public class SlotDiverResource {
         DiveSlot slot = DiveSlot.findById(slotId);
         if (slot == null) throw new NotFoundException("Créneau non trouvé");
 
-        if (slot.slotDate.isBefore(java.time.LocalDate.now())) {
-            throw new BadRequestException("Impossible d'ajouter un plongeur sur un créneau passé");
-        }
-
         // Vérifier droits directeur de plongée
         if ("DIVE_DIRECTOR".equals(getRole())) {
             User currentUser = User.findByEmail(jwt.getName());
@@ -75,6 +71,11 @@ public class SlotDiverResource {
             if (SlotDiver.hasDirector(slotId)) {
                 throw new BadRequestException("Il y a déjà un directeur de plongée sur ce créneau");
             }
+        }
+
+        // Vérifier doublon nom/prénom sur le créneau
+        if (SlotDiver.existsBySlotAndName(slotId, request.firstName(), request.lastName())) {
+            throw new BadRequestException("Un plongeur avec ce nom et prénom est déjà inscrit sur ce créneau");
         }
 
         // Vérifier capacité
@@ -131,6 +132,11 @@ public class SlotDiverResource {
             // Si on change vers directeur et que ce n'était pas lui avant, vérifier unicité
             if (!diver.isDirector && SlotDiver.hasDirector(slotId))
                 throw new BadRequestException("Il y a déjà un directeur de plongée sur ce créneau");
+        }
+
+        // Vérifier doublon nom/prénom sur le créneau (en excluant le plongeur courant)
+        if (SlotDiver.existsBySlotAndNameExcluding(slotId, request.firstName(), request.lastName(), diverId)) {
+            throw new BadRequestException("Un plongeur avec ce nom et prénom est déjà inscrit sur ce créneau");
         }
 
         diver.firstName  = request.firstName();

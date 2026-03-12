@@ -48,7 +48,7 @@ export function SlotForm({ date, config, onCreated, onCancel }: Props) {
     });
     return valid ?? '10:00';
   });
-  const [diverCountStr, setDiverCountStr] = useState('1');
+  const [diverCountStr, setDiverCountStr] = useState('2');
   const [title, setTitle]             = useState('');
   const [notes, setNotes]             = useState('');
   const [slotType, setSlotType]       = useState(safeConfig.slotTypes[0] ?? '');
@@ -82,8 +82,8 @@ export function SlotForm({ date, config, onCreated, onCancel }: Props) {
       return;
     }
     const diverCount = parseInt(diverCountStr, 10);
-    if (!diverCountStr || isNaN(diverCount) || diverCount < 1) {
-      setError('Le nombre de plongeurs doit être au moins 1');
+    if (!diverCountStr || isNaN(diverCount) || diverCount < 2) {
+      setError('Le nombre de plongeurs doit être au moins 2');
       return;
     }
     if (diverCount > safeConfig.maxDivers) {
@@ -161,12 +161,12 @@ export function SlotForm({ date, config, onCreated, onCancel }: Props) {
           <div className="form-group">
             <label>Nombre de plongeurs (max {safeConfig.maxDivers})</label>
             <input
-              type="number" min={1} max={safeConfig.maxDivers}
+              type="number" min={2} max={safeConfig.maxDivers}
               value={diverCountStr}
               onChange={e => setDiverCountStr(e.target.value)}
               onBlur={() => {
                 const val = parseInt(diverCountStr, 10);
-                if (!diverCountStr || isNaN(val) || val < 1) setDiverCountStr('1');
+                if (!diverCountStr || isNaN(val) || val < 2) setDiverCountStr('2');
                 else if (val > safeConfig.maxDivers) setDiverCountStr(String(safeConfig.maxDivers));
               }}
               required

@@ -29,6 +29,7 @@ export function CalendarPage() {
     siteName: 'Carrière de Saint-Lin', slotTypes: [], clubs: [], levels: [],
     publicAccess: true, selfRegistration: true,
     bookingOpenHour: -1, bookingCloseHour: -1,
+    exclusiveSlotTypes: [],
   });
   // Date pour laquelle on ouvre le formulaire (null = fermé)
   const [formDate, setFormDate] = useState<string | null>(null);

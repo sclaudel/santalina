@@ -80,4 +80,11 @@ public class ConfigResource {
     public ConfigResponse updateBookingHours(@Valid UpdateBookingHoursRequest request) {
         return configService.updateBookingHours(request.bookingOpenHour(), request.bookingCloseHour());
     }
+
+    @PUT
+    @Path("/exclusive-slot-types")
+    @RolesAllowed("ADMIN")
+    public ConfigResponse updateExclusiveSlotTypes(@Valid UpdateListRequest request) {
+        return configService.updateExclusiveSlotTypes(request.items());
+    }
 }
