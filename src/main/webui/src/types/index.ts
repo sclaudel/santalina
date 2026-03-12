@@ -98,6 +98,7 @@ export interface AppConfig {
   selfRegistration: boolean;
   bookingOpenHour: number;
   bookingCloseHour: number;
+  exclusiveSlotTypes: string[];
 }
 
 export interface PeriodStat {

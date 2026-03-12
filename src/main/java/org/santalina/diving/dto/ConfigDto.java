@@ -20,7 +20,8 @@ public class ConfigDto {
             boolean publicAccess,
             boolean selfRegistration,
             int bookingOpenHour,
-            int bookingCloseHour
+            int bookingCloseHour,
+            List<String> exclusiveSlotTypes
     ) {}
 
     public record UpdateMaxDiversRequest(

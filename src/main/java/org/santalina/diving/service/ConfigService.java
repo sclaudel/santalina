@@ -25,8 +25,9 @@ public class ConfigService {
     private static final String KEY_LEVELS            = "diver.levels";
     private static final String KEY_PUBLIC_ACCESS     = "public.access";
     private static final String KEY_SELF_REGISTRATION = "self.registration";
-    private static final String KEY_BOOKING_OPEN_HOUR  = "booking.open.hour";
-    private static final String KEY_BOOKING_CLOSE_HOUR = "booking.close.hour";
+    private static final String KEY_BOOKING_OPEN_HOUR    = "booking.open.hour";
+    private static final String KEY_BOOKING_CLOSE_HOUR   = "booking.close.hour";
+    private static final String KEY_EXCLUSIVE_SLOT_TYPES = "slot.exclusive.types";
 
     private static final String DEFAULT_SLOT_TYPES =
         "Club - Plongée|Club - Apnée|Club - Nage avec Palme|CODEP - Plongée|CODEP - Apnée|CODEP - Nage avec Palme|Externe - SDIS - Gendarmerie";
@@ -74,6 +75,11 @@ public class ConfigService {
     public boolean isSelfRegistration() {
         return Boolean.parseBoolean(getStringValue(KEY_SELF_REGISTRATION, "true"));
     }
+    /** Types de créneaux qui bloquent tout chevauchement (liste vide = aucun type exclusif) */
+    public List<String> getExclusiveSlotTypes() {
+        return parseList(getStringValue(KEY_EXCLUSIVE_SLOT_TYPES, ""));
+    }
+
     /** -1 = pas de restriction d'heure d'ouverture */
     public int getBookingOpenHour() {
         return getIntValueWithNegative(KEY_BOOKING_OPEN_HOUR, -1);
@@ -89,7 +95,8 @@ public class ConfigService {
                 getSlotResolutionMinutes(), getSiteName(),
                 getSlotTypes(), getClubs(), getLevels(),
                 isPublicAccess(), isSelfRegistration(),
-                getBookingOpenHour(), getBookingCloseHour()
+                getBookingOpenHour(), getBookingCloseHour(),
+                getExclusiveSlotTypes()
         );
     }
 
@@ -137,6 +144,12 @@ public class ConfigService {
         return getConfig();
     }
 
+    @Transactional
+    public ConfigResponse updateExclusiveSlotTypes(List<String> types) {
+        forceUpsert(KEY_EXCLUSIVE_SLOT_TYPES, serializeList(types));
+        return getConfig();
+    }
+
     // ---- Init au démarrage ----
 
     @Transactional
@@ -162,8 +175,9 @@ public class ConfigService {
         upsertIfMissing(KEY_LEVELS,            DEFAULT_LEVELS);
         upsertIfMissing(KEY_PUBLIC_ACCESS,     "true");
         upsertIfMissing(KEY_SELF_REGISTRATION, "true");
-        upsertIfMissing(KEY_BOOKING_OPEN_HOUR,  "-1");
-        upsertIfMissing(KEY_BOOKING_CLOSE_HOUR, "-1");
+        upsertIfMissing(KEY_BOOKING_OPEN_HOUR,    "-1");
+        upsertIfMissing(KEY_BOOKING_CLOSE_HOUR,   "-1");
+        upsertIfMissing(KEY_EXCLUSIVE_SLOT_TYPES, "");
     }
 
     // ---- Helpers privés ----
