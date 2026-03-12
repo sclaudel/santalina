@@ -48,6 +48,14 @@
     group: "{{ ansible_user }}"
     mode: "0755"
 
+- name: Créer le répertoire des clés DKIM (bind mount — persiste après docker compose down -v)
+  ansible.builtin.file:
+    path: "{{ app_dir }}/dkim_keys"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0700"
+
 # ── Clés RSA JWT ──────────────────────────────────────────────────────────────
 - name: Vérifier si la clé privée JWT existe déjà
   ansible.builtin.stat:

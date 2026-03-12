@@ -36,7 +36,7 @@ remplacer `ip4:...` par le mécanisme `include:` de votre fournisseur :
 ## 2. DKIM — Automatisé par Ansible
 
 Le DKIM signe cryptographiquement chaque email. La clé privée est générée automatiquement
-par le conteneur `santalina-smtp` au premier démarrage, et persistée dans le volume Docker `dkim_keys`.
+par le conteneur `santalina-smtp` au premier démarrage, et persistée dans le répertoire `dkim_keys/` sur l'hôte (bind mount — survit à `docker compose down -v`).
 
 ### Étapes après le premier déploiement
 
@@ -60,7 +60,7 @@ Exemple de valeur :
 v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...
 ```
 
-> ⚠️ Ne jamais supprimer le volume Docker `dkim_keys` — cela invaliderait
+> ⚠️ Ne jamais supprimer le répertoire `dkim_keys/` sur le serveur — cela invaliderait
 > l'enregistrement DNS existant et nécessiterait de republier une nouvelle clé.
 
 ---

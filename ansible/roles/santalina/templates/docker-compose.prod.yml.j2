@@ -33,6 +33,7 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       MAILER_FROM: ${MAILER_FROM}
       # Pointe vers le conteneur SMTP local sur le réseau interne
+      APP_BASE_URL: "https://{{ app_domain }}"
       MAILER_HOST: smtp
       MAILER_PORT: "25"
       # STARTTLS désactivé : connexion interne Docker, pas de TLS nécessaire
@@ -78,8 +79,8 @@ services:
       RELAYHOST: "{{ app_smtp_relayhost }}"
 {% endif %}
     volumes:
-      # Persistance des clés DKIM — NE PAS supprimer ce volume !
-      - dkim_keys:/etc/opendkim/domainkeys
+      # Bind mount sur l'hôte — survit à docker compose down -v
+      - ./dkim_keys:/etc/opendkim/domainkeys
     networks:
       - internal
 
@@ -138,6 +139,3 @@ secrets:
 volumes:
   postgres_data:
   app_data:
-  # Clés DKIM — volume nommé pour éviter toute suppression accidentelle
-  # Voir ansible/docs/smtp-authentication.md
-  dkim_keys:
