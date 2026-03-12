@@ -176,6 +176,7 @@
     mode: "0644"
   vars:
     ssl_mode: "{{ ssl_mode }}"
+  register: nginx_conf_deploy
 
 # ── Démarrage des services ────────────────────────────────────────────────────
 - name: Télécharger les images Docker depuis DockerHub
@@ -189,6 +190,16 @@
     cmd: docker compose up -d
     chdir: "{{ app_dir }}"
   become: false
+
+# Redémarrer nginx si son fichier de configuration a changé
+# (ex : passage HTTP → HTTPS lors d'un re-déploiement — docker compose up -d
+# ne redémarre pas un conteneur quand seul un fichier bind-mounté est modifié)
+- name: Redémarrer Nginx si la configuration a changé
+  ansible.builtin.command:
+    cmd: docker compose restart nginx
+    chdir: "{{ app_dir }}"
+  become: false
+  when: nginx_conf_deploy.changed
 
 # ── DKIM — récupération de la clé publique ────────────────────────────────────
 - name: Attendre que le conteneur SMTP soit prêt (génération des clés DKIM)
