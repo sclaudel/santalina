@@ -51,10 +51,6 @@ public class SlotDiverResource {
         DiveSlot slot = DiveSlot.findById(slotId);
         if (slot == null) throw new NotFoundException("Créneau non trouvé");
 
-        if (slot.slotDate.isBefore(java.time.LocalDate.now())) {
-            throw new BadRequestException("Impossible d'ajouter un plongeur sur un créneau passé");
-        }
-
         // Vérifier droits directeur de plongée
         if ("DIVE_DIRECTOR".equals(getRole())) {
             User currentUser = User.findByEmail(jwt.getName());
