@@ -32,10 +32,12 @@ export function AdminPage() {
   const [editLoading, setEditLoading]       = useState(false);
 
   // Listes configurables
-  const [slotTypesText, setSlotTypesText] = useState('');
-  const [clubsText, setClubsText]         = useState('');
-  const [levelsText, setLevelsText]       = useState('');
-  const [listLoading, setListLoading]     = useState(false);
+  const [slotTypesText, setSlotTypesText]   = useState('');
+  const [exclusiveSlotTypes, setExclusiveSlotTypes] = useState<string[]>([]);
+  const [clubsText, setClubsText]           = useState('');
+  const [levelsText, setLevelsText]         = useState('');
+  const [listLoading, setListLoading]       = useState(false);
+  const [exclusiveLoading, setExclusiveLoading] = useState(false);
 
   // Heures de réservation
   const [bookingOpenHour, setBookingOpenHour]   = useState<number>(-1);
@@ -58,6 +60,7 @@ export function AdminPage() {
       setNewMax(String(c.maxDivers));
       setNewSiteName(c.siteName ?? '');
       setSlotTypesText((c.slotTypes ?? []).join('\n'));
+      setExclusiveSlotTypes(c.exclusiveSlotTypes ?? []);
       setClubsText((c.clubs ?? []).join('\n'));
       setLevelsText((c.levels ?? []).join('\n'));
       setBookingOpenHour(c.bookingOpenHour ?? -1);
@@ -149,6 +152,23 @@ export function AdminPage() {
       setMsg('Types de créneaux mis à jour');
     } catch (err: unknown) { setError(getErrorMessage(err)); }
     finally { setListLoading(false); }
+  };
+
+  const handleUpdateExclusiveSlotTypes = async () => {
+    setMsg(''); setError(''); setExclusiveLoading(true);
+    try {
+      const updated = await adminService.updateExclusiveSlotTypes(exclusiveSlotTypes);
+      setConfig(updated);
+      setExclusiveSlotTypes(updated.exclusiveSlotTypes ?? []);
+      setMsg('Types de créneaux exclusifs mis à jour');
+    } catch (err: unknown) { setError(getErrorMessage(err)); }
+    finally { setExclusiveLoading(false); }
+  };
+
+  const handleToggleExclusive = (type: string) => {
+    setExclusiveSlotTypes(prev =>
+      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+    );
   };
 
   const handleUpdateClubs = async (e: React.FormEvent) => {
@@ -401,6 +421,7 @@ export function AdminPage() {
               {listLoading ? '...' : '💾 Enregistrer les types'}
             </button>
           </form>
+
           <form onSubmit={handleUpdateClubs} style={{ flex: 1, minWidth: 280 }}>
             <div className="form-group">
               <label style={{ fontWeight: 700 }}>Clubs</label>
@@ -426,6 +447,62 @@ export function AdminPage() {
             </button>
           </form>
         </div>
+      </div>
+
+      {/* Créneaux exclusifs */}
+      <div className="admin-section">
+        <h2>🚫 Créneaux exclusifs (sans chevauchement)</h2>
+        <p style={{ color: '#6b7280', fontSize: 13, marginBottom: 16 }}>
+          Les types cochés ne peuvent pas se chevaucher dans le calendrier. La création d'un créneau de ce type sera refusée si un autre créneau du même type existe déjà sur la même plage horaire.
+        </p>
+        {(config?.slotTypes ?? []).length === 0 ? (
+          <p style={{ color: '#9ca3af', fontSize: 13 }}>Aucun type de créneau configuré. Ajoutez d'abord des types dans la section « Listes configurables ».</p>
+        ) : (
+          <>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
+              {(config?.slotTypes ?? []).map(type => {
+                const isExclusive = exclusiveSlotTypes.includes(type);
+                return (
+                  <label
+                    key={type}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
+                      padding: '8px 14px', borderRadius: 8, fontSize: 14, userSelect: 'none',
+                      border: `2px solid ${isExclusive ? '#dc2626' : '#d1d5db'}`,
+                      background: isExclusive ? '#fef2f2' : '#f9fafb',
+                      color: isExclusive ? '#dc2626' : '#374151',
+                      fontWeight: isExclusive ? 700 : 400,
+                      transition: 'all .15s',
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isExclusive}
+                      onChange={() => handleToggleExclusive(type)}
+                      style={{ accentColor: '#dc2626', width: 16, height: 16 }}
+                    />
+                    {isExclusive ? '🚫' : '✔️'} {type}
+                  </label>
+                );
+              })}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={exclusiveLoading}
+                onClick={handleUpdateExclusiveSlotTypes}
+              >
+                {exclusiveLoading ? '...' : '💾 Enregistrer'}
+              </button>
+              {exclusiveSlotTypes.length > 0 && (
+                <span style={{ fontSize: 13, color: '#6b7280' }}>
+                  {exclusiveSlotTypes.length} type{exclusiveSlotTypes.length > 1 ? 's' : ''} exclusif{exclusiveSlotTypes.length > 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Gestion des utilisateurs */}
