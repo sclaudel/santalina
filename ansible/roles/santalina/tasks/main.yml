@@ -202,17 +202,22 @@
   when: nginx_conf_deploy.changed
 
 # ── DKIM — récupération de la clé publique ────────────────────────────────────
+# La génération RSA peut prendre plusieurs minutes sur un VPS (entropie limitée).
+# On utilise find pour chercher dans tout /etc/opendkim quel que soit le sous-dossier.
+# failed_when: false + ignore_errors: true garantissent que cette tâche ne bloque
+# jamais le déploiement même si la clé n'est pas encore disponible.
 - name: Attendre que la clé DKIM soit générée dans le conteneur SMTP
   ansible.builtin.command:
     cmd: >-
       docker exec santalina-smtp
-      sh -c 'ls /etc/opendkim/domainkeys/*.txt 2>/dev/null | wc -l'
+      sh -c 'find /etc/opendkim -name "*.txt" 2>/dev/null | wc -l'
     chdir: "{{ app_dir }}"
   become: false
   register: dkim_key_check
-  retries: 24
+  retries: 60
   delay: 5
   until: dkim_key_check.rc == 0 and (dkim_key_check.stdout | trim | int) > 0
+  failed_when: false
   ignore_errors: true
   when: not (mail_disabled | default(false))
 
@@ -220,10 +225,11 @@
   ansible.builtin.command:
     cmd: >-
       docker exec santalina-smtp
-      sh -c 'cat /etc/opendkim/domainkeys/*.txt 2>/dev/null || echo "Clé DKIM non encore générée"'
+      sh -c 'find /etc/opendkim -name "*.txt" -exec cat {} \; 2>/dev/null || echo "Clé DKIM non encore générée — relancez : docker exec santalina-smtp sh -c \"find /etc/opendkim -name *.txt -exec cat {} \\\\;\"'
     chdir: "{{ app_dir }}"
   become: false
   register: dkim_public_key
+  failed_when: false
   ignore_errors: true
   when: not (mail_disabled | default(false))
 
@@ -236,8 +242,10 @@
       - "  Type  : TXT"
       - "  Nom   : mail._domainkey.{{ app_domain }}"
       - "  Valeur:"
-      - "{{ dkim_public_key.stdout | default('(clé non disponible)') }}"
+      - "{{ dkim_public_key.stdout | default('(clé non disponible — réessayez dans quelques minutes)') }}"
       - "────────────────────────────────────────────────────────────"
+      - "  Si la clé est vide, récupérez-la manuellement :"
+      - "  docker exec santalina-smtp find /etc/opendkim -name '*.txt' -exec cat {} \\;"
       - "  Voir aussi : ansible/docs/smtp-authentication.md"
       - "════════════════════════════════════════════════════════════"
   when: not (mail_disabled | default(false)) and dkim_public_key is defined
