@@ -78,7 +78,7 @@ services:
       RELAYHOST: "{{ app_smtp_relayhost }}"
 {% endif %}
     healthcheck:
-      test: ["CMD-SHELL", "postfix status 2>/dev/null | grep -q 'postfix/postfix-script: the Postfix mail system is running'"]
+      test: ["CMD-SHELL", "nc -z localhost 25"]
       interval: 10s
       timeout: 5s
       retries: 12
