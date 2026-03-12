@@ -13,11 +13,11 @@ jobs:
     steps:
       # ── Récupération du code ──────────────────────────────────────────────
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # ── Setup Java 21 ─────────────────────────────────────────────────────
       - name: Setup Java 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
@@ -25,7 +25,7 @@ jobs:
 
       # ── Setup Node.js (build frontend) ────────────────────────────────────
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: 'npm'
@@ -51,14 +51,14 @@ jobs:
 
       # ── Connexion à DockerHub ─────────────────────────────────────────────
       - name: Log in to DockerHub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       # ── Build et push de l'image Docker ──────────────────────────────────
       - name: Build and push Docker image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile
