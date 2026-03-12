@@ -57,7 +57,7 @@ services:
       db:
         condition: service_healthy
       smtp:
-        condition: service_started
+        condition: service_healthy
     volumes:
       - app_data:/deployments/data
     networks:
@@ -78,6 +78,12 @@ services:
       # Relay SMTP externe optionnel
       RELAYHOST: "{{ app_smtp_relayhost }}"
 {% endif %}
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 25"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
     volumes:
       # Bind mount sur l'hôte — survit à docker compose down -v
       - ./dkim_keys:/etc/opendkim/domainkeys
