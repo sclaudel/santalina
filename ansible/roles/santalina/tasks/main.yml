@@ -333,7 +333,7 @@
     cmd: >
       docker compose run --rm --entrypoint certbot certbot certonly
       --webroot -w /var/www/certbot
-      -d {{ app_domain }}
+      -d {{ app_domain }} -d www.{{ app_domain }}
       --email {{ letsencrypt_email }}
       --agree-tos --non-interactive --no-eff-email
     chdir: "{{ app_dir }}"
