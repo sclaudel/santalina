@@ -242,8 +242,8 @@ public class SlotService {
     }
 
     private void validateDiverCount(int count) {
-        if (count < 1) {
-            throw new BadRequestException("Le nombre de plongeurs doit être d'au moins 1");
+        if (count < 2) {
+            throw new BadRequestException("Le nombre de plongeurs doit être d'au moins 2");
         }
         int maxDivers = configService.getMaxDivers();
         if (count > maxDivers) {

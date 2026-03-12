@@ -77,6 +77,11 @@ public class SlotDiverResource {
             }
         }
 
+        // Vérifier doublon nom/prénom sur le créneau
+        if (SlotDiver.existsBySlotAndName(slotId, request.firstName(), request.lastName())) {
+            throw new BadRequestException("Un plongeur avec ce nom et prénom est déjà inscrit sur ce créneau");
+        }
+
         // Vérifier capacité
         long current = SlotDiver.countBySlot(slotId);
         if (current >= slot.diverCount) {
@@ -131,6 +136,11 @@ public class SlotDiverResource {
             // Si on change vers directeur et que ce n'était pas lui avant, vérifier unicité
             if (!diver.isDirector && SlotDiver.hasDirector(slotId))
                 throw new BadRequestException("Il y a déjà un directeur de plongée sur ce créneau");
+        }
+
+        // Vérifier doublon nom/prénom sur le créneau (en excluant le plongeur courant)
+        if (SlotDiver.existsBySlotAndNameExcluding(slotId, request.firstName(), request.lastName(), diverId)) {
+            throw new BadRequestException("Un plongeur avec ce nom et prénom est déjà inscrit sur ce créneau");
         }
 
         diver.firstName  = request.firstName();

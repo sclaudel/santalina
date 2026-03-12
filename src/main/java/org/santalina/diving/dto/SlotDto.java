@@ -16,7 +16,7 @@ public class SlotDto {
             @NotNull LocalDate slotDate,
             @NotNull @JsonFormat(pattern = "HH:mm") LocalTime startTime,
             @NotNull @JsonFormat(pattern = "HH:mm") LocalTime endTime,
-            @NotNull @Min(1) Integer diverCount,
+            @NotNull @Min(2) Integer diverCount,
             String title,
             String notes,
             String slotType,
@@ -24,7 +24,7 @@ public class SlotDto {
     ) {}
 
     public record UpdateDiverCountRequest(
-            @NotNull @Min(1) Integer diverCount
+            @NotNull @Min(2) Integer diverCount
     ) {}
 
     public record UpdateSlotInfoRequest(

@@ -274,8 +274,8 @@ export function SlotBlock({
   const handleUpdateSlotInfo = async (e: React.FormEvent) => {
     e.preventDefault();
     const newCapacity = parseInt(infoCapacity, 10);
-    if (!infoCapacity || isNaN(newCapacity) || newCapacity < 1) {
-      setInfoError('La capacité doit être au moins 1'); return;
+    if (!infoCapacity || isNaN(newCapacity) || newCapacity < 2) {
+      setInfoError('La capacité doit être au moins 2'); return;
     }
     if (newCapacity > maxDivers) {
       setInfoError(`La capacité ne peut pas dépasser ${maxDivers}`); return;
@@ -491,7 +491,7 @@ export function SlotBlock({
           </div>
           <div className="slot-info-field">
             <label>Nombre de places (max {maxDivers}{usedDivers > 0 ? `, min ${usedDivers} inscrits` : ''})</label>
-            <input type="number" min={usedDivers || 1} max={maxDivers}
+            <input type="number" min={Math.max(usedDivers, 2)} max={maxDivers}
               value={infoCapacity} onChange={e => setInfoCapacity(e.target.value)} />
           </div>
           {(config?.slotTypes ?? []).length > 0 && (
