@@ -1,0 +1,95 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits"
+  ],
+
+  "_comment_security": [
+    "===== MESURES DE SÉCURITÉ =====",
+    "minimumReleaseAge: protection contre les versions compromises publiées",
+    "  récemment (attaques supply-chain type 'malicious package within minutes').",
+    "prCreation=not-pending: attend la fin des checks CI avant de créer",
+    "  la PR pour éviter de merger du code non validé.",
+    "osvVulnerabilityAlerts: détecte les CVE via la base OSV (Google).",
+    "prConcurrentLimit: évite le flooding de PRs (DoS sur la revue).",
+    "Pas d'automerge: toute mise à jour requiert une validation humaine.",
+    "enabledManagers restreint: Renovate ne gère que Gradle + npm.",
+    "  Docker et GitHub Actions sont gérés par Dependabot (.github/dependabot.yml)."
+  ],
+
+  "timezone": "Europe/Paris",
+
+  "schedule": ["before 10am on monday"],
+
+  "enabledManagers": ["gradle", "gradle-wrapper", "npm"],
+
+  "prConcurrentLimit": 5,
+
+  "prCreation": "not-pending",
+
+  "minimumReleaseAge": "3 days",
+
+  "osvVulnerabilityAlerts": true,
+
+  "vulnerabilityAlerts": {
+    "labels": ["security", "vulnerability"],
+    "automerge": false,
+    "prPriority": 10
+  },
+
+  "reviewers": ["sclaudel"],
+
+  "labels": ["dependencies"],
+
+  "packageRules": [
+
+    {
+      "_comment": "Grouper toutes les dépendances Quarkus (BOM + extensions)",
+      "matchPackagePrefixes": ["io.quarkus"],
+      "groupName": "Quarkus",
+      "addLabels": ["quarkus"],
+      "automerge": false
+    },
+
+    {
+      "_comment": "Mises à jour majeures : ne jamais auto-merger, tag explicite",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "addLabels": ["breaking-change"],
+      "prPriority": -1
+    },
+
+    {
+      "_comment": "Mises à jour mineures : pas d'auto-merge, tag minor",
+      "matchUpdateTypes": ["minor"],
+      "automerge": false,
+      "addLabels": ["minor"]
+    },
+
+    {
+      "_comment": "Mises à jour de patch : pas d'auto-merge (sécurité conservatrice)",
+      "matchUpdateTypes": ["patch"],
+      "automerge": false,
+      "addLabels": ["patch"]
+    },
+
+    {
+      "_comment": "devDependencies npm groupées pour réduire le bruit",
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["devDependencies"],
+      "groupName": "npm devDependencies",
+      "addLabels": ["dev-dependencies"]
+    },
+
+    {
+      "_comment": "Gradle Wrapper : mise à jour groupée",
+      "matchManagers": ["gradle-wrapper"],
+      "groupName": "Gradle Wrapper",
+      "addLabels": ["gradle"]
+    }
+
+  ]
+}

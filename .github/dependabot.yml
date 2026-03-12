@@ -1,0 +1,71 @@
+version: 2
+
+# ┌─────────────────────────────────────────────────────────────────────────┐
+# │  Dependabot — Mise à jour des dépendances (GitHub Actions + Docker)     │
+# │                                                                         │
+# │  Responsabilités :                                                      │
+# │    • GitHub Actions  → épinglage des actions à des SHA précis           │
+# │    • Docker          → mise à jour des images de base                  │
+# │                                                                         │
+# │  Gradle + npm sont gérés par Renovate (renovate.json).                  │
+# │                                                                         │
+# │  Sécurité :                                                             │
+# │    • Pas d'auto-merge : toute PR doit être revue manuellement           │
+# │    • open-pull-requests-limit : limite les PR pour éviter le flooding   │
+# │    • reviewers : le propriétaire est systématiquement assigné           │
+# │    • ignore major : les ruptures de compatibilité nécessitent une       │
+# │                     validation explicite                                │
+# └─────────────────────────────────────────────────────────────────────────┘
+
+updates:
+
+  # ── GitHub Actions ──────────────────────────────────────────────────────
+  # Épinglage des actions à des SHA de commit pour contrer les attaques
+  # de type « supply-chain » (tag mutable, dépôt compromis, etc.).
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Paris"
+    # Regroupe toutes les mises à jour d'actions en une seule PR
+    # pour limiter le bruit et le risque d'approbation à la va-vite.
+    groups:
+      github-actions-all:
+        patterns:
+          - "*"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "sclaudel"
+    commit-message:
+      prefix: "ci(deps)"
+    labels:
+      - "dependencies"
+      - "github-actions"
+
+  # ── Docker ──────────────────────────────────────────────────────────────
+  # Mise à jour de l'image de base eclipse-temurin dans le Dockerfile.
+  # Les mises à jour majeures sont ignorées : elles nécessitent une
+  # validation manuelle (compatibilité JVM, changements de comportement).
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 3
+    reviewers:
+      - "sclaudel"
+    commit-message:
+      prefix: "build(deps)"
+    labels:
+      - "dependencies"
+      - "docker"
+    ignore:
+      # Les mises à jour majeures (ex: JRE 21 → 22) peuvent introduire
+      # des incompatibilités — révision manuelle obligatoire.
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
