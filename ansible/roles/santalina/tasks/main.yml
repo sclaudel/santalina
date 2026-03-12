@@ -202,15 +202,17 @@
   when: nginx_conf_deploy.changed
 
 # ── DKIM — récupération de la clé publique ────────────────────────────────────
-- name: Attendre que le conteneur SMTP soit prêt (génération des clés DKIM)
+- name: Attendre que la clé DKIM soit générée dans le conteneur SMTP
   ansible.builtin.command:
-    cmd: docker inspect --format="{{ '{{' }}.State.Health.Status{{ '}}' }}" santalina-smtp
+    cmd: >-
+      docker exec santalina-smtp
+      sh -c 'ls /etc/opendkim/domainkeys/*.txt 2>/dev/null | wc -l'
     chdir: "{{ app_dir }}"
   become: false
-  register: smtp_status
-  retries: 12
+  register: dkim_key_check
+  retries: 24
   delay: 5
-  until: smtp_status.rc == 0
+  until: dkim_key_check.rc == 0 and (dkim_key_check.stdout | trim | int) > 0
   ignore_errors: true
   when: not (mail_disabled | default(false))
 
