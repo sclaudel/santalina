@@ -2,7 +2,7 @@
 # ── Redirection HTTP → HTTPS ──────────────────────────────────────────────────
 server {
     listen 80;
-    server_name {{ app_domain }};
+    server_name {{ app_domain }} www.{{ app_domain }};
 
     # Validation du certificat Let's Encrypt
     location /.well-known/acme-challenge/ {
@@ -12,6 +12,29 @@ server {
     location / {
         return 301 https://$host$request_uri;
     }
+}
+
+# ── Redirection www → apex ───────────────────────────────────────────────────
+server {
+    listen 443 ssl http2;
+    server_name www.{{ app_domain }};
+
+{% if ssl_mode | default('none') == 'selfsigned' %}
+    ssl_certificate     /etc/certs/selfsigned.crt;
+    ssl_certificate_key /etc/certs/selfsigned.key;
+{% else %}
+    ssl_certificate     /etc/letsencrypt/live/{{ app_domain }}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/{{ app_domain }}/privkey.pem;
+{% endif %}
+
+    ssl_protocols             TLSv1.2 TLSv1.3;
+    ssl_ciphers               ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache         shared:SSL:10m;
+    ssl_session_timeout       1d;
+    ssl_session_tickets       off;
+
+    return 301 https://{{ app_domain }}$request_uri;
 }
 
 # ── Reverse proxy HTTPS ───────────────────────────────────────────────────────
@@ -68,7 +91,7 @@ server {
 # ── HTTP uniquement (phase initiale avant obtention du certificat SSL) ─────────
 server {
     listen 80;
-    server_name {{ app_domain }};
+    server_name {{ app_domain }} www.{{ app_domain }};
 
     # Validation Let's Encrypt
     location /.well-known/acme-challenge/ {
