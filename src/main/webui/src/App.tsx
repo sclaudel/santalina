@@ -5,6 +5,7 @@ import { CalendarPage } from './pages/CalendarPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { AdminPage } from './pages/AdminPage';
 import { StatsPage } from './pages/StatsPage';
+import { MyStatsPage } from './pages/MyStatsPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { HelpPage } from './pages/HelpPage';
 import { adminService } from './services/adminService';
@@ -12,7 +13,7 @@ import type { AppConfig } from './types';
 import './App.css';
 
 function AppContent() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, hasRole } = useAuth();
 
   const urlParams = new URLSearchParams(window.location.search);
   const resetToken = urlParams.get('token');
@@ -27,6 +28,8 @@ function AppContent() {
 
   const navigate = (page: string) => {
     if (page === 'admin' && user?.role !== 'ADMIN') return;
+    if (page === 'stats' && user?.role !== 'ADMIN') return;
+    if (page === 'my-stats' && !hasRole('DIVE_DIRECTOR')) return;
     if (page === 'profile' && !isAuthenticated) return;
     setCurrentPage(page);
   };
@@ -60,6 +63,7 @@ function AppContent() {
         {currentPage === 'profile' && isAuthenticated && <ProfilePage />}
         {currentPage === 'admin' && user?.role === 'ADMIN' && <AdminPage />}
         {currentPage === 'stats' && user?.role === 'ADMIN' && <StatsPage />}
+        {currentPage === 'my-stats' && hasRole('DIVE_DIRECTOR') && <MyStatsPage />}
         {currentPage === 'help' && <HelpPage />}
       </div>
       <footer className="app-footer">

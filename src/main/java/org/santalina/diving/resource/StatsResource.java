@@ -2,10 +2,13 @@ package org.santalina.diving.resource;
 
 import org.santalina.diving.domain.DiveSlot;
 import org.santalina.diving.domain.SlotDiver;
+import org.santalina.diving.domain.User;
 import org.santalina.diving.dto.StatsDto.*;
 import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.time.LocalDate;
@@ -17,6 +20,9 @@ import java.util.stream.Collectors;
 @RolesAllowed("ADMIN")
 @Tag(name = "Statistiques")
 public class StatsResource {
+
+    @Inject
+    JsonWebToken jwt;
 
     private static final String[] DAYS_FR = {
         "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"
@@ -185,5 +191,113 @@ public class StatsResource {
                 statsByMonth, statsByYear, statsByClub, statsByType,
                 totalSlots, totalDivers, totalClubs, avgDiversPerSlot,
                 statsByDayOfWeek, statsByLevel, statsByDp);
+    }
+
+    // ── Statistiques personnelles du Directeur de Plongée ─────────────────────
+    @GET
+    @Path("/my")
+    @RolesAllowed({"ADMIN", "DIVE_DIRECTOR"})
+    public MyStatsResponse getMyStats(
+            @QueryParam("from") String fromParam,
+            @QueryParam("to")   String toParam) {
+
+        User currentUser = User.findByEmail(jwt.getName());
+        if (currentUser == null) throw new NotAuthorizedException("Utilisateur non trouvé");
+
+        LocalDate from = (fromParam != null) ? LocalDate.parse(fromParam) : LocalDate.of(2000, 1, 1);
+        LocalDate to   = (toParam   != null) ? LocalDate.parse(toParam)   : LocalDate.of(2100, 12, 31);
+
+        List<DiveSlot> slots = DiveSlot.findByCreatorAndDateRange(currentUser.id, from, to);
+
+        List<Long> slotIds = slots.stream().map(s -> s.id).toList();
+        List<SlotDiver> allDivers = SlotDiver.findBySlotIds(slotIds);
+
+        Map<Long, Integer> diversBySlot = new HashMap<>();
+        for (SlotDiver sd : allDivers) {
+            diversBySlot.merge(sd.slot.id, 1, Integer::sum);
+        }
+
+        // ── Par mois ──────────────────────────────────────────────────────────
+        Map<String, int[]> byMonthMap = new TreeMap<>();
+        for (DiveSlot s : slots) {
+            String key = s.slotDate.getYear() + "-" + String.format("%02d", s.slotDate.getMonthValue());
+            byMonthMap.computeIfAbsent(key, k -> new int[2]);
+            byMonthMap.get(key)[0]++;
+            byMonthMap.get(key)[1] += diversBySlot.getOrDefault(s.id, 0);
+        }
+        List<PeriodStat> myByMonth = byMonthMap.entrySet().stream()
+                .map(e -> new PeriodStat(e.getKey(), e.getValue()[0], e.getValue()[1]))
+                .toList();
+
+        // ── Par année ─────────────────────────────────────────────────────────
+        Map<String, int[]> byYearMap = new TreeMap<>();
+        for (DiveSlot s : slots) {
+            String key = String.valueOf(s.slotDate.getYear());
+            byYearMap.computeIfAbsent(key, k -> new int[2]);
+            byYearMap.get(key)[0]++;
+            byYearMap.get(key)[1] += diversBySlot.getOrDefault(s.id, 0);
+        }
+        List<PeriodStat> myByYear = byYearMap.entrySet().stream()
+                .map(e -> new PeriodStat(e.getKey(), e.getValue()[0], e.getValue()[1]))
+                .toList();
+
+        // ── Par club ──────────────────────────────────────────────────────────
+        Map<String, int[]> byClubMap = new LinkedHashMap<>();
+        for (DiveSlot s : slots) {
+            String key = (s.club != null && !s.club.isBlank()) ? s.club : "— Sans club —";
+            byClubMap.computeIfAbsent(key, k -> new int[2]);
+            byClubMap.get(key)[0]++;
+            byClubMap.get(key)[1] += diversBySlot.getOrDefault(s.id, 0);
+        }
+        List<GroupStat> myByClub = byClubMap.entrySet().stream()
+                .sorted(Comparator.comparingInt((Map.Entry<String, int[]> e) -> e.getValue()[1]).reversed())
+                .map(e -> new GroupStat(e.getKey(), e.getValue()[0], e.getValue()[1]))
+                .collect(Collectors.toList());
+
+        // ── Par type ──────────────────────────────────────────────────────────
+        Map<String, int[]> byTypeMap = new LinkedHashMap<>();
+        for (DiveSlot s : slots) {
+            String key = (s.slotType != null && !s.slotType.isBlank()) ? s.slotType : "— Sans type —";
+            byTypeMap.computeIfAbsent(key, k -> new int[2]);
+            byTypeMap.get(key)[0]++;
+            byTypeMap.get(key)[1] += diversBySlot.getOrDefault(s.id, 0);
+        }
+        List<GroupStat> myByType = byTypeMap.entrySet().stream()
+                .sorted(Comparator.comparingInt((Map.Entry<String, int[]> e) -> e.getValue()[1]).reversed())
+                .map(e -> new GroupStat(e.getKey(), e.getValue()[0], e.getValue()[1]))
+                .collect(Collectors.toList());
+
+        // ── Par jour de la semaine ────────────────────────────────────────────
+        int[][] byDow = new int[7][2];
+        for (DiveSlot s : slots) {
+            int dow = s.slotDate.getDayOfWeek().getValue() - 1;
+            byDow[dow][0]++;
+            byDow[dow][1] += diversBySlot.getOrDefault(s.id, 0);
+        }
+        List<PeriodStat> myByDayOfWeek = new ArrayList<>();
+        for (int i = 0; i < 7; i++) {
+            myByDayOfWeek.add(new PeriodStat(DAYS_FR[i], byDow[i][0], byDow[i][1]));
+        }
+
+        // ── Par niveau ────────────────────────────────────────────────────────
+        Map<String, Integer> levelMap = new LinkedHashMap<>();
+        for (SlotDiver sd : allDivers) {
+            String lvl = (sd.level != null && !sd.level.isBlank()) ? sd.level : "— Inconnu —";
+            levelMap.merge(lvl, 1, Integer::sum);
+        }
+        List<GroupStat> myByLevel = levelMap.entrySet().stream()
+                .sorted(Comparator.comparingInt(Map.Entry<String, Integer>::getValue).reversed())
+                .map(e -> new GroupStat(e.getKey(), 0, e.getValue()))
+                .collect(Collectors.toList());
+
+        // ── Totaux ───────────────────────────────────────────────────────────
+        int myTotalSlots  = slots.size();
+        int myTotalDivers = diversBySlot.values().stream().mapToInt(Integer::intValue).sum();
+        double myAvgDiversPerSlot = myTotalSlots > 0 ? (double) myTotalDivers / myTotalSlots : 0.0;
+
+        return new MyStatsResponse(
+                myByMonth, myByYear, myByClub, myByType,
+                myTotalSlots, myTotalDivers, myAvgDiversPerSlot,
+                myByDayOfWeek, myByLevel);
     }
 }

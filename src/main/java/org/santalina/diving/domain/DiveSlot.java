@@ -71,6 +71,11 @@ public class DiveSlot extends PanacheEntityBase {
         return list("slotDate >= ?1 AND slotDate <= ?2 ORDER BY slotDate, startTime", from, to);
     }
 
+    public static List<DiveSlot> findByCreatorAndDateRange(Long creatorId, LocalDate from, LocalDate to) {
+        return list("createdBy.id = ?1 AND slotDate >= ?2 AND slotDate <= ?3 ORDER BY slotDate, startTime",
+                creatorId, from, to);
+    }
+
     @PreUpdate
     public void onUpdate() {
         updatedAt = LocalDateTime.now();

@@ -57,7 +57,7 @@ public class AuthService {
         user.persist();
         LOG.infof("Nouvel utilisateur inscrit : %s", user.email);
         String token = jwtUtil.generateToken(user);
-        return new LoginResponse(token, user.email, user.name, user.primaryRole(), user.id);
+        return new LoginResponse(token, user.email, user.name, user.primaryRole(), user.id, user.roles);
     }
 
     @Transactional
@@ -75,7 +75,7 @@ public class AuthService {
         }
         LOG.infof("Connexion réussie pour : %s", user.email);
         String token = jwtUtil.generateToken(user);
-        return new LoginResponse(token, user.email, user.name, user.primaryRole(), user.id);
+        return new LoginResponse(token, user.email, user.name, user.primaryRole(), user.id, user.roles);
     }
 
     @Transactional
