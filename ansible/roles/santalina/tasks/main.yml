@@ -367,8 +367,16 @@
     and (certbot_result.rc | default(0)) != 0
 
 # ── Nginx — activer HTTPS après obtention du certificat ──────────────────────
-# Cette phase n'est nécessaire que lors du premier déploiement quand le cert
-# vient d'être obtenu. Lors des re-déploiements, nginx démarre déjà en HTTPS.
+# On re-vérifie l'existence du fichier cert APRÈS l'exécution de certbot.
+# Certbot peut retourner un code non-zéro (warning, rate limit partiel…) même
+# quand le certificat a bien été écrit sur disque. Conditionner sur rc==0 ferait
+# manquer la bascule HTTPS et forcerait un second passage du playbook.
+- name: Vérifier si le certificat SSL a bien été obtenu (post-certbot)
+  ansible.builtin.stat:
+    path: "{{ app_dir }}/letsencrypt/live/{{ app_domain }}/fullchain.pem"
+  register: ssl_cert_post_certbot
+  when: obtain_ssl | default(true) and not ssl_cert_exists
+
 - name: Déployer la configuration Nginx avec HTTPS (post-certbot)
   ansible.builtin.template:
     src: nginx.conf.j2
@@ -378,11 +386,11 @@
     mode: "0644"
   vars:
     ssl_mode: letsencrypt
-  when: obtain_ssl | default(true) and not ssl_cert_exists and (certbot_result.rc | default(1)) == 0
+  when: obtain_ssl | default(true) and not ssl_cert_exists and (ssl_cert_post_certbot.stat.exists | default(false))
 
 - name: Redémarrer Nginx pour activer la configuration HTTPS
   ansible.builtin.command:
     cmd: docker compose restart nginx
     chdir: "{{ app_dir }}"
   become: false
-  when: obtain_ssl | default(true) and not ssl_cert_exists and (certbot_result.rc | default(1)) == 0
+  when: obtain_ssl | default(true) and not ssl_cert_exists and (ssl_cert_post_certbot.stat.exists | default(false))
