@@ -80,4 +80,9 @@ export const adminService = {
     const res = await api.put<AppConfig>('/config/exclusive-slot-types', { items });
     return res.data;
   },
+
+  async updateDefaultSlotHours(defaultSlotHours: number): Promise<AppConfig> {
+    const res = await api.put<AppConfig>('/config/default-slot-hours', { defaultSlotHours });
+    return res.data;
+  },
 };

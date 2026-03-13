@@ -87,4 +87,11 @@ public class ConfigResource {
     public ConfigResponse updateExclusiveSlotTypes(@Valid UpdateListRequest request) {
         return configService.updateExclusiveSlotTypes(request.items());
     }
+
+    @PUT
+    @Path("/default-slot-hours")
+    @RolesAllowed("ADMIN")
+    public ConfigResponse updateDefaultSlotHours(@Valid UpdateDefaultSlotHoursRequest request) {
+        return configService.updateDefaultSlotHours(request.defaultSlotHours());
+    }
 }
