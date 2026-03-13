@@ -21,10 +21,10 @@ jobs:
 
     # Désactivé temporairement — VPS non encore provisionné.
     # Pour réactiver : remplacer `if: false` par la condition commentée ci-dessous.
-    if: false
-    # if: >
-    #   github.event_name == 'workflow_dispatch' ||
-    #   github.event.workflow_run.conclusion == 'success'
+    #if: false
+    if: >
+       github.event_name == 'workflow_dispatch' ||
+       github.event.workflow_run.conclusion == 'success'
 
     steps:
       # ── Récupérer le tag de la version depuis le workflow de release ─────
