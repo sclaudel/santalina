@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { DiveSlot, AppConfig } from '../types';
 import { SlotBlock } from './SlotBlock';
 
@@ -14,6 +14,8 @@ interface Props {
   startHour?: number;
   /** Heure de fin de la grille (fournie par WeekView pour aligner les colonnes) */
   endHour?: number;
+  /** Callback déclenché quand l'utilisateur clique sur une zone libre de la grille */
+  onClickTime?: (time: string) => void;
 }
 
 const DEFAULT_START = 6;   // 06:00 par défaut
@@ -75,8 +77,11 @@ function computeColumns(slots: DiveSlot[]): Map<number, { col: number; totalCols
   return result;
 }
 
-export function TimeGrid({ slots, config, onDelete, onRefresh, canEdit, currentUserId, currentUserRole, startHour: startHourProp, endHour: endHourProp }: Props) {
+export function TimeGrid({ slots, config, onDelete, onRefresh, canEdit, currentUserId, currentUserRole, startHour: startHourProp, endHour: endHourProp, onClickTime }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [hoverTime, setHoverTime] = useState<{ time: string; y: number } | null>(null);
+
+  const resolution = config?.slotResolutionMinutes > 0 ? config.slotResolutionMinutes : 15;
 
   // Calcul dynamique de la plage horaire visible :
   // – si fourni par le parent (WeekView), on l'utilise tel quel pour aligner toutes les colonnes
@@ -102,6 +107,31 @@ export function TimeGrid({ slots, config, onDelete, onRefresh, canEdit, currentU
 
   const columns = useMemo(() => computeColumns(slots), [slots]);
 
+  const computeTimeFromY = (y: number): string => {
+    const rawMinutes = y / PX_PER_MIN + startHour * 60;
+    const snapped    = Math.round(rawMinutes / resolution) * resolution;
+    const clamped    = Math.max(startHour * 60, Math.min(endHour * 60 - resolution, snapped));
+    const h = Math.floor(clamped / 60);
+    const m = clamped % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  };
+
+  const handleGridMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!onClickTime) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    setHoverTime({ time: computeTimeFromY(y), y });
+  };
+
+  const handleGridMouseLeave = () => setHoverTime(null);
+
+  const handleGridClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!onClickTime) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    onClickTime(computeTimeFromY(y));
+  };
+
   return (
     <div className="time-grid-wrapper">
       <div className="time-grid" style={{ height: totalHeight + 'px' }} ref={containerRef}>
@@ -120,7 +150,26 @@ export function TimeGrid({ slots, config, onDelete, onRefresh, canEdit, currentU
         </div>
 
         {/* Zone des créneaux */}
-        <div className="time-grid-slots">
+          <div
+            className="time-grid-slots"
+            style={onClickTime ? { cursor: 'crosshair', position: 'relative' } : { position: 'relative' }}
+            onClick={handleGridClick}
+            onMouseMove={handleGridMouseMove}
+            onMouseLeave={handleGridMouseLeave}
+          >
+            {/* Indicateur de survol */}
+            {onClickTime && hoverTime && (
+              <div style={{
+                position: 'absolute', left: '50%', transform: 'translateX(-50%)',
+                top: hoverTime.y - 11 + 'px',
+                background: '#1e40af', color: '#fff',
+                fontSize: 11, fontWeight: 700, borderRadius: 4,
+                padding: '2px 7px', pointerEvents: 'none', zIndex: 10,
+                whiteSpace: 'nowrap', boxShadow: '0 1px 4px rgba(0,0,0,.2)',
+              }}>
+                + {hoverTime.time}
+              </div>
+            )}
           {/* Lignes horizontales */}
           {hours.map(h => (
             <div
@@ -158,6 +207,7 @@ export function TimeGrid({ slots, config, onDelete, onRefresh, canEdit, currentU
                   left:   `calc(${leftPct}% + 2px)`,
                   width:  `calc(${widthPct}% - 4px)`,
                 }}
+                onClick={e => e.stopPropagation()}
               >
                 <SlotBlock
                   slot={slot}

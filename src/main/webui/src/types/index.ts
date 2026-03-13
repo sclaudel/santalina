@@ -99,6 +99,7 @@ export interface AppConfig {
   bookingOpenHour: number;
   bookingCloseHour: number;
   exclusiveSlotTypes: string[];
+  defaultSlotHours: number;
 }
 
 export interface PeriodStat {

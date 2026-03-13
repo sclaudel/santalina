@@ -29,10 +29,11 @@ export function CalendarPage() {
     siteName: 'Carrière de Saint-Lin', slotTypes: [], clubs: [], levels: [],
     publicAccess: true, selfRegistration: true,
     bookingOpenHour: -1, bookingCloseHour: -1,
-    exclusiveSlotTypes: [],
+    exclusiveSlotTypes: [], defaultSlotHours: 2,
   });
   // Date pour laquelle on ouvre le formulaire (null = fermé)
-  const [formDate, setFormDate] = useState<string | null>(null);
+  const [formDate, setFormDate]           = useState<string | null>(null);
+  const [formStartTime, setFormStartTime] = useState<string | undefined>(undefined);
   const [childKey, setChildKey] = useState(0); // force reload des vues
 
   const canEdit = isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'DIVE_DIRECTOR');
@@ -59,16 +60,19 @@ export function CalendarPage() {
   };
 
   // Ouvrir le formulaire avec la date précisée, ou la date courante par défaut
-  const openForm = (date?: string) => {
+  const openForm = (date?: string, startTime?: string) => {
     const defaultDate = viewMode === 'day' ? selectedDate : dayjs().format('YYYY-MM-DD');
     setFormDate(date ?? defaultDate);
+    setFormStartTime(startTime);
   };
 
   // Adapter pour les composants qui passent toujours une date
-  const openFormWithDate = (date: string) => openForm(date);
+  const openFormWithDate = (date: string, startTime?: string) => openForm(date, startTime);
+
+  const closeForm = () => { setFormDate(null); setFormStartTime(undefined); };
 
   const handleCreated = () => {
-    setFormDate(null);
+    closeForm();
     setChildKey(k => k + 1); // force rechargement des vues
   };
 
@@ -146,8 +150,9 @@ export function CalendarPage() {
           <SlotForm
             date={formDate}
             config={config}
+            initialStartTime={formStartTime}
             onCreated={handleCreated}
-            onCancel={() => setFormDate(null)}
+            onCancel={closeForm}
           />
         )}
       </main>

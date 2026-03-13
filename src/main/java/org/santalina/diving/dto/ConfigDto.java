@@ -21,7 +21,8 @@ public class ConfigDto {
             boolean selfRegistration,
             int bookingOpenHour,
             int bookingCloseHour,
-            List<String> exclusiveSlotTypes
+            List<String> exclusiveSlotTypes,
+            int defaultSlotHours
     ) {}
 
     public record UpdateMaxDiversRequest(
@@ -43,5 +44,9 @@ public class ConfigDto {
     public record UpdateBookingHoursRequest(
             @NotNull @Min(-1) @jakarta.validation.constraints.Max(23) Integer bookingOpenHour,
             @NotNull @Min(-1) @jakarta.validation.constraints.Max(23) Integer bookingCloseHour
+    ) {}
+
+    public record UpdateDefaultSlotHoursRequest(
+            @NotNull @Min(1) @jakarta.validation.constraints.Max(24) Integer defaultSlotHours
     ) {}
 }

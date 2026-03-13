@@ -7,6 +7,8 @@ interface Props {
   config: AppConfig;
   onCreated: () => void;
   onCancel: () => void;
+  /** Heure de début pré-remplie (ex: issu d'un clic sur la grille) */
+  initialStartTime?: string;
 }
 
 function timeOptions(resolutionMinutes: number): string[] {
@@ -25,12 +27,13 @@ function toMinutes(time: string): number {
   return h * 60 + m;
 }
 
-export function SlotForm({ date, config, onCreated, onCancel }: Props) {
+export function SlotForm({ date, config, onCreated, onCancel, initialStartTime }: Props) {
   const safeConfig = {
     maxDivers: config?.maxDivers > 0 ? config.maxDivers : 25,
     slotResolutionMinutes: config?.slotResolutionMinutes > 0 ? config.slotResolutionMinutes : 15,
     slotMinHours: config?.slotMinHours > 0 ? config.slotMinHours : 1,
     slotMaxHours: config?.slotMaxHours > 0 ? config.slotMaxHours : 10,
+    defaultSlotHours: config?.defaultSlotHours > 0 ? config.defaultSlotHours : 2,
     slotTypes: config?.slotTypes ?? [],
     clubs: config?.clubs ?? [],
     bookingOpenHour: config?.bookingOpenHour ?? -1,
@@ -39,13 +42,16 @@ export function SlotForm({ date, config, onCreated, onCancel }: Props) {
   const times = timeOptions(safeConfig.slotResolutionMinutes);
 
   const [slotDate, setSlotDate]           = useState(date);
-  const [startTime, setStartTime]         = useState('08:00');
+  const [startTime, setStartTime]         = useState(initialStartTime ?? '08:00');
   const [endTime, setEndTime]         = useState(() => {
-    const startMin = toMinutes('08:00');
-    const valid = times.find(t => {
-      const d = toMinutes(t) - startMin;
-      return d >= safeConfig.slotMinHours * 60 && d <= safeConfig.slotMaxHours * 60;
-    });
+    const base = initialStartTime ?? '08:00';
+    const startMin = toMinutes(base);
+    const defaultMin = safeConfig.defaultSlotHours * 60;
+    const valid = times.find(t => toMinutes(t) - startMin === defaultMin)
+      ?? times.find(t => {
+        const d = toMinutes(t) - startMin;
+        return d >= safeConfig.slotMinHours * 60 && d <= safeConfig.slotMaxHours * 60;
+      });
     return valid ?? '10:00';
   });
   const [diverCountStr, setDiverCountStr] = useState('2');

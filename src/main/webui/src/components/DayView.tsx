@@ -7,7 +7,7 @@ import { TimeGrid } from './TimeGrid';
 interface Props {
   date: string;
   config: AppConfig;
-  onAdd: (date: string) => void;
+  onAdd: (date: string, startTime?: string) => void;
 }
 
 export function DayView({ date, config, onAdd }: Props) {
@@ -71,6 +71,7 @@ export function DayView({ date, config, onAdd }: Props) {
           canEdit={canEdit}
           currentUserId={user?.id}
           currentUserRole={user?.role}
+          onClickTime={canEdit ? (time) => onAdd(date, time) : undefined}
         />
       )}
     </div>
