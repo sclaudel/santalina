@@ -86,7 +86,7 @@ services:
       start_period: 30s
     volumes:
       # Bind mount sur l'hôte — survit à docker compose down -v
-      - ./dkim_keys:/etc/opendkim/domainkeys
+      - ./dkim_keys:/etc/opendkim/keys
     networks:
       - internal
 
