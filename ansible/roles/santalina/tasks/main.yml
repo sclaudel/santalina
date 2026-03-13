@@ -229,6 +229,14 @@
   ignore_errors: true
   when: not (mail_disabled | default(false))
 
+- name: Corriger le propriétaire des clés DKIM sur l'hôte (générées en syslog:uuidd par le conteneur)
+  ansible.builtin.file:
+    path: "{{ app_dir }}/dkim_keys"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    recurse: true
+  when: not (mail_disabled | default(false)) and dkim_key_check is defined and not dkim_key_check.failed | default(true)
+
 - name: Récupérer la clé publique DKIM générée
   ansible.builtin.command:
     cmd: >-
