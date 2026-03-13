@@ -43,7 +43,7 @@ par le conteneur `santalina-smtp` au premier démarrage, et persistée dans le r
 **1. Récupérer la clé publique DKIM générée :**
 
 ```bash
-docker exec santalina-smtp cat /etc/opendkim/domainkeys/<votre-domaine>.txt
+docker exec santalina-smtp cat /etc/opendkim/keys/<votre-domaine>.txt
 ```
 
 Le playbook Ansible affiche automatiquement cette clé en fin d'exécution
