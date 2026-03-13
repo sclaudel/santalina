@@ -28,6 +28,7 @@ public class ConfigService {
     private static final String KEY_BOOKING_OPEN_HOUR    = "booking.open.hour";
     private static final String KEY_BOOKING_CLOSE_HOUR   = "booking.close.hour";
     private static final String KEY_EXCLUSIVE_SLOT_TYPES = "slot.exclusive.types";
+    private static final String KEY_DEFAULT_SLOT_HOURS   = "slot.default.hours";
 
     private static final String DEFAULT_SLOT_TYPES =
         "Club - Plongée|Club - Apnée|Club - Nage avec Palme|CODEP - Plongée|CODEP - Apnée|CODEP - Nage avec Palme|Externe - SDIS - Gendarmerie";
@@ -80,6 +81,11 @@ public class ConfigService {
         return parseList(getStringValue(KEY_EXCLUSIVE_SLOT_TYPES, ""));
     }
 
+    /** Durée par défaut d'un créneau à la création (en heures) */
+    public int getDefaultSlotHours() {
+        return getIntValue(KEY_DEFAULT_SLOT_HOURS, 2);
+    }
+
     /** -1 = pas de restriction d'heure d'ouverture */
     public int getBookingOpenHour() {
         return getIntValueWithNegative(KEY_BOOKING_OPEN_HOUR, -1);
@@ -96,7 +102,7 @@ public class ConfigService {
                 getSlotTypes(), getClubs(), getLevels(),
                 isPublicAccess(), isSelfRegistration(),
                 getBookingOpenHour(), getBookingCloseHour(),
-                getExclusiveSlotTypes()
+                getExclusiveSlotTypes(), getDefaultSlotHours()
         );
     }
 
@@ -150,6 +156,12 @@ public class ConfigService {
         return getConfig();
     }
 
+    @Transactional
+    public ConfigResponse updateDefaultSlotHours(int hours) {
+        forceUpsert(KEY_DEFAULT_SLOT_HOURS, String.valueOf(hours));
+        return getConfig();
+    }
+
     // ---- Init au démarrage ----
 
     @Transactional
@@ -178,6 +190,7 @@ public class ConfigService {
         upsertIfMissing(KEY_BOOKING_OPEN_HOUR,    "-1");
         upsertIfMissing(KEY_BOOKING_CLOSE_HOUR,   "-1");
         upsertIfMissing(KEY_EXCLUSIVE_SLOT_TYPES, "");
+        upsertIfMissing(KEY_DEFAULT_SLOT_HOURS,   "2");
     }
 
     // ---- Helpers privés ----

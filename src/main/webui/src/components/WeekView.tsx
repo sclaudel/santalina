@@ -9,7 +9,7 @@ interface Props {
   weekStart: string;
   config: AppConfig;
   onSelectDay: (date: string) => void;
-  onAdd: (date: string) => void;
+  onAdd: (date: string, startTime?: string) => void;
 }
 
 const DAYS_FR = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
@@ -104,6 +104,7 @@ export function WeekView({ weekStart, config, onSelectDay, onAdd }: Props) {
                 currentUserRole={user?.role}
                 startHour={startHour}
                 endHour={endHour}
+                onClickTime={canEdit ? (time) => onAdd(d, time) : undefined}
               />
             </div>
           ))}

@@ -17,8 +17,9 @@ const EMPTY_FORM: CreateUserRequest = {
 export function AdminPage() {
   const [users, setUsers]                   = useState<User[]>([]);
   const [config, setConfig]                 = useState<AppConfig | null>(null);
-  const [newMax, setNewMax]                 = useState('');
-  const [newSiteName, setNewSiteName]       = useState('');
+  const [newMax, setNewMax]                       = useState('');
+  const [newSiteName, setNewSiteName]             = useState('');
+  const [newDefaultSlotHours, setNewDefaultSlotHours] = useState('2');
   const [msg, setMsg]                       = useState('');
   const [error, setError]                   = useState('');
   const [loading, setLoading]               = useState(false);
@@ -59,6 +60,7 @@ export function AdminPage() {
       setConfig(c);
       setNewMax(String(c.maxDivers));
       setNewSiteName(c.siteName ?? '');
+      setNewDefaultSlotHours(String(c.defaultSlotHours ?? 2));
       setSlotTypesText((c.slotTypes ?? []).join('\n'));
       setExclusiveSlotTypes(c.exclusiveSlotTypes ?? []);
       setClubsText((c.clubs ?? []).join('\n'));
@@ -88,6 +90,18 @@ export function AdminPage() {
       const updated = await adminService.updateSiteName(newSiteName);
       setConfig(updated);
       setMsg(`Nom du site mis à jour : "${updated.siteName}"`);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
+    } finally { setLoading(false); }
+  };
+
+  const handleUpdateDefaultSlotHours = async (e: React.FormEvent) => {
+    e.preventDefault(); setMsg(''); setError(''); setLoading(true);
+    try {
+      const updated = await adminService.updateDefaultSlotHours(Number(newDefaultSlotHours));
+      setConfig(updated);
+      setNewDefaultSlotHours(String(updated.defaultSlotHours));
+      setMsg(`Durée par défaut mise à jour : ${updated.defaultSlotHours}h`);
     } catch (err: unknown) {
       setError(getErrorMessage(err));
     } finally { setLoading(false); }
@@ -265,6 +279,7 @@ export function AdminPage() {
             </div>
             <div className="config-item"><span>Durée minimale</span><strong>{config.slotMinHours}h</strong></div>
             <div className="config-item"><span>Durée maximale</span><strong>{config.slotMaxHours}h</strong></div>
+            <div className="config-item"><span>Durée par défaut</span><strong>{config.defaultSlotHours}h</strong></div>
             <div className="config-item"><span>Résolution</span><strong>{config.slotResolutionMinutes} min</strong></div>
             <div className="config-item highlight"><span>Plongeurs max</span><strong>{config.maxDivers}</strong></div>
           </div>
@@ -283,6 +298,17 @@ export function AdminPage() {
               <label>Maximum de plongeurs</label>
               <input type="number" min={1} max={500} value={newMax}
                 onChange={e => setNewMax(e.target.value)} required />
+            </div>
+            <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? '...' : 'Mettre à jour'}</button>
+          </form>
+          <form onSubmit={handleUpdateDefaultSlotHours} className="form form-inline" style={{ flex: 1, minWidth: 260 }}>
+            <div className="form-group">
+              <label>Durée par défaut d'un créneau</label>
+              <select value={newDefaultSlotHours} onChange={e => setNewDefaultSlotHours(e.target.value)}>
+                {Array.from({ length: 12 }, (_, i) => i + 1).map(h => (
+                  <option key={h} value={h}>{h}h</option>
+                ))}
+              </select>
             </div>
             <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? '...' : 'Mettre à jour'}</button>
           </form>
