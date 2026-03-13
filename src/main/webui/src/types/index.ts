@@ -17,6 +17,7 @@ export interface LoginResponse {
   name: string;
   role: UserRole;
   userId: number;
+  roles?: UserRole[];
 }
 
 export interface CreateUserRequest {
@@ -140,4 +141,16 @@ export interface StatsResponse {
   byDayOfWeek: PeriodStat[];
   byLevel: GroupStat[];
   byDiveDirector: DpStat[];
+}
+
+export interface MyStatsResponse {
+  byMonth: PeriodStat[];
+  byYear: PeriodStat[];
+  byClub: GroupStat[];
+  byType: GroupStat[];
+  totalSlots: number;
+  totalDivers: number;
+  avgDiversPerSlot: number;
+  byDayOfWeek: PeriodStat[];
+  byLevel: GroupStat[];
 }

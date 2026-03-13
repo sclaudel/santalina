@@ -21,7 +21,7 @@ interface Props {
 }
 
 export function NavBar({ onNavigate, currentPage, selfRegistration = true }: Props) {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, hasRole } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -63,6 +63,14 @@ export function NavBar({ onNavigate, currentPage, selfRegistration = true }: Pro
             onClick={() => onNavigate('stats')}
           >
             📊 Statistiques
+          </button>
+        )}
+        {isAuthenticated && hasRole('DIVE_DIRECTOR') && (
+          <button
+            className={`nav-link ${currentPage === 'my-stats' ? 'active' : ''}`}
+            onClick={() => onNavigate('my-stats')}
+          >
+            📊 Mes statistiques
           </button>
         )}
         <button
@@ -136,6 +144,14 @@ export function NavBar({ onNavigate, currentPage, selfRegistration = true }: Pro
               onClick={() => { onNavigate('stats'); closeMobileMenu(); }}
             >
               📊 Statistiques
+            </button>
+          )}
+          {isAuthenticated && hasRole('DIVE_DIRECTOR') && (
+            <button
+              className={currentPage === 'my-stats' ? 'active' : ''}
+              onClick={() => { onNavigate('my-stats'); closeMobileMenu(); }}
+            >
+              📊 Mes statistiques
             </button>
           )}
           <button

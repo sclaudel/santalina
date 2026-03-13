@@ -27,10 +27,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const buildUser = (data: { userId: number; email: string; name: string; role: UserRole }): User => ({
+  const buildUser = (data: { userId: number; email: string; name: string; role: UserRole; roles?: UserRole[] }): User => ({
     id: data.userId, email: data.email, name: data.name,
     role: data.role,
-    roles: [data.role], // sera enrichi lors du prochain appel /me si besoin
+    roles: data.roles && data.roles.length > 0 ? data.roles : [data.role],
   });
 
   const login = async (email: string, password: string) => {

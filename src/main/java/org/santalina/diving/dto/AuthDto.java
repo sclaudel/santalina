@@ -26,7 +26,8 @@ public class AuthDto {
             String email,
             String name,
             UserRole role,
-            Long userId
+            Long userId,
+            java.util.Set<UserRole> roles
     ) {}
 
     public record PasswordResetRequest(

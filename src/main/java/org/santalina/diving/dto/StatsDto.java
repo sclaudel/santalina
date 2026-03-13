@@ -43,4 +43,16 @@ public class StatsDto {
             List<GroupStat>  byLevel,
             List<DpStat>     byDiveDirector
     ) {}
+
+    public record MyStatsResponse(
+            List<PeriodStat> byMonth,
+            List<PeriodStat> byYear,
+            List<GroupStat>  byClub,
+            List<GroupStat>  byType,
+            int              totalSlots,
+            int              totalDivers,
+            double           avgDiversPerSlot,
+            List<PeriodStat> byDayOfWeek,
+            List<GroupStat>  byLevel
+    ) {}
 }
