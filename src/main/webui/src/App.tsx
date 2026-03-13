@@ -67,7 +67,7 @@ function AppContent() {
         {currentPage === 'help' && <HelpPage />}
       </div>
       <footer className="app-footer">
-        <p>🌊 Santalina — Système de réservation © {new Date().getFullYear()}</p>
+        <p>🌊 Santalina — Système de réservation © {new Date().getFullYear()} · v{__APP_VERSION__}</p>
       </footer>
     </div>
   );
