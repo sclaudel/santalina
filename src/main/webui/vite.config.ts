@@ -6,7 +6,7 @@ import fs from 'fs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-const propsContent = fs.readFileSync(path.resolve(__dirname, '../../../../gradle.properties'), 'utf-8')
+const propsContent = fs.readFileSync(path.resolve(__dirname, '../../../gradle.properties'), 'utf-8')
 const versionMatch = propsContent.match(/appVersion=(.+)/)
 const appVersion = versionMatch ? versionMatch[1].trim() : '0.0.0'
 
