@@ -39,6 +39,9 @@ public class User extends PanacheEntityBase {
     @Column
     public String phone;
 
+    @Column(name = "license_number")
+    public String licenseNumber;
+
     /** Rôle principal (compatibilité ascendante) */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
