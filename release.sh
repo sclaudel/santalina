@@ -72,7 +72,7 @@ esac
 info "Nouvelle version : ${NEW_VERSION}"
 echo ""
 read -rp "Confirmer la release v${NEW_VERSION} ? [o/N] : " CONFIRM
-[[ "${CONFIRM,,}" == "o" ]] || { warn "Release annulée."; exit 0; }
+[[ "$(echo "$CONFIRM" | tr '[:upper:]' '[:lower:]')" == "o" ]] || { warn "Release annulée."; exit 0; }
 
 # ── Vérification de l'état Git ───────────────────────────────────────────────
 if ! git diff --quiet || ! git diff --cached --quiet; then
