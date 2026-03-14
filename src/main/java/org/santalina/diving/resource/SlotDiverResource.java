@@ -86,13 +86,15 @@ public class SlotDiverResource {
         }
 
         SlotDiver diver = new SlotDiver();
-        diver.slot       = slot;
-        diver.firstName  = request.firstName().trim();
-        diver.lastName   = request.lastName().trim().toUpperCase();
-        diver.level      = request.level();
-        diver.email      = request.email();
-        diver.phone      = request.phone();
-        diver.isDirector = request.isDirector();
+        diver.slot          = slot;
+        diver.firstName     = request.firstName().trim();
+        diver.lastName      = request.lastName().trim().toUpperCase();
+        diver.level         = request.level();
+        diver.email         = request.email();
+        diver.phone         = request.phone();
+        diver.isDirector    = request.isDirector();
+        diver.aptitudes     = request.aptitudes();
+        diver.licenseNumber = request.licenseNumber();
         diver.persist();
 
         return Response.status(201).entity(SlotDiverResponse.from(diver)).build();
@@ -139,12 +141,14 @@ public class SlotDiverResource {
             throw new BadRequestException("Un plongeur avec ce nom et prénom est déjà inscrit sur ce créneau");
         }
 
-        diver.firstName  = request.firstName().trim();
-        diver.lastName   = request.lastName().trim().toUpperCase();
-        diver.level      = request.level();
-        diver.email      = request.email();
-        diver.phone      = request.phone();
-        diver.isDirector = request.isDirector();
+        diver.firstName     = request.firstName().trim();
+        diver.lastName      = request.lastName().trim().toUpperCase();
+        diver.level         = request.level();
+        diver.email         = request.email();
+        diver.phone         = request.phone();
+        diver.isDirector    = request.isDirector();
+        diver.aptitudes     = request.aptitudes();
+        diver.licenseNumber = request.licenseNumber();
         diver.persist();
 
         return SlotDiverResponse.from(diver);

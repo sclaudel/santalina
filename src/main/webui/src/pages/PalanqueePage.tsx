@@ -35,27 +35,33 @@ interface DiverCardProps {
   onDragEnter: () => void;
   isDragging: boolean;
   onLevelChange: (diverId: number, newLevel: string) => void;
+  onAptitudesChange: (diverId: number, newAptitudes: string) => void;
   onTap?: (id: number) => void;
   isPicked?: boolean;
 }
 
-function DiverCard({ diver, onDragStart, onDragEnter, isDragging, onLevelChange, onTap, isPicked }: DiverCardProps) {
+const APTITUDES_OPTIONS = ['PE12','PE20','PE40','PE60','PA12','PA20','PA40','PA60','E1','E2','E3','E4','GP'];
+
+function DiverCard({ diver, onDragStart, onDragEnter, isDragging, onLevelChange, onAptitudesChange, onTap, isPicked }: DiverCardProps) {
   const [editingLevel, setEditingLevel] = useState(false);
+  const [editingAptitudes, setEditingAptitudes] = useState(false);
   const color = getLevelColor(diver.level);
 
   const levelOptions = Object.keys(LEVEL_COLORS);
   if (diver.level && !levelOptions.includes(diver.level)) levelOptions.unshift(diver.level);
 
+  const isEditing = editingLevel || editingAptitudes;
+
   return (
     <div
       className={`palanquee-postit${isDragging ? ' palanquee-postit--dragging' : ''}${isPicked ? ' palanquee-postit--picked' : ''}`}
-      draggable={!editingLevel && !onTap}
+      draggable={!isEditing && !onTap}
       onDragStart={e => {
-        if (editingLevel) { e.preventDefault(); return; }
+        if (isEditing) { e.preventDefault(); return; }
         e.dataTransfer.effectAllowed = 'move';
         onDragStart(diver.id);
       }}
-      onDragEnter={e => { e.stopPropagation(); if (!editingLevel) onDragEnter(); }}
+      onDragEnter={e => { e.stopPropagation(); if (!isEditing) onDragEnter(); }}
       onClick={() => onTap?.(diver.id)}
       style={{ borderTop: `4px solid ${color}` }}
       title={onTap ? 'Appuyer pour sélectionner' : 'Glisser pour réordonner ou changer de palanquée'}
@@ -86,6 +92,28 @@ function DiverCard({ diver, onDragStart, onDragEnter, isDragging, onLevelChange,
           {diver.level}
         </div>
       )}
+      {editingAptitudes ? (
+        <select
+          autoFocus
+          className="palanquee-postit-level-select"
+          value={diver.aptitudes ?? ''}
+          onBlur={() => setEditingAptitudes(false)}
+          onChange={e => { onAptitudesChange(diver.id, e.target.value); setEditingAptitudes(false); }}
+          onMouseDown={e => e.stopPropagation()}
+          onClick={e => e.stopPropagation()}
+        >
+          <option value="">— aucune —</option>
+          {APTITUDES_OPTIONS.map(a => <option key={a} value={a}>{a}</option>)}
+        </select>
+      ) : (
+        <div
+          className="palanquee-postit-aptitudes"
+          title="Double-clic pour modifier les aptitudes"
+          onDoubleClick={e => { e.stopPropagation(); setEditingAptitudes(true); }}
+        >
+          {diver.aptitudes ? diver.aptitudes : <span className="palanquee-postit-aptitudes--empty">aptitudes</span>}
+        </div>
+      )}
     </div>
   );
 }
@@ -106,6 +134,7 @@ interface DropZoneProps {
   isPool?: boolean;         // layout horizontal wrap (pool non-assignés)
   palanqueeIndex?: number;  // 1-based number for display
   onLevelChange: (diverId: number, newLevel: string) => void;
+  onAptitudesChange: (diverId: number, newAptitudes: string) => void;
   onTapDiver?: (id: number) => void;   // mobile: tap to pick
   mobilePickedId?: number | null;      // mobile: highlight picked diver
 }
@@ -114,7 +143,7 @@ function DropZone({
   palanqueeId, divers, draggedId, onDrop, onDragStart,
   onDragEnterCard, onDragEnterEnd, insertBeforeId,
   label, labelIcon, isUnassigned = false, isPool = false, palanqueeIndex,
-  onLevelChange, onTapDiver, mobilePickedId,
+  onLevelChange, onAptitudesChange, onTapDiver, mobilePickedId,
 }: DropZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -164,6 +193,7 @@ function DropZone({
               onDragEnter={() => onDragEnterCard(palanqueeId, d.id)}
               isDragging={d.id === draggedId}
               onLevelChange={onLevelChange}
+              onAptitudesChange={onAptitudesChange}
               onTap={onTapDiver}
               isPicked={mobilePickedId === d.id}
             />
@@ -269,6 +299,31 @@ export function PalanqueePage({ slotId, onBack }: Props) {
         email:      diver.email,
         phone:      diver.phone,
         isDirector: diver.isDirector,
+        aptitudes:  diver.aptitudes,
+        licenseNumber: diver.licenseNumber,
+      });
+    } catch {
+      await loadAll();
+    }
+  }, [allDivers, slotId, loadAll]);
+
+  // ── changement d'aptitudes inline sur le post-it ───────────────────────────
+  const handleAptitudesChange = useCallback(async (diverId: number, newAptitudes: string) => {
+    const diver = allDivers.find(d => d.id === diverId);
+    if (!diver || diver.aptitudes === newAptitudes) return;
+    const updater = (d: SlotDiver) => d.id === diverId ? { ...d, aptitudes: newAptitudes || undefined } : d;
+    setAllDivers(prev => prev.map(updater));
+    setPalanquees(prev => prev.map(p => ({ ...p, divers: p.divers.map(updater) })));
+    try {
+      await slotDiverService.update(slotId, diverId, {
+        firstName:  diver.firstName,
+        lastName:   diver.lastName,
+        level:      diver.level,
+        email:      diver.email,
+        phone:      diver.phone,
+        isDirector: diver.isDirector,
+        aptitudes:  newAptitudes || undefined,
+        licenseNumber: diver.licenseNumber,
       });
     } catch {
       await loadAll();
@@ -567,6 +622,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
           isUnassigned
           isPool
           onLevelChange={handleLevelChange}
+          onAptitudesChange={handleAptitudesChange}
           onTapDiver={isMobile ? handleMobilePick : undefined}
           mobilePickedId={isMobile ? mobilePickedId : undefined}
         />
@@ -653,6 +709,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                       labelIcon="🤿"
                       palanqueeIndex={idx + 1}
                       onLevelChange={handleLevelChange}
+                      onAptitudesChange={handleAptitudesChange}
                       onTapDiver={handleMobilePick}
                       mobilePickedId={mobilePickedId}
                     />
@@ -714,6 +771,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                 labelIcon="🤿"
                 palanqueeIndex={idx + 1}
                 onLevelChange={handleLevelChange}
+                onAptitudesChange={handleAptitudesChange}
               />
             </div>
           ))}

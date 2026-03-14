@@ -60,10 +60,11 @@ function fillHeader(
   pageNum: number,
   totalPages: number,
 ) {
-  const director = allDivers.find(d => d.isDirector);
-  const dirName  = director ? `${director.lastName.toUpperCase()} ${cap(director.firstName)}` : '';
-  const dirLevel = director?.level ?? '';
-  const dpInfo   = dirLevel ? `${dirName} (${dirLevel})` : dirName;
+  const director   = allDivers.find(d => d.isDirector);
+  const dirName    = director ? `${director.lastName.toUpperCase()} ${cap(director.firstName)}` : '';
+  const dirLevel   = director?.level ?? '';
+  const dirLicense = director?.licenseNumber ?? '';
+  const dpInfo     = [dirName, dirLevel, dirLicense].filter(Boolean).join(' - ');
 
   ws.getCell('B4').value =
     `Date : ${fmtDate(slot.slotDate)} ${slot.startTime}–${slot.endTime}\nClub : ${slot.club ?? ''}\nNom, Prénom et Brevet du DP : ${dpInfo}`;

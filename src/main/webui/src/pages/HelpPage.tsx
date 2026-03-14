@@ -160,6 +160,7 @@ export function HelpPage() {
           <ol>
             <li>Dans le formulaire d'ajout, cochez <strong>🎖 Directeur de plongée sur ce créneau</strong>.</li>
             <li>Renseignez son <strong>email</strong> et son <strong>téléphone</strong> (obligatoires pour le directeur).</li>
+            <li>Renseignez optionnellement son <strong>N° de licence</strong>. Si le directeur est sélectionné depuis la recherche d'utilisateurs, son numéro de licence est prérempli automatiquement depuis son profil.</li>
             <li>Cliquez sur <strong>Ajouter</strong>.</li>
           </ol>
           <h4>Sur un plongeur déjà inscrit</h4>
@@ -168,7 +169,7 @@ export function HelpPage() {
             <li>Cochez <strong>Directeur de plongée</strong> et renseignez les coordonnées.</li>
             <li>Cliquez sur <strong>Enregistrer</strong>.</li>
           </ol>
-          <div className="help-tip">💡 Les coordonnées du directeur (email, téléphone) sont exportées dans la fiche de sécurité Excel.</div>
+          <div className="help-tip">💡 Les coordonnées du directeur (email, téléphone, N° de licence) sont exportées dans la fiche de sécurité Excel. La licence s'affiche sur la même ligne que le nom et le niveau : ex. <code>DUPONT Jean - MF2 - 12345678A</code>.</div>
         </>
       ),
     },
@@ -205,6 +206,50 @@ export function HelpPage() {
             <li>Cliquez sur <strong>📊 Exporter fiche de sécurité (Excel)</strong>.</li>
             <li>Le fichier <code>.xlsx</code> est téléchargé automatiquement.</li>
           </ol>
+          <h4>Contenu de la fiche</h4>
+          <ul>
+            <li><strong>Cellule B4</strong> — Date, club et informations du directeur sur une seule ligne : <code>NOM Prénom - Niveau - N°Licence</code> (la licence n'apparaît que si elle est renseignée).</li>
+            <li><strong>Colonnes A–C</strong> — Nom, prénom et niveau de certification de chaque plongeur.</li>
+            <li><strong>Colonne D</strong> — Aptitudes du plongeur si elles ont été renseignées dans l'organisation des palanquées (ex : PE20, PA40, GP…).</li>
+            <li>Si des palanquées sont organisées, chaque palanquée est présentée dans un tableau séparé, sinon tous les plongeurs apparaissent dans un tableau unique.</li>
+          </ul>
+          <div className="help-tip">💡 Pour que la licence du DP apparaisse dans l'export, elle doit être saisie dans son profil utilisateur ou directement dans le formulaire DP sur le créneau.</div>
+        </>
+      ),
+    },
+
+    // ── ORGANISATION DES PALANQUÉES ──────────────────────────────────────────
+    {
+      id: 'palanquees',
+      icon: '🫧',
+      title: 'Organiser les palanquées',
+      roles: ['ADMIN', 'DIVE_DIRECTOR'],
+      content: (
+        <>
+          <p>La page d'organisation des palanquées permet de répartir les plongeurs inscrits sur un créneau en groupes de plongée, par glisser-déposer.</p>
+          <h4>Accéder à la page</h4>
+          <ol>
+            <li>Cliquez sur un créneau pour ouvrir le panneau de détails.</li>
+            <li>Cliquez sur <strong>🫧 Organiser les palanquées</strong>.</li>
+          </ol>
+          <h4>Répartir les plongeurs</h4>
+          <ul>
+            <li>Les plongeurs non affectés apparaissent dans la zone <strong>Non assignés</strong>.</li>
+            <li><strong>Glissez-déposez</strong> une fiche plongeur vers une palanquée existante ou vers <strong>+ Nouvelle palanquée</strong> pour créer un nouveau groupe.</li>
+            <li>Pour retirer un plongeur d'une palanquée, glissez-le vers la zone <strong>Non assignés</strong>.</li>
+          </ul>
+          <h4>Modifier le niveau d'un plongeur</h4>
+          <ul>
+            <li><strong>Double-cliquez</strong> sur le niveau affiché sur la fiche (ex : MF1) pour ouvrir un menu déroulant et le modifier.</li>
+          </ul>
+          <h4>Renseigner les aptitudes d'un plongeur</h4>
+          <ul>
+            <li><strong>Double-cliquez</strong> sur la zone aptitudes (sous le niveau, affichée en grisé « aptitudes » si vide) pour ouvrir un menu déroulant.</li>
+            <li>Sélectionnez parmi : <strong>PE12, PE20, PE40, PE60, PA12, PA20, PA40, PA60, E1, E2, E3, E4, GP</strong>.</li>
+            <li>Choisissez <strong>— aucune —</strong> pour effacer l'aptitude.</li>
+            <li>Les aptitudes saisies ici apparaissent dans la <strong>colonne D</strong> de la fiche de sécurité Excel exportée.</li>
+          </ul>
+          <div className="help-tip">💡 Les modifications de niveau et d'aptitudes sont enregistrées immédiatement sur le serveur.</div>
         </>
       ),
     },
@@ -253,6 +298,7 @@ export function HelpPage() {
             <li><strong>Prénom</strong> et <strong>Nom</strong> — affichés dans le menu et les listes de plongeurs.</li>
             <li><strong>Email</strong> — identifiant de connexion.</li>
             <li><strong>Téléphone</strong> — utilisé pour contacter le directeur de plongée.</li>
+            <li><strong>N° de licence fédérale</strong> — champ <em>optionnel</em>. S'il est renseigné, il sera automatiquement repris lorsque vous êtes sélectionné comme directeur de plongée sur un créneau, et apparaîtra dans la fiche de sécurité Excel.</li>
             <li><strong>Mot de passe</strong> — modifiable depuis cette page (champ optionnel, laissez vide pour ne pas le changer).</li>
           </ul>
           <p>Accès : cliquez sur votre nom dans la barre de navigation → <strong>👤 Mon profil</strong>.</p>
@@ -437,10 +483,10 @@ export function HelpPage() {
         items: [
           { type: 'paragraph' as const, text: 'Chaque créneau peut avoir un seul directeur de plongée. Il est identifié par le badge 🎖️ dans la liste des plongeurs.' },
           { type: 'h4' as const, text: 'Lors de l\'ajout d\'un plongeur' },
-          { type: 'ol' as const, items: ['Dans le formulaire d\'ajout, cochez 🎖 Directeur de plongée sur ce créneau.', 'Renseignez son email et son téléphone (obligatoires pour le directeur).', 'Cliquez sur Ajouter.'] },
+          { type: 'ol' as const, items: ['Dans le formulaire d\'ajout, cochez 🎖 Directeur de plongée sur ce créneau.', 'Renseignez son email et son téléphone (obligatoires).', 'Renseignez optionnellement son N° de licence (prérempli automatiquement si le DP est sélectionné depuis la recherche d\'utilisateurs).', 'Cliquez sur Ajouter.'] },
           { type: 'h4' as const, text: 'Sur un plongeur déjà inscrit' },
           { type: 'ol' as const, items: ['Dans la liste des plongeurs, cliquez sur l\'icône ✏️ à côté du nom.', 'Cochez Directeur de plongée et renseignez les coordonnées.', 'Cliquez sur Enregistrer.'] },
-          { type: 'tip' as const, text: 'Les coordonnées du directeur (email, téléphone) sont exportées dans la fiche de sécurité Excel.' },
+          { type: 'tip' as const, text: 'Les coordonnées du directeur (email, téléphone, N° licence) sont exportées dans la fiche de sécurité. La licence apparaît sur la ligne DP : NOM Prénom - Niveau - 12345678A.' },
         ],
       },
       {
@@ -455,6 +501,22 @@ export function HelpPage() {
         items: [
           { type: 'paragraph' as const, text: 'Une fiche de sécurité Excel peut être générée pour chaque créneau. Elle récapitule les plongeurs inscrits et les informations du directeur de plongée.' },
           { type: 'ol' as const, items: ['Cliquez sur le créneau pour ouvrir le panneau de détails.', 'Cliquez sur Exporter fiche de sécurité (Excel).', 'Le fichier .xlsx est téléchargé automatiquement.'] },
+          { type: 'h4' as const, text: 'Contenu de la fiche' },
+          { type: 'ul' as const, items: ['Cellule B4 — Date, club et infos DP : NOM Prénom - Niveau - N°Licence.', 'Colonnes A–C — Nom, prénom et niveau de chaque plongeur.', 'Colonne D — Aptitudes du plongeur (PE20, PA40, GP…) si renseignées dans l\'organisation des palanquées.', 'Si des palanquées sont organisées, chaque palanquée est dans un tableau séparé.'] },
+          { type: 'tip' as const, text: 'Pour que la licence du DP apparaisse, elle doit être saisie dans son profil ou dans le formulaire DP sur le créneau.' },
+        ],
+      },
+      {
+        icon: '🫧', title: 'Organiser les palanquées',
+        items: [
+          { type: 'paragraph' as const, text: 'La page d\'organisation des palanquées permet de répartir les plongeurs en groupes de plongée par glisser-déposer.' },
+          { type: 'h4' as const, text: 'Accéder à la page' },
+          { type: 'ol' as const, items: ['Cliquez sur un créneau pour ouvrir le panneau de détails.', 'Cliquez sur Organiser les palanquées.'] },
+          { type: 'h4' as const, text: 'Répartir les plongeurs' },
+          { type: 'ul' as const, items: ['Glissez-déposez une fiche vers une palanquée ou vers "+ Nouvelle palanquée".', 'Pour retirer un plongeur d\'une palanquée, glissez-le vers la zone Non assignés.'] },
+          { type: 'h4' as const, text: 'Modifier le niveau ou les aptitudes' },
+          { type: 'ul' as const, items: ['Double-cliquez sur le niveau affiché pour le modifier.', 'Double-cliquez sur la zone aptitudes pour sélectionner : PE12–PE60, PA12–PA60, E1–E4, GP.', 'Les aptitudes apparaissent en colonne D de l\'export Excel.'] },
+          { type: 'tip' as const, text: 'Les modifications de niveau et d\'aptitudes sont enregistrées immédiatement sur le serveur.' },
         ],
       },
     ] : []),
@@ -473,7 +535,7 @@ export function HelpPage() {
       icon: '👤', title: 'Mon profil',
       items: [
         { type: 'paragraph', text: 'La page Mon profil vous permet de consulter et modifier vos informations personnelles.' },
-        { type: 'ul', items: ['Nom et email — affichés dans le menu et les listes de plongeurs.', 'Téléphone — utilisé pour contacter le directeur de plongée.', 'Mot de passe — modifiable depuis cette page.'] },
+        { type: 'ul', items: ['Nom et email — affichés dans le menu et les listes de plongeurs.', 'Téléphone — utilisé pour contacter le directeur de plongée.', 'N° de licence fédérale (optionnel) — repris automatiquement si vous êtes désigné DP sur un créneau, et exporté dans la fiche de sécurité.', 'Mot de passe — modifiable depuis cette page.'] },
         { type: 'paragraph', text: 'Accès : cliquez sur votre nom dans la barre de navigation → Mon profil.' },
       ],
     },

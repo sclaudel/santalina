@@ -835,6 +835,19 @@ body {
   /* L'en-tête des colonnes semaine reste collant sous la navbar */
   .week-header-row { position: sticky; top: 60px; z-index: 20; }
 
+  /* Vue semaine compressée : réduire l'axe horaire et forcer les colonnes à tenir en largeur */
+  .week-time-spacer { width: 32px; min-width: 32px; }
+  .week-time-axis   { width: 32px; min-width: 32px; }
+  .week-time-label  { right: 2px; font-size: 9px; }
+  .week-day-col-header {
+    min-width: 0; overflow: hidden; padding: 6px 2px;
+  }
+  .week-col-dayname { font-size: 9px; }
+  .week-col-daynum  { font-size: 15px; }
+  .week-col-daynum.today-num { width: 24px; height: 24px; font-size: 12px; }
+  .week-col-count   { font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .week-day-column  { min-width: 0; }
+
   /* Contrôles vue */
   .view-controls { gap: 8px; flex-wrap: wrap; }
   .period-label { font-size: 13px; }
@@ -1433,6 +1446,18 @@ body {
   padding: 1px 2px;
   background: #fff;
   cursor: pointer;
+}
+.palanquee-postit-aptitudes {
+  font-size: 10px;
+  margin-top: 2px;
+  color: #0369a1;
+  font-weight: 600;
+  cursor: default;
+}
+.palanquee-postit-aptitudes--empty {
+  color: #9ca3af;
+  font-style: italic;
+  font-weight: 400;
 }
 .palanquee-postit-director { font-size: 12px; }
 

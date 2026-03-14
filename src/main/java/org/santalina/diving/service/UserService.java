@@ -30,9 +30,10 @@ public class UserService {
     public UserResponse updateProfile(String email, UpdateProfileRequest request) {
         User user = User.findByEmail(email);
         if (user == null) throw new NotFoundException("Utilisateur non trouvé");
-        user.firstName = request.firstName().trim();
-        user.lastName  = request.lastName().trim().toUpperCase();
-        user.phone = request.phone();
+        user.firstName     = request.firstName().trim();
+        user.lastName      = request.lastName().trim().toUpperCase();
+        user.phone         = request.phone();
+        user.licenseNumber = request.licenseNumber() != null ? request.licenseNumber().trim() : null;
         user.persist();
         return UserResponse.from(user);
     }
@@ -91,6 +92,7 @@ public class UserService {
         user.firstName    = request.firstName().trim();
         user.lastName     = request.lastName().trim().toUpperCase();
         user.phone        = request.phone();
+        user.licenseNumber = request.licenseNumber() != null ? request.licenseNumber().trim() : null;
         user.passwordHash = PasswordUtil.hash(request.password());
         user.roles        = new HashSet<>(request.roles());
         user.role         = user.primaryRole();
@@ -125,6 +127,7 @@ public class UserService {
         user.firstName = request.firstName().trim();
         user.lastName  = request.lastName().trim().toUpperCase();
         user.phone     = request.phone();
+        user.licenseNumber = request.licenseNumber() != null ? request.licenseNumber().trim() : null;
         user.persist();
         return UserResponse.from(user);
     }

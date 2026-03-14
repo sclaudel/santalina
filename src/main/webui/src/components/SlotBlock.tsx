@@ -65,6 +65,7 @@ const TOOLTIP_WIDTH = 320;
 const EMPTY_FORM: SlotDiverRequest = {
   firstName: '', lastName: '', level: 'Inconnu',
   email: '', phone: '', isDirector: false,
+  aptitudes: undefined, licenseNumber: undefined,
 };
 
 function getLevelColor(level: string): string {
@@ -322,7 +323,8 @@ export function SlotBlock({
   const startEdit = (d: SlotDiver) => {
     setEditingDiver(d);
     setEditForm({ firstName: d.firstName, lastName: d.lastName, level: d.level,
-                  email: d.email ?? '', phone: d.phone ?? '', isDirector: d.isDirector });
+                  email: d.email ?? '', phone: d.phone ?? '', isDirector: d.isDirector,
+                  aptitudes: d.aptitudes, licenseNumber: d.licenseNumber });
     setEditSearchQuery(''); setEditSearchResults([]);
     setEditError('');
     setShowDiverForm(false);
@@ -330,13 +332,13 @@ export function SlotBlock({
 
   /** Pré-remplit le formulaire d'ajout depuis un utilisateur trouvé */
   const selectUserForAdd = (u: UserSearchResult) => {
-    setForm(f => ({ ...f, firstName: u.firstName, lastName: u.lastName, email: u.email ?? '', phone: u.phone ?? '' }));
+    setForm(f => ({ ...f, firstName: u.firstName, lastName: u.lastName, email: u.email ?? '', phone: u.phone ?? '', licenseNumber: u.licenseNumber }));
     setSearchQuery(''); setSearchResults([]);
   };
 
   /** Pré-remplit le formulaire d'édition depuis un utilisateur trouvé */
   const selectUserForEdit = (u: UserSearchResult) => {
-    setEditForm(f => ({ ...f, firstName: u.firstName, lastName: u.lastName, email: u.email ?? '', phone: u.phone ?? '' }));
+    setEditForm(f => ({ ...f, firstName: u.firstName, lastName: u.lastName, email: u.email ?? '', phone: u.phone ?? '', licenseNumber: u.licenseNumber }));
     setEditSearchQuery(''); setEditSearchResults([]);
   };
 
@@ -645,6 +647,10 @@ export function SlotBlock({
                             <input type="tel" placeholder="Téléphone *" required
                               value={editForm.phone ?? ''}
                               onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))} />
+                            <input type="text" placeholder="N° de licence (optionnel)"
+                              value={editForm.licenseNumber ?? ''}
+                              maxLength={50}
+                              onChange={e => setEditForm(f => ({ ...f, licenseNumber: e.target.value || undefined }))} />
                           </div>
                         )}
                         <div className="diver-form-actions">
@@ -738,6 +744,9 @@ export function SlotBlock({
                     onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
                   <input type="tel" placeholder="Téléphone *" value={form.phone ?? ''} required
                     onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
+                  <input type="text" placeholder="N° de licence (optionnel)" value={form.licenseNumber ?? ''}
+                    maxLength={50}
+                    onChange={e => setForm(f => ({ ...f, licenseNumber: e.target.value || undefined }))} />
                 </div>
               )}
               <div className="diver-form-actions">

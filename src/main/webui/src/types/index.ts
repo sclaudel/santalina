@@ -9,6 +9,7 @@ export interface User {
   lastName: string;
   name: string;
   phone?: string;
+  licenseNumber?: string;
   role: UserRole;
   roles: UserRole[];
 }
@@ -29,6 +30,7 @@ export interface CreateUserRequest {
   lastName: string;
   password: string;
   phone?: string;
+  licenseNumber?: string;
   roles: UserRole[];
 }
 
@@ -37,6 +39,7 @@ export interface UpdateUserAdminRequest {
   firstName: string;
   lastName: string;
   phone?: string;
+  licenseNumber?: string;
 }
 
 export interface UserSearchResult {
@@ -46,6 +49,7 @@ export interface UserSearchResult {
   name: string;
   email: string;
   phone?: string;
+  licenseNumber?: string;
 }
 
 export interface SlotDiver {
@@ -56,6 +60,8 @@ export interface SlotDiver {
   email?: string;
   phone?: string;
   isDirector: boolean;
+  aptitudes?: string;
+  licenseNumber?: string;
 }
 
 export interface SlotDiverRequest {
@@ -65,6 +71,8 @@ export interface SlotDiverRequest {
   email?: string;
   phone?: string;
   isDirector: boolean;
+  aptitudes?: string;
+  licenseNumber?: string;
 }
 
 export interface DiveSlot {
