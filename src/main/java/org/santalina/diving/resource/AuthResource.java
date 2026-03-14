@@ -2,6 +2,7 @@ package org.santalina.diving.resource;
 
 import org.santalina.diving.dto.AuthDto.*;
 import org.santalina.diving.service.AuthService;
+import org.santalina.diving.service.CaptchaService;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -22,7 +23,17 @@ public class AuthResource {
     AuthService authService;
 
     @Inject
+    CaptchaService captchaService;
+
+    @Inject
     JsonWebToken jwt;
+
+    @GET
+    @Path("/captcha")
+    @PermitAll
+    public CaptchaService.CaptchaChallenge getCaptcha() {
+        return captchaService.generate();
+    }
 
     @POST
     @Path("/register")

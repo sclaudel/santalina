@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { authService } from '../services/authService';
 
 interface Props {
   onClose: () => void;
@@ -17,6 +18,32 @@ export function LoginModal({ onClose, selfRegistration = true }: Props) {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Captcha
+  const [captchaId, setCaptchaId] = useState('');
+  const [captchaImage, setCaptchaImage] = useState('');
+  const [captchaAnswer, setCaptchaAnswer] = useState('');
+  const [captchaLoading, setCaptchaLoading] = useState(false);
+
+  const loadCaptcha = useCallback(async () => {
+    setCaptchaLoading(true);
+    setCaptchaAnswer('');
+    try {
+      const data = await authService.getCaptcha();
+      setCaptchaId(data.id);
+      setCaptchaImage(data.image);
+    } catch {
+      // silently ignore, user can retry
+    } finally {
+      setCaptchaLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (mode === 'register') {
+      loadCaptcha();
+    }
+  }, [mode, loadCaptcha]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(''); setSuccess(''); setLoading(true);
@@ -25,7 +52,7 @@ export function LoginModal({ onClose, selfRegistration = true }: Props) {
         await login(email, password);
         onClose();
       } else if (mode === 'register') {
-        await register(email, password, name, phone);
+        await register(email, password, name, phone, captchaId, captchaAnswer);
         onClose();
       } else {
         const res = await fetch('/api/auth/password-reset/request', {
@@ -38,6 +65,7 @@ export function LoginModal({ onClose, selfRegistration = true }: Props) {
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       setError(msg || 'Une erreur est survenue');
+      if (mode === 'register') loadCaptcha();
     } finally {
       setLoading(false);
     }
@@ -88,6 +116,25 @@ export function LoginModal({ onClose, selfRegistration = true }: Props) {
               <label>Mot de passe *</label>
               <input type="password" value={password} onChange={e => setPassword(e.target.value)}
                 required minLength={6} placeholder="••••••" />
+            </div>
+          )}
+
+          {/* Captcha image */}
+          {mode === 'register' && (
+            <div className="form-group">
+              <label>Vérification *</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                {captchaImage
+                  ? <img src={captchaImage} alt="Code de vérification" style={{ border: '1px solid #ccd5de', borderRadius: '4px', height: '60px' }} />
+                  : <div style={{ width: '200px', height: '60px', background: '#eef2f7', borderRadius: '4px' }} />}
+                <button type="button" onClick={loadCaptcha} disabled={captchaLoading}
+                  title="Nouveau code" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', padding: '4px' }}>
+                  ↺
+                </button>
+              </div>
+              <input type="text" value={captchaAnswer} onChange={e => setCaptchaAnswer(e.target.value)}
+                required placeholder="Tapez les caractères affichés" maxLength={10}
+                autoComplete="off" autoCorrect="off" autoCapitalize="characters" spellCheck={false} />
             </div>
           )}
 

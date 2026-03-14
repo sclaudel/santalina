@@ -36,11 +36,19 @@ public class AuthService {
     @Inject
     PasswordResetMailer mailer;
 
+    @Inject
+    CaptchaService captchaService;
+
     @Transactional
     public LoginResponse register(RegisterRequest request) {
         if (!configService.isSelfRegistration()) {
             LOG.warnf("Tentative d'inscription refusée (inscriptions désactivées) pour %s", request.email());
             throw new BadRequestException("Les inscriptions sont désactivées");
+        }
+        // Vérification du captcha
+        if (!captchaService.verify(request.captchaId(), request.captchaAnswer())) {
+            LOG.warnf("Tentative d'inscription bloquée (captcha invalide) pour %s", request.email());
+            throw new BadRequestException("Code de vérification incorrect");
         }
         if (User.findByEmail(request.email()) != null) {
             LOG.warnf("Tentative d'inscription avec un email déjà utilisé : %s", request.email());
