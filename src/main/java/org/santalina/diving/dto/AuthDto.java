@@ -18,7 +18,9 @@ public class AuthDto {
             @NotBlank @Size(min = 6, max = 100) String password,
             @NotBlank @Size(min = 2, max = 100) String name,
             @NotBlank @Pattern(regexp = "^[+]?[0-9 .\\-()]{7,20}$", message = "Numéro de téléphone invalide")
-            String phone
+            String phone,
+            @NotBlank String captchaId,
+            @NotBlank String captchaAnswer
     ) {}
 
     public record LoginResponse(

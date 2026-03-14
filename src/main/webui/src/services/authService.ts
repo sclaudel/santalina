@@ -7,8 +7,13 @@ export const authService = {
     return res.data;
   },
 
-  async register(email: string, password: string, name: string, phone: string): Promise<LoginResponse> {
-    const res = await api.post<LoginResponse>('/auth/register', { email, password, name, phone });
+  async getCaptcha(): Promise<{ id: string; image: string }> {
+    const res = await api.get<{ id: string; image: string }>('/auth/captcha');
+    return res.data;
+  },
+
+  async register(email: string, password: string, name: string, phone: string, captchaId: string, captchaAnswer: string): Promise<LoginResponse> {
+    const res = await api.post<LoginResponse>('/auth/register', { email, password, name, phone, captchaId, captchaAnswer });
     return res.data;
   },
 
