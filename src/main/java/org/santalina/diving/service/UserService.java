@@ -92,6 +92,7 @@ public class UserService {
         user.firstName    = request.firstName().trim();
         user.lastName     = request.lastName().trim().toUpperCase();
         user.phone        = request.phone();
+        user.licenseNumber = request.licenseNumber() != null ? request.licenseNumber().trim() : null;
         user.passwordHash = PasswordUtil.hash(request.password());
         user.roles        = new HashSet<>(request.roles());
         user.role         = user.primaryRole();
@@ -126,6 +127,7 @@ public class UserService {
         user.firstName = request.firstName().trim();
         user.lastName  = request.lastName().trim().toUpperCase();
         user.phone     = request.phone();
+        user.licenseNumber = request.licenseNumber() != null ? request.licenseNumber().trim() : null;
         user.persist();
         return UserResponse.from(user);
     }

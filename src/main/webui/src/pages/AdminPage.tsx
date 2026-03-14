@@ -11,7 +11,7 @@ const ALL_ROLES: { value: UserRole; label: string }[] = [
 ];
 
 const EMPTY_FORM: CreateUserRequest = {
-  email: '', firstName: '', lastName: '', password: '', phone: '', roles: ['DIVER'],
+  email: '', firstName: '', lastName: '', password: '', phone: '', licenseNumber: '', roles: ['DIVER'],
 };
 
 export function AdminPage() {
@@ -28,7 +28,7 @@ export function AdminPage() {
   const [createError, setCreateError]       = useState('');
   const [createLoading, setCreateLoading]   = useState(false);
   const [editingUserId, setEditingUserId]   = useState<number | null>(null);
-  const [editForm, setEditForm]             = useState<UpdateUserAdminRequest>({ email: '', firstName: '', lastName: '', phone: '' });
+  const [editForm, setEditForm]             = useState<UpdateUserAdminRequest>({ email: '', firstName: '', lastName: '', phone: '', licenseNumber: '' });
   const [editError, setEditError]           = useState('');
   const [editLoading, setEditLoading]       = useState(false);
 
@@ -234,7 +234,7 @@ export function AdminPage() {
   const startEditUser = (user: User) => {
     setShowCreateForm(false);
     setEditingUserId(user.id);
-    setEditForm({ email: user.email, firstName: user.firstName, lastName: user.lastName, phone: user.phone ?? '' });
+    setEditForm({ email: user.email, firstName: user.firstName, lastName: user.lastName, phone: user.phone ?? '', licenseNumber: user.licenseNumber ?? '' });
     setEditError('');
   };
 
@@ -248,7 +248,7 @@ export function AdminPage() {
 
   const cancelEditUser = () => {
     setEditingUserId(null);
-    setEditForm({ email: '', firstName: '', lastName: '', phone: '' });
+    setEditForm({ email: '', firstName: '', lastName: '', phone: '', licenseNumber: '' });
     setEditError('');
   };
 
@@ -583,6 +583,11 @@ export function AdminPage() {
                   onChange={e => setCreateForm(f => ({ ...f, phone: e.target.value }))} />
               </div>
               <div className="form-group">
+                <label>N° de licence fédérale</label>
+                <input type="text" placeholder="Ex : 12345678A" value={createForm.licenseNumber ?? ''}
+                  onChange={e => setCreateForm(f => ({ ...f, licenseNumber: e.target.value }))} maxLength={50} />
+              </div>
+              <div className="form-group">
                 <label>Mot de passe *</label>
                 <input type="password" placeholder="Min. 6 caractères" value={createForm.password}
                   onChange={e => setCreateForm(f => ({ ...f, password: e.target.value }))}
@@ -638,6 +643,11 @@ export function AdminPage() {
               <label>Téléphone</label>
               <input type="tel" placeholder="+33 6 12 34 56 78" value={editForm.phone ?? ''}
                 onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))} />
+            </div>
+            <div className="form-group">
+              <label>N° de licence fédérale</label>
+              <input type="text" placeholder="Ex : 12345678A" value={editForm.licenseNumber ?? ''}
+                onChange={e => setEditForm(f => ({ ...f, licenseNumber: e.target.value }))} maxLength={50} />
             </div>
             <div className="form-actions">
               <button type="button" className="btn btn-outline" onClick={cancelEditUser}>Annuler</button>

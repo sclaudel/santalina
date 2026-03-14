@@ -30,6 +30,7 @@ export interface CreateUserRequest {
   lastName: string;
   password: string;
   phone?: string;
+  licenseNumber?: string;
   roles: UserRole[];
 }
 
@@ -38,6 +39,7 @@ export interface UpdateUserAdminRequest {
   firstName: string;
   lastName: string;
   phone?: string;
+  licenseNumber?: string;
 }
 
 export interface UserSearchResult {
