@@ -9,6 +9,7 @@ import { MyStatsPage } from './pages/MyStatsPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { ActivatePage } from './pages/ActivatePage';
 import { HelpPage } from './pages/HelpPage';
+import { PalanqueePage } from './pages/PalanqueePage';
 import { adminService } from './services/adminService';
 import type { AppConfig } from './types';
 import './App.css';
@@ -33,6 +34,7 @@ function AppContent() {
     if (page === 'stats' && user?.role !== 'ADMIN') return;
     if (page === 'my-stats' && !hasRole('DIVE_DIRECTOR')) return;
     if (page === 'profile' && !isAuthenticated) return;
+    if (page.startsWith('palanquee-') && !hasRole('ADMIN') && !hasRole('DIVE_DIRECTOR')) return;
     setCurrentPage(page);
   };
 
@@ -65,12 +67,18 @@ function AppContent() {
     <div className="app">
       <NavBar onNavigate={navigate} currentPage={currentPage} selfRegistration={selfRegistration} />
       <div className="app-content">
-        {currentPage === 'calendar' && <CalendarPage />}
+        {currentPage === 'calendar' && <CalendarPage onNavigate={navigate} />}
         {currentPage === 'profile' && isAuthenticated && <ProfilePage />}
         {currentPage === 'admin' && user?.role === 'ADMIN' && <AdminPage />}
         {currentPage === 'stats' && user?.role === 'ADMIN' && <StatsPage />}
         {currentPage === 'my-stats' && hasRole('DIVE_DIRECTOR') && <MyStatsPage />}
         {currentPage === 'help' && <HelpPage />}
+        {currentPage.startsWith('palanquee-') && (hasRole('ADMIN') || hasRole('DIVE_DIRECTOR')) && (
+          <PalanqueePage
+            slotId={parseInt(currentPage.split('-')[1], 10)}
+            onBack={() => navigate('calendar')}
+          />
+        )}
       </div>
       <footer className="app-footer">
         <p>🌊 Santalina — Système de réservation © {new Date().getFullYear()} · v{__APP_VERSION__}</p>

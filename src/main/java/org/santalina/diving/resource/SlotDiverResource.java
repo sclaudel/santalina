@@ -87,8 +87,8 @@ public class SlotDiverResource {
 
         SlotDiver diver = new SlotDiver();
         diver.slot       = slot;
-        diver.firstName  = request.firstName();
-        diver.lastName   = request.lastName();
+        diver.firstName  = request.firstName().trim();
+        diver.lastName   = request.lastName().trim().toUpperCase();
         diver.level      = request.level();
         diver.email      = request.email();
         diver.phone      = request.phone();
@@ -139,8 +139,8 @@ public class SlotDiverResource {
             throw new BadRequestException("Un plongeur avec ce nom et prénom est déjà inscrit sur ce créneau");
         }
 
-        diver.firstName  = request.firstName();
-        diver.lastName   = request.lastName();
+        diver.firstName  = request.firstName().trim();
+        diver.lastName   = request.lastName().trim().toUpperCase();
         diver.level      = request.level();
         diver.email      = request.email();
         diver.phone      = request.phone();

@@ -161,3 +161,10 @@ export interface MyStatsResponse {
   byDayOfWeek: PeriodStat[];
   byLevel: GroupStat[];
 }
+
+export interface Palanquee {
+  id: number;
+  name: string;
+  position: number;
+  divers: SlotDiver[];
+}

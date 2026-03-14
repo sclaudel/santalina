@@ -25,6 +25,7 @@ interface Props {
   height: number;
   onDelete: (id: number) => void;
   onRefresh: () => void;
+  onOpenPalanquees?: (slotId: number) => void;
   canEdit: boolean;
   currentUserId?: number;
   currentUserRole?: string;
@@ -88,7 +89,7 @@ function timeOptions(resolutionMinutes: number): string[] {
 }
 
 export function SlotBlock({
-  slot, height, onDelete, onRefresh,
+  slot, height, onDelete, onRefresh, onOpenPalanquees,
   canEdit, currentUserId, currentUserRole, maxDivers = 25, config,
 }: Props) {
   const [showTooltip, setShowTooltip]         = useState(false);
@@ -756,6 +757,17 @@ export function SlotBlock({
       {canEditThisSlot && (
         <button className="btn-export-fiche" onClick={handleExportFiche}>
           📊 Exporter fiche de sécurité (Excel)
+        </button>
+      )}
+
+      {/* Bouton organisation des palanquées */}
+      {canEditThisSlot && (
+        <button
+          className="btn-export-fiche btn-palanquees"
+          onClick={() => { closeTooltip(); onOpenPalanquees?.(slot.id); }}
+          title="Organiser les plongeurs en palanquées"
+        >
+          🤿 Organiser les palanquées
         </button>
       )}
 

@@ -61,8 +61,8 @@ public class AuthService {
         String activationToken = UUID.randomUUID().toString();
         User user = new User();
         user.email                 = request.email();
-        user.firstName             = request.firstName();
-        user.lastName              = request.lastName();
+        user.firstName             = request.firstName().trim();
+        user.lastName              = request.lastName().trim().toUpperCase();
         user.phone                 = request.phone();
         user.passwordHash          = null;
         user.role                  = UserRole.DIVER;
