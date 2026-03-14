@@ -15,18 +15,26 @@ public class AuthDto {
 
     public record RegisterRequest(
             @NotBlank @Email String email,
-            @NotBlank @Size(min = 6, max = 100) String password,
-            @NotBlank @Size(min = 2, max = 100) String name,
+            @NotBlank @Size(min = 2, max = 100) String firstName,
+            @NotBlank @Size(min = 2, max = 100) String lastName,
             @NotBlank @Pattern(regexp = "^[+]?[0-9 .\\-()]{7,20}$", message = "Numéro de téléphone invalide")
             String phone,
             @NotBlank String captchaId,
             @NotBlank String captchaAnswer
     ) {}
 
+    public record RegisterResponse(String message) {}
+
+    public record ActivateAccountRequest(
+            @NotBlank String token,
+            @NotBlank @Size(min = 6, max = 100) String password
+    ) {}
+
     public record LoginResponse(
             String token,
             String email,
-            String name,
+            String firstName,
+            String lastName,
             UserRole role,
             Long userId,
             java.util.Set<UserRole> roles

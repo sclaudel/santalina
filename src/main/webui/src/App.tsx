@@ -7,6 +7,7 @@ import { AdminPage } from './pages/AdminPage';
 import { StatsPage } from './pages/StatsPage';
 import { MyStatsPage } from './pages/MyStatsPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
+import { ActivatePage } from './pages/ActivatePage';
 import { HelpPage } from './pages/HelpPage';
 import { adminService } from './services/adminService';
 import type { AppConfig } from './types';
@@ -16,8 +17,9 @@ function AppContent() {
   const { isAuthenticated, user, hasRole } = useAuth();
 
   const urlParams = new URLSearchParams(window.location.search);
-  const resetToken = urlParams.get('token');
-  const isResetPage = window.location.pathname === '/reset-password' && resetToken;
+  const token = urlParams.get('token');
+  const isResetPage = window.location.pathname === '/reset-password' && token;
+  const isActivatePage = window.location.pathname === '/activate' && token;
 
   const [currentPage, setCurrentPage] = useState<string>('calendar');
   const [appConfig, setAppConfig] = useState<AppConfig | null>(null);
@@ -35,7 +37,11 @@ function AppContent() {
   };
 
   if (isResetPage) {
-    return <ResetPasswordPage token={resetToken!} />;
+    return <ResetPasswordPage token={token!} />;
+  }
+
+  if (isActivatePage) {
+    return <ActivatePage token={token!} />;
   }
 
   // Accès public désactivé : afficher un écran de connexion si non connecté

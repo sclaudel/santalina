@@ -4,6 +4,7 @@ import org.santalina.diving.config.DivingConfig;
 import org.santalina.diving.domain.User;
 import org.santalina.diving.domain.UserRole;
 import org.santalina.diving.dto.AuthDto.*;
+import org.santalina.diving.mail.ActivationMailer;
 import org.santalina.diving.mail.PasswordResetMailer;
 import org.santalina.diving.security.JwtUtil;
 import org.santalina.diving.security.PasswordUtil;
@@ -37,10 +38,13 @@ public class AuthService {
     PasswordResetMailer mailer;
 
     @Inject
+    ActivationMailer activationMailer;
+
+    @Inject
     CaptchaService captchaService;
 
     @Transactional
-    public LoginResponse register(RegisterRequest request) {
+    public RegisterResponse register(RegisterRequest request) {
         if (!configService.isSelfRegistration()) {
             LOG.warnf("Tentative d'inscription refusée (inscriptions désactivées) pour %s", request.email());
             throw new BadRequestException("Les inscriptions sont désactivées");
@@ -54,26 +58,59 @@ public class AuthService {
             LOG.warnf("Tentative d'inscription avec un email déjà utilisé : %s", request.email());
             throw new BadRequestException("Un compte existe déjà avec cet email");
         }
+        String activationToken = UUID.randomUUID().toString();
         User user = new User();
-        user.email        = request.email();
-        user.name         = request.name();
-        user.phone        = request.phone();
-        user.passwordHash = PasswordUtil.hash(request.password());
-        user.role         = UserRole.DIVER;
-        user.roles        = new java.util.HashSet<>();
+        user.email                 = request.email();
+        user.firstName             = request.firstName();
+        user.lastName              = request.lastName();
+        user.phone                 = request.phone();
+        user.passwordHash          = null;
+        user.role                  = UserRole.DIVER;
+        user.roles                 = new java.util.HashSet<>();
         user.roles.add(UserRole.DIVER);
+        user.activated             = false;
+        user.activationToken       = activationToken;
+        user.activationTokenExpiry = LocalDateTime.now().plusHours(24);
         user.persist();
-        LOG.infof("Nouvel utilisateur inscrit : %s", user.email);
+        LOG.infof("Nouveau compte créé, en attente d'activation : %s", user.email);
+        activationMailer.sendActivationEmail(user.email, user.fullName(), activationToken);
+        return new RegisterResponse("Un email d'activation a été envoyé à " + user.email
+                + ". Cliquez sur le lien pour choisir votre mot de passe.");
+    }
+
+    @Transactional
+    public LoginResponse activate(ActivateAccountRequest request) {
+        User user = User.findByActivationToken(request.token());
+        if (user == null) {
+            LOG.warnf("Tentative d'activation avec un token invalide");
+            throw new NotFoundException("Lien d'activation invalide ou déjà utilisé");
+        }
+        if (user.activationTokenExpiry == null || user.activationTokenExpiry.isBefore(LocalDateTime.now())) {
+            LOG.warnf("Token d'activation expiré pour : %s", user.email);
+            throw new BadRequestException("Lien d'activation expiré. Veuillez vous réinscrire.");
+        }
+        user.passwordHash          = PasswordUtil.hash(request.password());
+        user.activated             = true;
+        user.activationToken       = null;
+        user.activationTokenExpiry = null;
+        user.persist();
+        LOG.infof("Compte activé : %s", user.email);
         String token = jwtUtil.generateToken(user);
-        return new LoginResponse(token, user.email, user.name, user.primaryRole(), user.id, user.roles);
+        return new LoginResponse(token, user.email, user.firstName, user.lastName,
+                user.primaryRole(), user.id, user.roles);
     }
 
     @Transactional
     public LoginResponse login(LoginRequest request) {
         User user = User.findByEmail(request.email());
-        if (user == null || !PasswordUtil.verify(request.password(), user.passwordHash)) {
+        if (user == null || user.passwordHash == null
+                || !PasswordUtil.verify(request.password(), user.passwordHash)) {
             LOG.warnf("Échec de connexion pour : %s", request.email());
             throw new NotAuthorizedException("Email ou mot de passe incorrect");
+        }
+        if (!user.activated) {
+            LOG.warnf("Tentative de connexion d'un compte non activé : %s", request.email());
+            throw new BadRequestException("Compte non activé. Vérifiez votre email.");
         }
         // Synchroniser roles depuis role si vide (migration)
         if (user.roles == null || user.roles.isEmpty()) {
@@ -83,7 +120,8 @@ public class AuthService {
         }
         LOG.infof("Connexion réussie pour : %s", user.email);
         String token = jwtUtil.generateToken(user);
-        return new LoginResponse(token, user.email, user.name, user.primaryRole(), user.id, user.roles);
+        return new LoginResponse(token, user.email, user.firstName, user.lastName,
+                user.primaryRole(), user.id, user.roles);
     }
 
     @Transactional
@@ -100,7 +138,7 @@ public class AuthService {
         user.resetTokenExpiry = LocalDateTime.now().plusMinutes(expiryMinutes);
         user.persist();
         LOG.infof("Token de réinitialisation généré pour : %s (expiration dans %d min)", user.email, expiryMinutes);
-        mailer.sendResetEmail(user.email, user.name, token);
+        mailer.sendResetEmail(user.email, user.fullName(), token);
     }
 
     @Transactional
@@ -148,8 +186,10 @@ public class AuthService {
 
         User admin = new User();
         admin.email        = adminEmail;
-        admin.name         = "Administrateur";
+        admin.firstName    = "Administrateur";
+        admin.lastName     = "";
         admin.passwordHash = PasswordUtil.hash(adminPassword);
+        admin.activated    = true;
         admin.role         = UserRole.ADMIN;
         admin.roles        = new java.util.HashSet<>();
         admin.roles.add(UserRole.ADMIN);

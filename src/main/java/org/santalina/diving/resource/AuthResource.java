@@ -39,7 +39,14 @@ public class AuthResource {
     @Path("/register")
     @PermitAll
     public Response register(@Valid RegisterRequest request) {
-        return Response.status(201).entity(authService.register(request)).build();
+        return Response.ok(authService.register(request)).build();
+    }
+
+    @POST
+    @Path("/activate")
+    @PermitAll
+    public Response activateAccount(@Valid ActivateAccountRequest request) {
+        return Response.ok(authService.activate(request)).build();
     }
 
     @POST

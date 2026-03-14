@@ -11,14 +11,17 @@ public class UserDto {
     public record UserResponse(
             Long id,
             String email,
+            String firstName,
+            String lastName,
             String name,
             String phone,
-            UserRole role,          // rôle principal
-            Set<UserRole> roles     // tous les rôles
+            UserRole role,
+            Set<UserRole> roles
     ) {
         public static UserResponse from(User user) {
             return new UserResponse(
-                    user.id, user.email, user.name, user.phone,
+                    user.id, user.email, user.firstName, user.lastName,
+                    user.fullName(), user.phone,
                     user.primaryRole(),
                     user.roles != null ? user.roles : Set.of(user.role)
             );
@@ -26,7 +29,8 @@ public class UserDto {
     }
 
     public record UpdateProfileRequest(
-            @NotBlank @Size(min = 2, max = 100) String name,
+            @NotBlank @Size(min = 2, max = 100) String firstName,
+            @NotBlank @Size(min = 2, max = 100) String lastName,
             @Pattern(regexp = "^[+]?[0-9 .\\-()]{7,20}$", message = "Numéro de téléphone invalide")
             String phone
     ) {}
@@ -38,30 +42,35 @@ public class UserDto {
 
     public record CreateUserRequest(
             @NotBlank(message = "L'email est obligatoire") @Email(message = "Format email invalide") String email,
-            @NotBlank(message = "Le nom est obligatoire") @Size(min = 2, max = 100, message = "Le nom doit faire entre 2 et 100 caractères") String name,
+            @NotBlank(message = "Le prénom est obligatoire") @Size(min = 2, max = 100) String firstName,
+            @NotBlank(message = "Le nom est obligatoire") @Size(min = 2, max = 100) String lastName,
             @NotBlank(message = "Le mot de passe est obligatoire") @Size(min = 6, max = 100, message = "Le mot de passe doit faire au moins 6 caractères") String password,
             @Pattern(regexp = "^[+]?[0-9 .\\-()]{7,20}$", message = "Numéro de téléphone invalide")
             String phone,
             @NotNull @Size(min = 1) Set<UserRole> roles
     ) {}
 
-    /** Mise à jour des informations d'un utilisateur par l'admin */
     public record UpdateUserAdminRequest(
             @NotBlank(message = "L'email est obligatoire") @Email(message = "Format email invalide") String email,
-            @NotBlank(message = "Le nom est obligatoire") @Size(min = 2, max = 100, message = "Le nom doit faire entre 2 et 100 caractères") String name,
+            @NotBlank(message = "Le prénom est obligatoire") @Size(min = 2, max = 100) String firstName,
+            @NotBlank(message = "Le nom est obligatoire") @Size(min = 2, max = 100) String lastName,
             @Pattern(regexp = "^[+]?[0-9 .\\-()]{7,20}$", message = "Numéro de téléphone invalide")
             String phone
     ) {}
 
-    /** Résultat allégé pour la recherche lors de l'ajout d'un plongeur */
     public record UserSearchResult(
             Long id,
+            String firstName,
+            String lastName,
             String name,
             String email,
             String phone
     ) {
         public static UserSearchResult from(User user) {
-            return new UserSearchResult(user.id, user.name, user.email, user.phone);
+            return new UserSearchResult(
+                    user.id, user.firstName, user.lastName,
+                    user.fullName(), user.email, user.phone
+            );
         }
     }
 }

@@ -4,14 +4,18 @@ import { authService } from '../services/authService';
 
 export function ProfilePage() {
   const { user } = useAuth();
-  const [name, setName] = useState(user?.name || '');
+  const [firstName, setFirstName] = useState(user?.firstName || '');
+  const [lastName, setLastName]   = useState(user?.lastName  || '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => { setName(user?.name || ''); }, [user]);
+  useEffect(() => {
+    setFirstName(user?.firstName || '');
+    setLastName(user?.lastName  || '');
+  }, [user]);
 
   const ROLE_LABELS: Record<string, string> = {
     ADMIN: '🔑 Administrateur',
@@ -23,11 +27,10 @@ export function ProfilePage() {
     e.preventDefault();
     setMsg(''); setError(''); setLoading(true);
     try {
-      await authService.updateProfile(name);
+      await authService.updateProfile(firstName, lastName);
       setMsg('Profil mis à jour avec succès !');
-      // Rafraîchir le user en local storage
       if (user) {
-        const updated = { ...user, name };
+        const updated = { ...user, firstName, lastName, name: `${firstName} ${lastName}`.trim() };
         localStorage.setItem('user', JSON.stringify(updated));
         window.location.reload();
       }
@@ -60,10 +63,10 @@ export function ProfilePage() {
       <div className="profile-card">
         <div className="profile-header">
           <div className="profile-avatar">
-            {user.name.charAt(0).toUpperCase()}
+            {(user.firstName || user.name).charAt(0).toUpperCase()}
           </div>
           <div>
-            <h2>{user.name}</h2>
+            <h2>{user.firstName} {user.lastName}</h2>
             <p className="profile-email">📧 {user.email}</p>
             <span className="role-badge-large">{ROLE_LABELS[user.role]}</span>
           </div>
@@ -75,9 +78,15 @@ export function ProfilePage() {
         <div className="profile-section">
           <h3>✏️ Modifier le profil</h3>
           <form onSubmit={handleUpdateProfile} className="form">
-            <div className="form-group">
-              <label>Nom complet</label>
-              <input type="text" value={name} onChange={e => setName(e.target.value)} required minLength={2} />
+            <div className="form-row">
+              <div className="form-group" style={{ flex: 1 }}>
+                <label>Prénom</label>
+                <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} required minLength={2} />
+              </div>
+              <div className="form-group" style={{ flex: 1 }}>
+                <label>Nom</label>
+                <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} required minLength={2} />
+              </div>
             </div>
             <button type="submit" className="btn btn-primary" disabled={loading}>
               {loading ? 'Enregistrement...' : 'Enregistrer'}

@@ -18,11 +18,23 @@ public class User extends PanacheEntityBase {
     @Column(nullable = false, unique = true)
     public String email;
 
-    @Column(name = "password_hash", nullable = false)
+    @Column(name = "password_hash")
     public String passwordHash;
 
+    @Column(name = "first_name", nullable = false)
+    public String firstName;
+
+    @Column(name = "last_name", nullable = false)
+    public String lastName;
+
     @Column(nullable = false)
-    public String name;
+    public boolean activated = true;
+
+    @Column(name = "activation_token")
+    public String activationToken;
+
+    @Column(name = "activation_token_expiry")
+    public LocalDateTime activationTokenExpiry;
 
     @Column
     public String phone;
@@ -53,6 +65,11 @@ public class User extends PanacheEntityBase {
 
     // ---- helpers ----
 
+    /** Retourne le nom complet (prénom + nom). */
+    public String fullName() {
+        return (firstName + " " + lastName).trim();
+    }
+
     public boolean hasRole(UserRole r) {
         return roles != null && roles.contains(r);
     }
@@ -77,6 +94,10 @@ public class User extends PanacheEntityBase {
 
     public static User findByResetToken(String token) {
         return find("resetToken", token).firstResult();
+    }
+
+    public static User findByActivationToken(String token) {
+        return find("activationToken", token).firstResult();
     }
 
     @PreUpdate

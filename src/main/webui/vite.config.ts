@@ -18,6 +18,15 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, '../resources/META-INF/resources'),
     emptyOutDir: true,
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'utils-vendor': ['axios', 'dayjs'],
+        },
+      },
+    },
   },
   server: {
     proxy: {

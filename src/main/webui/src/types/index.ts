@@ -5,16 +5,19 @@ export type UserRole = 'ADMIN' | 'DIVE_DIRECTOR' | 'DIVER';
 export interface User {
   id: number;
   email: string;
+  firstName: string;
+  lastName: string;
   name: string;
   phone?: string;
-  role: UserRole;        // rôle principal
-  roles: UserRole[];     // tous les rôles
+  role: UserRole;
+  roles: UserRole[];
 }
 
 export interface LoginResponse {
   token: string;
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   role: UserRole;
   userId: number;
   roles?: UserRole[];
@@ -22,7 +25,8 @@ export interface LoginResponse {
 
 export interface CreateUserRequest {
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   password: string;
   phone?: string;
   roles: UserRole[];
@@ -30,12 +34,15 @@ export interface CreateUserRequest {
 
 export interface UpdateUserAdminRequest {
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   phone?: string;
 }
 
 export interface UserSearchResult {
   id: number;
+  firstName: string;
+  lastName: string;
   name: string;
   email: string;
   phone?: string;
