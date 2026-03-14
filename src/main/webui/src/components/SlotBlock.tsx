@@ -5,7 +5,7 @@ import { slotDiverService } from '../services/slotDiverService';
 import { slotService } from '../services/slotService';
 import { adminService } from '../services/adminService';
 import { getSlotTypeStyle } from '../utils/slotTypeColors';
-import { exportFicheSecurite } from '../utils/exportFicheSecurite';
+
 
 /** Réinitialise le zoom iOS après fermeture d'un formulaire.
  *  iOS Safari zoome automatiquement sur les inputs < 16px et ne dézoome jamais.
@@ -323,19 +323,13 @@ export function SlotBlock({
 
   /** Pré-remplit le formulaire d'ajout depuis un utilisateur trouvé */
   const selectUserForAdd = (u: UserSearchResult) => {
-    const parts = u.name.trim().split(' ');
-    const firstName = parts[0] ?? '';
-    const lastName  = parts.slice(1).join(' ') || (parts[0] ?? '');
-    setForm(f => ({ ...f, firstName, lastName, email: u.email ?? '', phone: u.phone ?? '' }));
+    setForm(f => ({ ...f, firstName: u.firstName, lastName: u.lastName, email: u.email ?? '', phone: u.phone ?? '' }));
     setSearchQuery(''); setSearchResults([]);
   };
 
   /** Pré-remplit le formulaire d'édition depuis un utilisateur trouvé */
   const selectUserForEdit = (u: UserSearchResult) => {
-    const parts = u.name.trim().split(' ');
-    const firstName = parts[0] ?? '';
-    const lastName  = parts.slice(1).join(' ') || (parts[0] ?? '');
-    setEditForm(f => ({ ...f, firstName, lastName, email: u.email ?? '', phone: u.phone ?? '' }));
+    setEditForm(f => ({ ...f, firstName: u.firstName, lastName: u.lastName, email: u.email ?? '', phone: u.phone ?? '' }));
     setEditSearchQuery(''); setEditSearchResults([]);
   };
 
@@ -383,6 +377,14 @@ export function SlotBlock({
       const m = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       setError(m || "Erreur lors de l'ajout");
     } finally { setSaving(false); }
+  };
+
+  const handleExportFiche = async () => {
+    const { exportFicheSecurite } = await import('../utils/exportFicheSecurite');
+    exportFicheSecurite(
+      { ...slot, title: currentTitle, notes: currentNotes, slotType: currentSlotType, club: currentClub, diverCount: currentDiverCount },
+      divers
+    ).catch(err => console.error('Export fiche sécurité :', err));
   };
 
   const handleRemoveDiver = async (diverId: number) => {
@@ -752,11 +754,7 @@ export function SlotBlock({
 
       {/* Bouton export fiche de sécurité */}
       {canEditThisSlot && (
-        <button className="btn-export-fiche"
-          onClick={() => exportFicheSecurite(
-            { ...slot, title: currentTitle, notes: currentNotes, slotType: currentSlotType, club: currentClub, diverCount: currentDiverCount },
-            divers
-          ).catch(err => console.error('Export fiche sécurité :', err))}>
+        <button className="btn-export-fiche" onClick={handleExportFiche}>
           📊 Exporter fiche de sécurité (Excel)
         </button>
       )}

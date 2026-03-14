@@ -12,11 +12,14 @@ export function LoginModal({ onClose, selfRegistration = true }: Props) {
   const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
+  const [gdprAccepted, setGdprAccepted] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [registerDone, setRegisterDone] = useState(false);
 
   // Captcha
   const [captchaId, setCaptchaId] = useState('');
@@ -40,6 +43,9 @@ export function LoginModal({ onClose, selfRegistration = true }: Props) {
 
   useEffect(() => {
     if (mode === 'register') {
+      setFirstName(''); setLastName('');
+      setGdprAccepted(false);
+      setRegisterDone(false);
       loadCaptcha();
     }
   }, [mode, loadCaptcha]);
@@ -52,8 +58,9 @@ export function LoginModal({ onClose, selfRegistration = true }: Props) {
         await login(email, password);
         onClose();
       } else if (mode === 'register') {
-        await register(email, password, name, phone, captchaId, captchaAnswer);
-        onClose();
+        const msg = await register(email, firstName, lastName, phone, captchaId, captchaAnswer);
+        setRegisterDone(true);
+        setSuccess(msg);
       } else {
         const res = await fetch('/api/auth/password-reset/request', {
           method: 'POST',
@@ -72,7 +79,7 @@ export function LoginModal({ onClose, selfRegistration = true }: Props) {
   };
 
   const switchMode = (m: 'login' | 'register' | 'forgot') => {
-    setMode(m); setError(''); setSuccess('');
+    setMode(m); setError(''); setSuccess(''); setRegisterDone(false);
   };
 
   return (
@@ -86,12 +93,28 @@ export function LoginModal({ onClose, selfRegistration = true }: Props) {
         {error   && <div className="alert alert-error">{error}</div>}
         {success && <div className="alert alert-success">{success}</div>}
 
+        {/* Succès inscription */}
+        {registerDone ? (
+          <div style={{ textAlign: 'center', padding: '24px 0' }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>📧</div>
+            <p style={{ fontWeight: 600, fontSize: 16, marginBottom: 8 }}>Vérifiez votre boite email !</p>
+            <p style={{ color: '#4b5563', fontSize: 14 }}>{success}</p>
+            <button className="btn btn-outline" style={{ marginTop: 20 }} onClick={onClose}>Fermer</button>
+          </div>
+        ) : (
         <form onSubmit={handleSubmit} className="form">
           {mode === 'register' && (
-            <div className="form-group">
-              <label>Nom complet *</label>
-              <input type="text" value={name} onChange={e => setName(e.target.value)}
-                required placeholder="Jean Dupont" />
+            <div className="form-row">
+              <div className="form-group" style={{ flex: 1 }}>
+                <label>Prénom *</label>
+                <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)}
+                  required placeholder="Jean" minLength={2} />
+              </div>
+              <div className="form-group" style={{ flex: 1 }}>
+                <label>Nom *</label>
+                <input type="text" value={lastName} onChange={e => setLastName(e.target.value)}
+                  required placeholder="Dupont" minLength={2} />
+              </div>
             </div>
           )}
 
@@ -111,7 +134,7 @@ export function LoginModal({ onClose, selfRegistration = true }: Props) {
             </div>
           )}
 
-          {mode !== 'forgot' && (
+          {mode === 'login' && (
             <div className="form-group">
               <label>Mot de passe *</label>
               <input type="password" value={password} onChange={e => setPassword(e.target.value)}
@@ -138,10 +161,24 @@ export function LoginModal({ onClose, selfRegistration = true }: Props) {
             </div>
           )}
 
+          {/* Consentement RGPD */}
+          {mode === 'register' && (
+            <div className="gdpr-consent">
+              <input id="gdpr-check" type="checkbox" required checked={gdprAccepted}
+                onChange={e => setGdprAccepted(e.target.checked)} />
+              <label htmlFor="gdpr-check">
+                J'accepte que mes données personnelles (prénom, nom, email, téléphone) soient
+                enregistrées pour la gestion des réservations de plongée, conformément au RGPD.
+                Ces données ne seront pas transmises à des tiers.
+              </label>
+            </div>
+          )}
+
           <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: '100%' }}>
             {loading ? 'Chargement...' : mode === 'login' ? 'Se connecter' : mode === 'register' ? "S'inscrire" : 'Envoyer le lien'}
           </button>
         </form>
+        )}
 
         <div className="modal-links">
           {mode === 'login' && (<>

@@ -1,12 +1,13 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import type { User, UserRole } from '../types';
+import type { User, UserRole, LoginResponse } from '../types';
 import { authService } from '../services/authService';
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string, phone: string, captchaId: string, captchaAnswer: string) => Promise<void>;
+  register: (email: string, firstName: string, lastName: string, phone: string, captchaId: string, captchaAnswer: string) => Promise<string>;
+  activateAccount: (token: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
   hasRole: (role: UserRole) => boolean;
@@ -22,13 +23,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedToken = localStorage.getItem('token');
     const storedUser  = localStorage.getItem('user');
     if (storedToken && storedUser) {
+      const parsed = JSON.parse(storedUser);
+      // Compat ascendante : ancien format sans firstName/lastName
+      if (parsed.name && !parsed.firstName) {
+        const parts = (parsed.name as string).trim().split(' ');
+        parsed.firstName = parts[0] ?? parsed.name;
+        parsed.lastName  = parts.slice(1).join(' ') || '';
+      }
       setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+      setUser(parsed);
     }
   }, []);
 
-  const buildUser = (data: { userId: number; email: string; name: string; role: UserRole; roles?: UserRole[] }): User => ({
-    id: data.userId, email: data.email, name: data.name,
+  const buildUser = (data: LoginResponse): User => ({
+    id: data.userId, email: data.email,
+    firstName: data.firstName, lastName: data.lastName,
+    name: `${data.firstName} ${data.lastName}`.trim(),
     role: data.role,
     roles: data.roles && data.roles.length > 0 ? data.roles : [data.role],
   });
@@ -42,8 +52,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(userData);
   };
 
-  const register = async (email: string, password: string, name: string, phone: string, captchaId: string, captchaAnswer: string) => {
-    const data = await authService.register(email, password, name, phone, captchaId, captchaAnswer);
+  const register = async (email: string, firstName: string, lastName: string, phone: string, captchaId: string, captchaAnswer: string): Promise<string> => {
+    const data = await authService.register(email, firstName, lastName, phone, captchaId, captchaAnswer);
+    return data.message;
+  };
+
+  const activateAccount = async (token: string, password: string) => {
+    const data = await authService.activateAccount(token, password);
     localStorage.setItem('token', data.token);
     const userData = buildUser(data);
     localStorage.setItem('user', JSON.stringify(userData));
@@ -63,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      user, token, login, register, logout,
+      user, token, login, register, activateAccount, logout,
       isAuthenticated: !!token, hasRole,
     }}>
       {children}

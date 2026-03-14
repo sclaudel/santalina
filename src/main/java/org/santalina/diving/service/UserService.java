@@ -30,7 +30,8 @@ public class UserService {
     public UserResponse updateProfile(String email, UpdateProfileRequest request) {
         User user = User.findByEmail(email);
         if (user == null) throw new NotFoundException("Utilisateur non trouvé");
-        user.name  = request.name();
+        user.firstName = request.firstName();
+        user.lastName  = request.lastName();
         user.phone = request.phone();
         user.persist();
         return UserResponse.from(user);
@@ -48,7 +49,7 @@ public class UserService {
         String normalized = stripAccents(query.trim().toLowerCase());
         return User.<User>listAll()
                 .stream()
-                .filter(u -> stripAccents(u.name.toLowerCase()).contains(normalized)
+                .filter(u -> stripAccents(u.fullName().toLowerCase()).contains(normalized)
                           || stripAccents(u.email.toLowerCase()).contains(normalized))
                 .limit(10)
                 .map(UserSearchResult::from)
@@ -87,11 +88,13 @@ public class UserService {
         }
         User user = new User();
         user.email        = request.email();
-        user.name         = request.name();
+        user.firstName    = request.firstName();
+        user.lastName     = request.lastName();
         user.phone        = request.phone();
         user.passwordHash = PasswordUtil.hash(request.password());
         user.roles        = new HashSet<>(request.roles());
         user.role         = user.primaryRole();
+        user.activated    = true;
         user.persist();
         LOG.infof("Utilisateur créé par admin : %s (roles=%s)", user.email, user.roles);
         return UserResponse.from(user);
@@ -118,9 +121,10 @@ public class UserService {
                 throw new BadRequestException("Un compte existe déjà avec cet email");
             }
         }
-        user.email = request.email();
-        user.name  = request.name();
-        user.phone = request.phone();
+        user.email     = request.email();
+        user.firstName = request.firstName();
+        user.lastName  = request.lastName();
+        user.phone     = request.phone();
         user.persist();
         return UserResponse.from(user);
     }

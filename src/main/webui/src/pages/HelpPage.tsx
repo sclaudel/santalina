@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { exportHelpPdf, type PdfSection } from '../utils/exportHelpPdf';
+import type { PdfSection } from '../utils/exportHelpPdf';
 
 interface Section {
   id: string;
@@ -511,7 +511,10 @@ export function HelpPage() {
     ] : []),
   ];
 
-  const handleDownloadPdf = () => exportHelpPdf(pdfSections, siteName);
+  const handleDownloadPdf = async () => {
+    const { exportHelpPdf } = await import('../utils/exportHelpPdf');
+    exportHelpPdf(pdfSections, siteName);
+  };
 
   return (
     <div className="page">

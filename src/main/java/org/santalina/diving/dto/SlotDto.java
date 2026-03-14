@@ -65,7 +65,7 @@ public class SlotDto {
                     slot.slotType,
                     slot.club,
                     slot.createdBy != null ? slot.createdBy.id : null,
-                    slot.createdBy != null ? slot.createdBy.name : null,
+                    slot.createdBy != null ? slot.createdBy.fullName() : null,
                     divers
             );
         }

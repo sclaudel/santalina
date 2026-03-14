@@ -12,8 +12,13 @@ export const authService = {
     return res.data;
   },
 
-  async register(email: string, password: string, name: string, phone: string, captchaId: string, captchaAnswer: string): Promise<LoginResponse> {
-    const res = await api.post<LoginResponse>('/auth/register', { email, password, name, phone, captchaId, captchaAnswer });
+  async register(email: string, firstName: string, lastName: string, phone: string, captchaId: string, captchaAnswer: string): Promise<{ message: string }> {
+    const res = await api.post<{ message: string }>('/auth/register', { email, firstName, lastName, phone, captchaId, captchaAnswer });
+    return res.data;
+  },
+
+  async activateAccount(token: string, password: string): Promise<LoginResponse> {
+    const res = await api.post<LoginResponse>('/auth/activate', { token, password });
     return res.data;
   },
 
@@ -34,8 +39,8 @@ export const authService = {
     return res.data;
   },
 
-  async updateProfile(name: string): Promise<User> {
-    const res = await api.put<User>('/users/me', { name });
+  async updateProfile(firstName: string, lastName: string): Promise<User> {
+    const res = await api.put<User>('/users/me', { firstName, lastName });
     return res.data;
   },
 

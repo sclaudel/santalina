@@ -11,7 +11,7 @@ const ALL_ROLES: { value: UserRole; label: string }[] = [
 ];
 
 const EMPTY_FORM: CreateUserRequest = {
-  email: '', name: '', password: '', phone: '', roles: ['DIVER'],
+  email: '', firstName: '', lastName: '', password: '', phone: '', roles: ['DIVER'],
 };
 
 export function AdminPage() {
@@ -28,7 +28,7 @@ export function AdminPage() {
   const [createError, setCreateError]       = useState('');
   const [createLoading, setCreateLoading]   = useState(false);
   const [editingUserId, setEditingUserId]   = useState<number | null>(null);
-  const [editForm, setEditForm]             = useState<UpdateUserAdminRequest>({ email: '', name: '', phone: '' });
+  const [editForm, setEditForm]             = useState<UpdateUserAdminRequest>({ email: '', firstName: '', lastName: '', phone: '' });
   const [editError, setEditError]           = useState('');
   const [editLoading, setEditLoading]       = useState(false);
 
@@ -121,7 +121,7 @@ export function AdminPage() {
     try {
       const updated = await adminService.updateRoles(user.id, next);
       setUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
-      setMsg(`Rôles de ${user.name} mis à jour`);
+      setMsg(`Rôles de ${user.firstName} ${user.lastName} mis à jour`);
     } catch (err: unknown) {
       setError(getErrorMessage(err));
     }
@@ -150,7 +150,7 @@ export function AdminPage() {
       setUsers(prev => [...prev, created]);
       setCreateForm(EMPTY_FORM);
       setShowCreateForm(false);
-      setMsg(`Utilisateur "${created.name}" créé avec succès`);
+      setMsg(`Utilisateur "${created.firstName} ${created.lastName}" créé avec succès`);
     } catch (err: unknown) {
       setCreateError(getErrorMessage(err));
     } finally { setCreateLoading(false); }
@@ -234,20 +234,21 @@ export function AdminPage() {
   const startEditUser = (user: User) => {
     setShowCreateForm(false);
     setEditingUserId(user.id);
-    setEditForm({ email: user.email, name: user.name, phone: user.phone ?? '' });
+    setEditForm({ email: user.email, firstName: user.firstName, lastName: user.lastName, phone: user.phone ?? '' });
     setEditError('');
   };
 
   const filteredUsers = users.filter(u => {
     const q = userSearch.toLowerCase();
-    return !q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || (u.phone ?? '').toLowerCase().includes(q);
+    return !q || u.firstName.toLowerCase().includes(q) || u.lastName.toLowerCase().includes(q)
+                || u.email.toLowerCase().includes(q) || (u.phone ?? '').toLowerCase().includes(q);
   });
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / USER_PAGE_SIZE));
   const pagedUsers = filteredUsers.slice((userPage - 1) * USER_PAGE_SIZE, userPage * USER_PAGE_SIZE);
 
   const cancelEditUser = () => {
     setEditingUserId(null);
-    setEditForm({ email: '', name: '', phone: '' });
+    setEditForm({ email: '', firstName: '', lastName: '', phone: '' });
     setEditError('');
   };
 
@@ -256,7 +257,7 @@ export function AdminPage() {
     try {
       const updated = await adminService.updateUser(editingUserId!, editForm);
       setUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
-      setMsg(`Utilisateur "${updated.name}" mis à jour`);
+      setMsg(`Utilisateur "${updated.firstName} ${updated.lastName}" mis à jour`);
       cancelEditUser();
     } catch (err: unknown) {
       setEditError(getErrorMessage(err));
@@ -560,9 +561,14 @@ export function AdminPage() {
             {createError && <div className="alert alert-error">{createError}</div>}
             <div className="form-row">
               <div className="form-group">
-                <label>Nom complet *</label>
-                <input placeholder="Jean Dupont" value={createForm.name}
-                  onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))} required />
+                <label>Prénom *</label>
+                <input placeholder="Jean" value={createForm.firstName}
+                  onChange={e => setCreateForm(f => ({ ...f, firstName: e.target.value }))} required minLength={2} />
+              </div>
+              <div className="form-group">
+                <label>Nom *</label>
+                <input placeholder="Dupont" value={createForm.lastName}
+                  onChange={e => setCreateForm(f => ({ ...f, lastName: e.target.value }))} required minLength={2} />
               </div>
               <div className="form-group">
                 <label>Email *</label>
@@ -613,9 +619,14 @@ export function AdminPage() {
             {editError && <div className="alert alert-error">{editError}</div>}
             <div className="form-row">
               <div className="form-group">
-                <label>Nom complet *</label>
-                <input placeholder="Jean Dupont" value={editForm.name}
-                  onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} required />
+                <label>Prénom *</label>
+                <input placeholder="Jean" value={editForm.firstName}
+                  onChange={e => setEditForm(f => ({ ...f, firstName: e.target.value }))} required minLength={2} />
+              </div>
+              <div className="form-group">
+                <label>Nom *</label>
+                <input placeholder="Dupont" value={editForm.lastName}
+                  onChange={e => setEditForm(f => ({ ...f, lastName: e.target.value }))} required minLength={2} />
               </div>
               <div className="form-group">
                 <label>Email *</label>
@@ -652,7 +663,7 @@ export function AdminPage() {
                 const isLastAdmin = userRoles.includes('ADMIN') && adminCount <= 1;
                 return (
                   <tr key={u.id}>
-                    <td><strong>{u.name}</strong></td>
+                    <td><strong>{u.firstName} {u.lastName}</strong></td>
                     <td>{u.email}</td>
                     <td>{u.phone || <span style={{ color: '#9ca3af' }}>—</span>}</td>
                     <td>

@@ -32,7 +32,7 @@ public class JwtUtil {
                 .subject(user.email)
                 .groups(groups)
                 .claim("userId", user.id)
-                .claim("name", user.name)
+                .claim("name", user.fullName())
                 .claim("role", primaryRole)
                 .expiresIn(Duration.ofHours(expiryHours))
                 .sign();
