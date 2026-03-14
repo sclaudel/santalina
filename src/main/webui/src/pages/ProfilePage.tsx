@@ -6,6 +6,7 @@ export function ProfilePage() {
   const { user } = useAuth();
   const [firstName, setFirstName] = useState(user?.firstName || '');
   const [lastName, setLastName]   = useState(user?.lastName  || '');
+  const [licenseNumber, setLicenseNumber] = useState(user?.licenseNumber || '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [msg, setMsg] = useState('');
@@ -15,6 +16,7 @@ export function ProfilePage() {
   useEffect(() => {
     setFirstName(user?.firstName || '');
     setLastName(user?.lastName  || '');
+    setLicenseNumber(user?.licenseNumber || '');
   }, [user]);
 
   const ROLE_LABELS: Record<string, string> = {
@@ -27,10 +29,10 @@ export function ProfilePage() {
     e.preventDefault();
     setMsg(''); setError(''); setLoading(true);
     try {
-      await authService.updateProfile(firstName, lastName);
+      await authService.updateProfile(firstName, lastName, licenseNumber || undefined);
       setMsg('Profil mis à jour avec succès !');
       if (user) {
-        const updated = { ...user, firstName, lastName, name: `${firstName} ${lastName}`.trim() };
+        const updated = { ...user, firstName, lastName, name: `${firstName} ${lastName}`.trim(), licenseNumber: licenseNumber || undefined };
         localStorage.setItem('user', JSON.stringify(updated));
         window.location.reload();
       }
@@ -87,6 +89,16 @@ export function ProfilePage() {
                 <label>Nom</label>
                 <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} required minLength={2} />
               </div>
+            </div>
+            <div className="form-group">
+              <label>N° de licence fédérale <span style={{ fontWeight: 400, color: 'var(--gray-500)' }}>(optionnel)</span></label>
+              <input
+                type="text"
+                value={licenseNumber}
+                onChange={e => setLicenseNumber(e.target.value)}
+                placeholder="Ex : 12345678A"
+                maxLength={50}
+              />
             </div>
             <button type="submit" className="btn btn-primary" disabled={loading}>
               {loading ? 'Enregistrement...' : 'Enregistrer'}

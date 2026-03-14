@@ -15,13 +15,14 @@ public class UserDto {
             String lastName,
             String name,
             String phone,
+            String licenseNumber,
             UserRole role,
             Set<UserRole> roles
     ) {
         public static UserResponse from(User user) {
             return new UserResponse(
                     user.id, user.email, user.firstName, user.lastName,
-                    user.fullName(), user.phone,
+                    user.fullName(), user.phone, user.licenseNumber,
                     user.primaryRole(),
                     user.roles != null ? user.roles : Set.of(user.role)
             );
@@ -32,7 +33,8 @@ public class UserDto {
             @NotBlank @Size(min = 2, max = 100) String firstName,
             @NotBlank @Size(min = 2, max = 100) String lastName,
             @Pattern(regexp = "^[+]?[0-9 .\\-()]{7,20}$", message = "Numéro de téléphone invalide")
-            String phone
+            String phone,
+            @Size(max = 50) String licenseNumber
     ) {}
 
     /** Remplace UpdateRoleRequest — supporte maintenant plusieurs rôles */
@@ -64,12 +66,13 @@ public class UserDto {
             String lastName,
             String name,
             String email,
-            String phone
+            String phone,
+            String licenseNumber
     ) {
         public static UserSearchResult from(User user) {
             return new UserSearchResult(
                     user.id, user.firstName, user.lastName,
-                    user.fullName(), user.email, user.phone
+                    user.fullName(), user.email, user.phone, user.licenseNumber
             );
         }
     }

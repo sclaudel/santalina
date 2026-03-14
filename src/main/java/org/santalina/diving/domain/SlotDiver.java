@@ -35,6 +35,12 @@ public class SlotDiver extends PanacheEntityBase {
     @Column(name = "is_director", nullable = false)
     public boolean isDirector = false;
 
+    @Column
+    public String aptitudes;
+
+    @Column(name = "license_number")
+    public String licenseNumber;
+
     @Column(name = "added_at", nullable = false)
     public LocalDateTime addedAt = LocalDateTime.now();
 
