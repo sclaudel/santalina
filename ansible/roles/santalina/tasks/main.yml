@@ -229,12 +229,21 @@
   ignore_errors: true
   when: not (mail_disabled | default(false))
 
-- name: Corriger le propriétaire des clés DKIM sur l'hôte (générées en syslog:uuidd par le conteneur)
+- name: Corriger le propriétaire des clés DKIM sur l'hôte (OpenDKIM tourne avec uid 101 dans le conteneur)
   ansible.builtin.file:
     path: "{{ app_dir }}/dkim_keys"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
+    owner: "101"
+    group: "101"
+    mode: "0640"
     recurse: true
+  become: true
+  when: not (mail_disabled | default(false)) and dkim_key_check is defined and not dkim_key_check.failed | default(true)
+
+- name: Redémarrer le conteneur SMTP après correction des permissions DKIM
+  ansible.builtin.command:
+    cmd: docker compose restart smtp
+    chdir: "{{ app_dir }}"
+  become: false
   when: not (mail_disabled | default(false)) and dkim_key_check is defined and not dkim_key_check.failed | default(true)
 
 - name: Récupérer la clé publique DKIM générée
