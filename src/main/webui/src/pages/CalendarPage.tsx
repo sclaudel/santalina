@@ -20,7 +20,7 @@ function isMobile(): boolean {
   return window.innerWidth < 768;
 }
 
-export function CalendarPage() {
+export function CalendarPage({ onNavigate }: { onNavigate?: (page: string) => void } = {}) {
   const { user, isAuthenticated }   = useAuth();
   const [viewMode, setViewMode]     = useState<ViewMode>(() => isMobile() ? 'day' : 'week');
   const [selectedDate, setSelectedDate] = useState(dayjs().format('YYYY-MM-DD'));
@@ -130,12 +130,15 @@ export function CalendarPage() {
         </div>
 
         {viewMode === 'day' && (
-          <DayView key={`day-${childKey}`} date={selectedDate} config={config} onAdd={openFormWithDate} />
+          <DayView key={`day-${childKey}`} date={selectedDate} config={config} onAdd={openFormWithDate}
+            onOpenPalanquees={onNavigate ? (id) => onNavigate(`palanquee-${id}`) : undefined}
+          />
         )}
         {viewMode === 'week' && (
           <WeekView key={`week-${childKey}`} weekStart={weekStart} config={config}
             onSelectDay={d => { setSelectedDate(d); setViewMode('day'); }}
             onAdd={openFormWithDate}
+            onOpenPalanquees={onNavigate ? (id) => onNavigate(`palanquee-${id}`) : undefined}
           />
         )}
         {viewMode === 'month' && (
