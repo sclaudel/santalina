@@ -61,14 +61,15 @@ export function HelpPage() {
 
           <h4>Depuis la vue Jour</h4>
           <ol>
-            <li>Si la journée est vide, un bouton <strong>+ Créer le premier créneau</strong> apparaît au centre de la vue.</li>
-            <li>Cliquez dessus pour ouvrir le formulaire de création.</li>
+            <li>Survolez (sur ordinateur) ou appuyez (mobile) sur la <strong>grille horaire</strong> à l'heure souhaitée.</li>
+            <li>Cliquez sur le bouton <strong>+</strong> qui apparaît sur la plage horaire ciblée — l'heure de début est préremplie automatiquement.</li>
+            <li>Si la journée est entièrement vide, un bouton <strong>+ Créer le premier créneau</strong> apparaît également au centre de la vue.</li>
           </ol>
 
           <h4>Depuis la vue Semaine</h4>
           <ol>
-            <li>Survolez (sur ordinateur uniquement) ou appuyez sur l'en-tête d'une colonne de jour dans la grille.</li>
-            <li>Cliquez sur le bouton <strong>+</strong> qui apparaît dans l'en-tête.</li>
+            <li>Survolez (sur ordinateur) ou appuyez (mobile) sur une <strong>cellule horaire</strong> dans la colonne du jour souhaité.</li>
+            <li>Cliquez sur le bouton <strong>+</strong> qui apparaît — la date et l'heure de début sont préremplies.</li>
           </ol>
 
           <h4>Depuis la vue Mois</h4>
@@ -224,13 +225,17 @@ export function HelpPage() {
           <h4>S'inscrire (si activé)</h4>
           <ol>
             <li>Cliquez sur <strong>🔐 Connexion</strong>, puis sur <strong>Pas encore de compte ? S'inscrire</strong>.</li>
-            <li>Remplissez votre prénom/nom, email, téléphone et mot de passe.</li>
+            <li>Remplissez votre <strong>prénom</strong>, <strong>nom</strong>, <strong>email</strong> et <strong>téléphone</strong>, puis acceptez la politique de confidentialité.</li>
+            <li>Un <strong>email de confirmation</strong> vous est envoyé. Aucun mot de passe n'est demandé à ce stade.</li>
+            <li>Cliquez sur le lien reçu par email pour accéder à la page d'activation.</li>
+            <li>Définissez votre mot de passe&nbsp;: vous êtes automatiquement connecté.</li>
             <li>Votre compte est créé avec le rôle <strong>Plongeur</strong>. Un administrateur peut ensuite modifier votre rôle.</li>
           </ol>
+          <div className="help-tip">💡 Le lien d'activation est valable <strong>24 heures</strong>. Si vous ne le retrouvez pas, vérifiez le dossier spam.</div>
           <h4>Mot de passe oublié</h4>
           <ol>
             <li>Dans la fenêtre de connexion, cliquez sur <strong>Mot de passe oublié ?</strong>.</li>
-            <li>Saisissez votre email. Un lien de réinitialisation vous sera envoyé.</li>
+            <li>Saisissez votre email. Un lien de réinitialisation (valable 30 minutes) vous sera envoyé.</li>
           </ol>
         </>
       ),
@@ -245,9 +250,10 @@ export function HelpPage() {
         <>
           <p>La page <strong>Mon profil</strong> vous permet de consulter et modifier vos informations personnelles.</p>
           <ul>
-            <li><strong>Nom</strong> et <strong>email</strong> — affichés dans le menu et les listes de plongeurs.</li>
+            <li><strong>Prénom</strong> et <strong>Nom</strong> — affichés dans le menu et les listes de plongeurs.</li>
+            <li><strong>Email</strong> — identifiant de connexion.</li>
             <li><strong>Téléphone</strong> — utilisé pour contacter le directeur de plongée.</li>
-            <li><strong>Mot de passe</strong> — modifiable depuis cette page.</li>
+            <li><strong>Mot de passe</strong> — modifiable depuis cette page (champ optionnel, laissez vide pour ne pas le changer).</li>
           </ul>
           <p>Accès : cliquez sur votre nom dans la barre de navigation → <strong>👤 Mon profil</strong>.</p>
         </>
@@ -262,12 +268,12 @@ export function HelpPage() {
       roles: ['ADMIN'],
       content: (
         <>
-          <p>La gestion des utilisateurs est accessible dans <strong>⚙️ Administration → section Utilisateurs</strong>.</p>
+          <p>La gestion des utilisateurs est accessible via le menu utilisateur → <strong>⚙️ Administration → section Utilisateurs</strong>.</p>
 
           <h4>Créer un utilisateur</h4>
           <ol>
             <li>Cliquez sur <strong>+ Nouvel utilisateur</strong>.</li>
-            <li>Renseignez l'email, le nom, le téléphone et le mot de passe provisoire.</li>
+            <li>Renseignez le prénom, le nom, l'email, le téléphone et le mot de passe provisoire.</li>
             <li>Attribuez un ou plusieurs rôles :
               <ul>
                 <li><strong>🏊 Plongeur</strong> — peut consulter le calendrier et ses créneaux.</li>
@@ -309,7 +315,7 @@ export function HelpPage() {
       roles: ['ADMIN'],
       content: (
         <>
-          <p>Le tableau de bord des statistiques est accessible via <strong>📊 Statistiques</strong> dans la barre de navigation (réservé aux administrateurs).</p>
+          <p>Le tableau de bord des statistiques est accessible via le menu utilisateur → <strong>📊 Statistiques</strong> (réservé aux administrateurs).</p>
 
           <h4>Filtres de période</h4>
           <ul>
@@ -339,7 +345,7 @@ export function HelpPage() {
       roles: ['ADMIN'],
       content: (
         <>
-          <p>La configuration est accessible dans <strong>⚙️ Administration</strong>.</p>
+          <p>La configuration est accessible via le menu utilisateur → <strong>⚙️ Administration</strong>.</p>
 
           <h4>Configuration du lac</h4>
           <ul>
