@@ -1,9 +1,10 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import type { AppConfig, DiveSlot, SlotDiver, SlotDiverRequest, UserSearchResult } from '../types';
+import type { AppConfig, DiveSlot, Palanquee, SlotDiver, SlotDiverRequest, UserSearchResult } from '../types';
 import { slotDiverService } from '../services/slotDiverService';
 import { slotService } from '../services/slotService';
 import { adminService } from '../services/adminService';
+import { palanqueeService } from '../services/palanqueeService';
 import { getSlotTypeStyle } from '../utils/slotTypeColors';
 
 
@@ -108,6 +109,7 @@ export function SlotBlock({
   const [editForm, setEditForm]           = useState<SlotDiverRequest>(EMPTY_FORM);
   const [editSaving, setEditSaving]       = useState(false);
   const [editError, setEditError]         = useState('');
+  const [palanquees, setPalanquees]       = useState<Palanquee[]>([]);
   const [currentDiverCount, setCurrentDiverCount] = useState(slot.diverCount);
   // Édition des infos du créneau (titre, notes, type, club, date, horaires, capacité)
   const [editingInfo, setEditingInfo]   = useState(false);
@@ -229,8 +231,12 @@ export function SlotBlock({
     setShowTooltip(true);
     setLoading(true);
     try {
-      const fresh = await slotDiverService.getBySlot(slot.id);
+      const [fresh, pals] = await Promise.all([
+        slotDiverService.getBySlot(slot.id),
+        palanqueeService.getBySlot(slot.id),
+      ]);
       setDivers(fresh);
+      setPalanquees(pals);
     } catch { /* silencieux */ }
     finally { setLoading(false); }
   };
@@ -381,11 +387,16 @@ export function SlotBlock({
   };
 
   const handleExportFiche = async () => {
-    const { exportFicheSecurite } = await import('../utils/exportFicheSecurite');
-    exportFicheSecurite(
-      { ...slot, title: currentTitle, notes: currentNotes, slotType: currentSlotType, club: currentClub, diverCount: currentDiverCount },
-      divers
-    ).catch(err => console.error('Export fiche sécurité :', err));
+    const currentSlot = { ...slot, title: currentTitle, notes: currentNotes, slotType: currentSlotType, club: currentClub, diverCount: currentDiverCount };
+    if (palanquees.length > 0) {
+      const { exportFicheSecuriteAvecPalanquees } = await import('../utils/exportFicheSecuriteAvecPalanquees');
+      exportFicheSecuriteAvecPalanquees(currentSlot, divers, palanquees)
+        .catch(err => console.error('Export fiche sécurité (palanquées) :', err));
+    } else {
+      const { exportFicheSecurite } = await import('../utils/exportFicheSecurite');
+      exportFicheSecurite(currentSlot, divers)
+        .catch(err => console.error('Export fiche sécurité :', err));
+    }
   };
 
   const handleRemoveDiver = async (diverId: number) => {
@@ -756,7 +767,9 @@ export function SlotBlock({
       {/* Bouton export fiche de sécurité */}
       {canEditThisSlot && (
         <button className="btn-export-fiche" onClick={handleExportFiche}>
-          📊 Exporter fiche de sécurité (Excel)
+          {palanquees.length > 0
+            ? '📥 Exporter fiche de sécurité avec palanquées (Excel)'
+            : '📊 Exporter fiche de sécurité (Excel)'}
         </button>
       )}
 
