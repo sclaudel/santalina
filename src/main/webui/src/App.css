@@ -836,6 +836,9 @@ body {
   .week-header-row { position: sticky; top: 60px; z-index: 20; }
 
   /* Vue semaine compressée : réduire l'axe horaire et forcer les colonnes à tenir en largeur */
+  .week-view-chrono  { width: 100%; overflow-x: hidden; }
+  .week-header-row   { width: 100%; }
+  .week-grid-chrono  { width: 100%; }
   .week-time-spacer { width: 32px; min-width: 32px; }
   .week-time-axis   { width: 32px; min-width: 32px; }
   .week-time-label  { right: 2px; font-size: 9px; }
@@ -845,8 +848,8 @@ body {
   .week-col-dayname { font-size: 9px; }
   .week-col-daynum  { font-size: 15px; }
   .week-col-daynum.today-num { width: 24px; height: 24px; font-size: 12px; }
-  .week-col-count   { font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .week-day-column  { min-width: 0; }
+  .week-col-count   { display: none; }
+  .week-day-column  { min-width: 0; overflow: hidden; }
 
   /* Contrôles vue */
   .view-controls { gap: 8px; flex-wrap: wrap; }
