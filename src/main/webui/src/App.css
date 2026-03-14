@@ -79,6 +79,9 @@ body {
   background: none; border: none; cursor: pointer; color: var(--gray-700); font-size: 14px;
 }
 .user-dropdown button:hover { background: var(--gray-100); }
+.user-dropdown-separator {
+  height: 1px; background: var(--gray-200); margin: 4px 0;
+}
 
 /* ========== BUTTONS ========== */
 .btn {

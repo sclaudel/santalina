@@ -49,36 +49,6 @@ export function NavBar({ onNavigate, currentPage, selfRegistration = true }: Pro
         >
           📅 Calendrier
         </button>
-        {isAuthenticated && user?.role === 'ADMIN' && (
-          <button
-            className={`nav-link ${currentPage === 'admin' ? 'active' : ''}`}
-            onClick={() => onNavigate('admin')}
-          >
-            ⚙️ Administration
-          </button>
-        )}
-        {isAuthenticated && user?.role === 'ADMIN' && (
-          <button
-            className={`nav-link ${currentPage === 'stats' ? 'active' : ''}`}
-            onClick={() => onNavigate('stats')}
-          >
-            📊 Statistiques
-          </button>
-        )}
-        {isAuthenticated && hasRole('DIVE_DIRECTOR') && (
-          <button
-            className={`nav-link ${currentPage === 'my-stats' ? 'active' : ''}`}
-            onClick={() => onNavigate('my-stats')}
-          >
-            📊 Mes statistiques
-          </button>
-        )}
-        <button
-          className={`nav-link ${currentPage === 'help' ? 'active' : ''}`}
-          onClick={() => onNavigate('help')}
-        >
-          📖 Aide
-        </button>
       </div>
 
       {/* Menu utilisateur desktop */}
@@ -97,6 +67,26 @@ export function NavBar({ onNavigate, currentPage, selfRegistration = true }: Pro
                 <button onClick={() => { onNavigate('profile'); setShowUserMenu(false); }}>
                   👤 Mon profil
                 </button>
+                <button onClick={() => { onNavigate('help'); setShowUserMenu(false); }}>
+                  📖 Aide
+                </button>
+                {user?.role === 'ADMIN' && (
+                  <>
+                    <div className="user-dropdown-separator" />
+                    <button onClick={() => { onNavigate('admin'); setShowUserMenu(false); }}>
+                      ⚙️ Administration
+                    </button>
+                    <button onClick={() => { onNavigate('stats'); setShowUserMenu(false); }}>
+                      📊 Statistiques
+                    </button>
+                  </>
+                )}
+                {hasRole('DIVE_DIRECTOR') && (
+                  <button onClick={() => { onNavigate('my-stats'); setShowUserMenu(false); }}>
+                    📊 Mes statistiques
+                  </button>
+                )}
+                <div className="user-dropdown-separator" />
                 <button onClick={() => { logout(); setShowUserMenu(false); }}>
                   🚪 Déconnexion
                 </button>
