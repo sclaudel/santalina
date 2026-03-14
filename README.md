@@ -10,7 +10,8 @@ Application de réservation de créneaux de plongée en lac, développée avec *
 ## ✨ Fonctionnalités
 
 - 📅 **Calendrier public** : vues Jour, Semaine et Mois **chronologiques** sans authentification
-- 🔐 **Authentification JWT** : login, inscription, reset de mot de passe par email
+- 🔐 **Authentification JWT** : login, inscription avec **activation par email** (lien 24 h), reset de mot de passe par email
+- 🛡️ **RGPD** : consentement explicite collecté à l'inscription
 - 👥 **3 rôles** (cumulables) :
   - `ADMIN` 🔑 : configuration, tous les créneaux, gestion des utilisateurs
   - `DIVE_DIRECTOR` 🤿 : création et suppression de ses propres créneaux + gestion des plongeurs
@@ -18,9 +19,10 @@ Application de réservation de créneaux de plongée en lac, développée avec *
 - ⏰ **Créneaux** : 1h min, 10h max, résolution 15 min, chevauchements affichés côte à côte
 - 🤿 **Plongeurs** : ajout/modification/suppression de plongeurs (nom, prénom, niveau) sur chaque créneau
 - 🎯 **Capacité configurable** : max 25 plongeurs simultanés (modifiable par l'admin)
+- 🐳 **Docker-ready** : Dockerfile multi-stage + docker-compose
 - 🗄️ **Double base de données** : H2 fichier (dev) / PostgreSQL (prod) — couche d'abstraction Panache
-- � **Statistiques** (ADMIN) : tableau de bord avec camemberts, histogrammes et tableaux — par mois, par année, par club, par type de créneau, avec filtres période
-- �🐳 **Docker-ready** : Dockerfile multi-stage + docker-compose
+- 📊 **Statistiques** (ADMIN) : tableau de bord avec camemberts, histogrammes et tableaux — par mois, par année, par club, par type de créneau, avec filtres période
+- 🍔 **Navigation** : barre réduite à « Calendrier » ; Administration, Statistiques, Aide et Profil regroupés dans le menu utilisateur déroulant
 
 ---
 
@@ -86,7 +88,8 @@ docker compose up --build
 
 | Méthode | Endpoint | Accès | Description |
 |---------|----------|-------|-------------|
-| `POST` | `/api/auth/register` | Public | Inscription |
+| `POST` | `/api/auth/register` | Public | Inscription (crée un compte inactif, envoie l'email d'activation) |
+| `POST` | `/api/auth/activate` | Public | Activation du compte + définition du mot de passe |
 | `POST` | `/api/auth/login` | Public | Connexion → JWT |
 | `POST` | `/api/auth/password-reset/request` | Public | Demande reset MDP |
 | `POST` | `/api/auth/password-reset/confirm` | Public | Confirmer reset |
@@ -114,7 +117,7 @@ Documentation Swagger : **http://localhost:8085/q/swagger-ui**
 
 ## 📊 Statistiques (ADMIN)
 
-Accessible via le menu **Statistiques** (réservé au rôle `ADMIN`).
+Accessible via le **menu utilisateur → 📊 Statistiques** (réservé au rôle `ADMIN`).
 
 ### Filtres disponibles
 - **Année** : toutes les années ou une année spécifique
@@ -147,26 +150,25 @@ Accessible via le menu **Statistiques** (réservé au rôle `ADMIN`).
 
 ```
 src/main/
-├── java/com/example/diving/
+├── java/org/santalina/diving/
 │   ├── config/          # DivingConfig (@ConfigProperty)
 │   ├── domain/          # Entités JPA (User, DiveSlot, SlotDiver, AppConfigEntry)
 │   ├── dto/             # Records Java (request/response)
 │   ├── exception/       # GlobalExceptionMapper
-│   ├── mail/            # PasswordResetMailer
-│   ├── resource/        # JAX-RS endpoints (dont StatsResource)
+│   ├── mail/            # PasswordResetMailer, ActivationMailer
+│   ├── resource/        # JAX-RS endpoints (AuthResource, SlotResource, UserResource, StatsResource…)
 │   ├── security/        # JwtUtil, PasswordUtil (BCrypt)
 │   ├── service/         # AuthService, SlotService, UserService, ConfigService
 │   └── startup/         # AppStartup (init admin + config)
 ├── resources/
 │   ├── application.properties
-│   ├── db/migration/    # Flyway V1..V5
-│   ├── privateKey.pem   # Clé privée JWT (générée, ne pas committer)
-│   └── publicKey.pem    # Clé publique JWT
+│   └── db/migration/    # Flyway V1..V14
 └── webui/               # Frontend React + TypeScript + Vite
     └── src/
         ├── components/  # NavBar, CalendarPicker, DayView, WeekView, MonthView, SlotBlock, SlotForm, LoginModal
         ├── context/     # AuthContext (JWT + état multi-rôles)
-        ├── pages/       # CalendarPage, ProfilePage, AdminPage, ResetPasswordPage, StatsPage
+        ├── pages/       # CalendarPage, ProfilePage, AdminPage, StatsPage, MyStatsPage,
+        │               #   HelpPage, ResetPasswordPage, ActivatePage
         ├── services/    # api.ts, authService, slotService, adminService, slotDiverService, statsService
         └── types/       # Types TypeScript partagés
 ```

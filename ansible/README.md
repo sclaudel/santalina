@@ -134,10 +134,14 @@ app_db_password: "UnMotDePasseSQL_Solide!"
 app_admin_email: admin@mondomaine.fr
 app_admin_password: "UnMotDePasseAdmin_Solide!"
 
-# Serveur SMTP pour l'envoi d'emails
+# Adresse d'expédition SMTP (les mails partent du conteneur Postfix interne)
 app_mailer_from: noreply@mondomaine.fr
-app_mailer_host: smtp.mondomaine.fr
-app_mailer_port: 587
+
+# Relay SMTP externe (optionnel — laisser commenté pour envoi direct)
+# app_smtp_relayhost: "[smtp.sendgrid.net]:587"
+
+# Désactiver les envois de mails jusqu'à la configuration DNS/DKIM
+mail_disabled: false
 ```
 
 > **Mots de passe :** utilisez des mots de passe forts (16+ caractères, mixte
@@ -264,8 +268,10 @@ Le pipeline:
 ├── .env                      ← variables d'environnement (600)
 ├── docker-compose.yml        ← composition des services
 ├── keys/
-│   ├── privateKey.pem        ← clé privée RSA JWT (600, générée une fois)
-│   └── publicKey.pem         ← clé publique RSA JWT (600)
+│   ├── privateKey.pem        ← clé privée RSA JWT (700, générée une fois)
+│   └── publicKey.pem         ← clé publique RSA JWT
+├── dkim_keys/
+│   └── santalina.org.private ← clé DKIM OpenDKIM (propriétaire uid 101)
 └── nginx/
     └── nginx.conf            ← configuration Nginx
 
@@ -279,6 +285,14 @@ Volumes Docker :
 > **Important :** les clés JWT dans `keys/` sont générées une **seule** fois lors
 > de la première installation. Le playbook ne les écrase jamais si elles existent
 > déjà. Ne les supprimez pas : cela invaliderait toutes les sessions actives.
+
+> **DKIM :** les clés DKIM dans `dkim_keys/` sont générées automatiquement par le
+> conteneur SMTP au premier démarrage (`DKIM_AUTOGENERATE: true`). Elles survivent
+> aux `docker compose down -v` grâce au bind mount. Après le premier déploiement,
+> la clé publique est affichée en fin de playbook — copiez-la dans votre zone DNS
+> (`mail._domainkey.votre-domaine TXT "v=DKIM1; k=rsa; p=…"`).
+> Le propriétaire du répertoire est automatiquement corrigé à `uid 101` (OpenDKIM)
+> par le playbook, suivi d'un redémarrage du conteneur SMTP.
 
 ---
 
