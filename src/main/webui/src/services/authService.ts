@@ -12,8 +12,8 @@ export const authService = {
     return res.data;
   },
 
-  async register(email: string, firstName: string, lastName: string, phone: string, captchaId: string, captchaAnswer: string): Promise<{ message: string }> {
-    const res = await api.post<{ message: string }>('/auth/register', { email, firstName, lastName, phone, captchaId, captchaAnswer });
+  async register(email: string, firstName: string, lastName: string, phone: string, consentGiven: boolean, captchaId: string, captchaAnswer: string): Promise<{ message: string }> {
+    const res = await api.post<{ message: string }>('/auth/register', { email, firstName, lastName, phone, consentGiven, captchaId, captchaAnswer });
     return res.data;
   },
 

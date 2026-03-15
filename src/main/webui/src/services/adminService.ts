@@ -85,4 +85,9 @@ export const adminService = {
     const res = await api.put<AppConfig>('/config/default-slot-hours', { defaultSlotHours });
     return res.data;
   },
+
+  async updateNotificationEmail(email: string): Promise<AppConfig> {
+    const res = await api.put<AppConfig>('/config/notification-email', { email });
+    return res.data;
+  },
 };

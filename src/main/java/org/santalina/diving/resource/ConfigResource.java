@@ -94,4 +94,11 @@ public class ConfigResource {
     public ConfigResponse updateDefaultSlotHours(@Valid UpdateDefaultSlotHoursRequest request) {
         return configService.updateDefaultSlotHours(request.defaultSlotHours());
     }
+
+    @PUT
+    @Path("/notification-email")
+    @RolesAllowed("ADMIN")
+    public ConfigResponse updateNotificationEmail(UpdateNotificationEmailRequest request) {
+        return configService.updateNotificationBookingEmail(request.email());
+    }
 }

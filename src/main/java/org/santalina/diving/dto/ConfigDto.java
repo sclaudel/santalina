@@ -22,7 +22,8 @@ public class ConfigDto {
             int bookingOpenHour,
             int bookingCloseHour,
             List<String> exclusiveSlotTypes,
-            int defaultSlotHours
+            int defaultSlotHours,
+            String notificationBookingEmail
     ) {}
 
     public record UpdateMaxDiversRequest(
@@ -48,5 +49,9 @@ public class ConfigDto {
 
     public record UpdateDefaultSlotHoursRequest(
             @NotNull @Min(1) @jakarta.validation.constraints.Max(24) Integer defaultSlotHours
+    ) {}
+
+    public record UpdateNotificationEmailRequest(
+            String email
     ) {}
 }

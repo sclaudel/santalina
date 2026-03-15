@@ -54,6 +54,12 @@ public class User extends PanacheEntityBase {
     @Enumerated(EnumType.STRING)
     public Set<UserRole> roles = new HashSet<>();
 
+    @Column(name = "consent_given", nullable = false)
+    public boolean consentGiven = false;
+
+    @Column(name = "consent_date")
+    public LocalDateTime consentDate;
+
     @Column(name = "reset_token")
     public String resetToken;
 

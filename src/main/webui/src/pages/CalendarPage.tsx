@@ -30,6 +30,7 @@ export function CalendarPage({ onNavigate }: { onNavigate?: (page: string) => vo
     publicAccess: true, selfRegistration: true,
     bookingOpenHour: -1, bookingCloseHour: -1,
     exclusiveSlotTypes: [], defaultSlotHours: 2,
+    notificationBookingEmail: '',
   });
   // Date pour laquelle on ouvre le formulaire (null = fermé)
   const [formDate, setFormDate]           = useState<string | null>(null);
