@@ -714,21 +714,21 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                       )}
                       <div className="palanquee-column-params">
                         <select
-                          className="palanquee-param-select"
+                          className={`palanquee-param-select${!p.depth ? ' palanquee-param-select--empty' : ''}`}
                           value={p.depth ?? ''}
                           onChange={e => handleDepthChange(p.id, e.target.value)}
-                          title="Profondeur max"
+                          title="Cliquez pour définir la profondeur maximale de cette palanquée"
                         >
-                          <option value="">Prof.</option>
+                          <option value="">Prof. ▾</option>
                           {DEPTH_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
                         </select>
                         <select
-                          className="palanquee-param-select"
+                          className={`palanquee-param-select${!p.duration ? ' palanquee-param-select--empty' : ''}`}
                           value={p.duration ?? ''}
                           onChange={e => handleDurationChange(p.id, e.target.value)}
-                          title="Temps max"
+                          title="Cliquez pour définir le temps maximum de cette palanquée"
                         >
-                          <option value="">Temps</option>
+                          <option value="">Temps ▾</option>
                           {DURATION_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
                         </select>
                       </div>
@@ -795,21 +795,21 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                 )}
                 <div className="palanquee-column-params">
                   <select
-                    className="palanquee-param-select"
+                    className={`palanquee-param-select${!p.depth ? ' palanquee-param-select--empty' : ''}`}
                     value={p.depth ?? ''}
                     onChange={e => handleDepthChange(p.id, e.target.value)}
-                    title="Profondeur max"
+                    title="Cliquez pour définir la profondeur maximale de cette palanquée"
                   >
-                    <option value="">Prof.</option>
+                    <option value="">Prof. ▾</option>
                     {DEPTH_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
                   </select>
                   <select
-                    className="palanquee-param-select"
+                    className={`palanquee-param-select${!p.duration ? ' palanquee-param-select--empty' : ''}`}
                     value={p.duration ?? ''}
                     onChange={e => handleDurationChange(p.id, e.target.value)}
-                    title="Temps max"
+                    title="Cliquez pour définir le temps maximum de cette palanquée"
                   >
-                    <option value="">Temps</option>
+                    <option value="">Temps ▾</option>
                     {DURATION_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
