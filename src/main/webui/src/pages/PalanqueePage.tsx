@@ -41,6 +41,8 @@ interface DiverCardProps {
 }
 
 const APTITUDES_OPTIONS = ['PE12','PE20','PE40','PE60','PA12','PA20','PA40','PA60','E1','E2','E3','E4','GP'];
+const DEPTH_OPTIONS = ['6m', '12m', '20m', '30m', '40m', '50m', '60m'];
+const DURATION_OPTIONS = Array.from({ length: 24 }, (_, i) => `${(i + 1) * 10}'`);
 
 function DiverCard({ diver, onDragStart, onDragEnter, isDragging, onLevelChange, onAptitudesChange, onTap, isPicked }: DiverCardProps) {
   const [editingLevel, setEditingLevel] = useState(false);
@@ -523,16 +525,35 @@ export function PalanqueePage({ slotId, onBack }: Props) {
   const commitRename = async (id: number) => {
     const draft = renameDraft.trim();
     if (!draft) { setRenamingId(null); return; }
-    const prev = palanquees.find(p => p.id === id)?.name;
+    const pal  = palanquees.find(p => p.id === id);
+    const prev = pal?.name;
     if (draft === prev) { setRenamingId(null); return; }
     setPalanquees(ps => ps.map(p => p.id === id ? { ...p, name: draft } : p));
     setRenamingId(null);
     try {
-      await palanqueeService.rename(slotId, id, draft);
+      await palanqueeService.rename(slotId, id, draft, pal?.depth, pal?.duration);
     } catch {
       await loadAll();
     }
   };
+
+  const handleDepthChange = useCallback(async (palanqueeId: number, depth: string) => {
+    const pal = palanquees.find(p => p.id === palanqueeId);
+    if (!pal) return;
+    setPalanquees(prev => prev.map(p => p.id === palanqueeId ? { ...p, depth: depth || undefined } : p));
+    try {
+      await palanqueeService.rename(slotId, palanqueeId, pal.name, depth || undefined, pal.duration);
+    } catch { await loadAll(); }
+  }, [palanquees, slotId, loadAll]);
+
+  const handleDurationChange = useCallback(async (palanqueeId: number, duration: string) => {
+    const pal = palanquees.find(p => p.id === palanqueeId);
+    if (!pal) return;
+    setPalanquees(prev => prev.map(p => p.id === palanqueeId ? { ...p, duration: duration || undefined } : p));
+    try {
+      await palanqueeService.rename(slotId, palanqueeId, pal.name, pal.depth, duration || undefined);
+    } catch { await loadAll(); }
+  }, [palanquees, slotId, loadAll]);
 
   // ── export Excel ─────────────────────────────────────────────────────────
   const handleExportExcel = async () => {
@@ -691,6 +712,26 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                           P{idx + 1} – {p.name}
                         </span>
                       )}
+                      <div className="palanquee-column-params">
+                        <select
+                          className="palanquee-param-select"
+                          value={p.depth ?? ''}
+                          onChange={e => handleDepthChange(p.id, e.target.value)}
+                          title="Profondeur max"
+                        >
+                          <option value="">Prof.</option>
+                          {DEPTH_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
+                        </select>
+                        <select
+                          className="palanquee-param-select"
+                          value={p.duration ?? ''}
+                          onChange={e => handleDurationChange(p.id, e.target.value)}
+                          title="Temps max"
+                        >
+                          <option value="">Temps</option>
+                          {DURATION_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                      </div>
                       <button
                         className="palanquee-delete-btn"
                         onClick={() => handleDeletePalanquee(p.id)}
@@ -752,6 +793,26 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                     P{idx + 1} – {p.name}
                   </span>
                 )}
+                <div className="palanquee-column-params">
+                  <select
+                    className="palanquee-param-select"
+                    value={p.depth ?? ''}
+                    onChange={e => handleDepthChange(p.id, e.target.value)}
+                    title="Profondeur max"
+                  >
+                    <option value="">Prof.</option>
+                    {DEPTH_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                  <select
+                    className="palanquee-param-select"
+                    value={p.duration ?? ''}
+                    onChange={e => handleDurationChange(p.id, e.target.value)}
+                    title="Temps max"
+                  >
+                    <option value="">Temps</option>
+                    {DURATION_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
                 <button
                   className="palanquee-delete-btn"
                   onClick={() => handleDeletePalanquee(p.id)}

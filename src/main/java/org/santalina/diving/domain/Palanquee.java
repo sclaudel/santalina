@@ -22,6 +22,12 @@ public class Palanquee extends PanacheEntityBase {
     @Column(nullable = false)
     public int position = 0;
 
+    @Column
+    public String depth;
+
+    @Column
+    public String duration;
+
     public static List<Palanquee> findBySlot(Long slotId) {
         return list("slot.id = ?1 ORDER BY position, id", slotId);
     }

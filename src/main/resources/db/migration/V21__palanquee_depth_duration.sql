@@ -1,0 +1,2 @@
+ALTER TABLE palanquees ADD COLUMN depth VARCHAR(10);
+ALTER TABLE palanquees ADD COLUMN duration VARCHAR(10);

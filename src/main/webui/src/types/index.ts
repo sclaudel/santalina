@@ -174,5 +174,7 @@ export interface Palanquee {
   id: number;
   name: string;
   position: number;
+  depth?: string;
+  duration?: string;
   divers: SlotDiver[];
 }

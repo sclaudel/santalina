@@ -96,8 +96,8 @@ export function ProfilePage() {
                 type="text"
                 value={licenseNumber}
                 onChange={e => setLicenseNumber(e.target.value)}
-                placeholder="Ex : 12345678A"
-                maxLength={50}
+                placeholder="Ex : A-14-1223422222"
+                maxLength={20}
               />
             </div>
             <button type="submit" className="btn btn-primary" disabled={loading}>

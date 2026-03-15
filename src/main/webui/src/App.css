@@ -1314,6 +1314,23 @@ body {
 }
 .palanquee-column-name:hover { text-decoration: underline; }
 
+.palanquee-column-params {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.palanquee-param-select {
+  font-size: 11px;
+  padding: 2px 4px;
+  border: 1px solid #bfdbfe;
+  border-radius: 4px;
+  background: #fff;
+  color: var(--primary);
+  cursor: pointer;
+  max-width: 60px;
+}
+.palanquee-param-select:focus { outline: 1px solid var(--primary); }
+
 .palanquee-rename-input {
   flex: 1;
   font-size: 13px;

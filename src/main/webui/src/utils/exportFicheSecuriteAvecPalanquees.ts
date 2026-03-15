@@ -41,6 +41,8 @@ const STYLE_RESTORE_COLS = [8, 9, 10, 11, 12]; // H I J K L
 interface ExportGroup {
   label: string;
   divers: SlotDiver[];
+  depth?: string;
+  duration?: string;
 }
 
 /** Remplit l'en-tête de la feuille */
@@ -112,6 +114,19 @@ function fillSheetGroups(
         if (group?.label) {
           cellA.value = group.label;
           cellA.alignment = { horizontal: 'center', vertical: 'middle' };
+        }
+
+        // Profondeur max et Temps max dans la cellule fusionnée H8:H11 / I8:I11
+        // (et équivalents pour les autres groupes) — écriture sur la cellule maître (ri=0)
+        if (group?.depth) {
+          const cellDepth = ws.getCell(r, 8);
+          cellDepth.value = `Profondeur max\n\n${group.depth}`;
+          cellDepth.alignment = { wrapText: true, vertical: 'top', horizontal: 'center' };
+        }
+        if (group?.duration) {
+          const cellDur = ws.getCell(r, 9);
+          cellDur.value = `Temps\nmax\n\n${group.duration}`;
+          cellDur.alignment = { wrapText: true, vertical: 'top', horizontal: 'center' };
         }
       }
 
@@ -190,6 +205,8 @@ export async function exportFicheSecuriteAvecPalanquees(
   const exportGroups: ExportGroup[] = palanquees.map((p, idx) => ({
     label: `P${idx + 1}`,
     divers: p.divers.slice(0, MAX_DIVERS_PER_GROUP),
+    depth: p.depth,
+    duration: p.duration,
   }));
 
   // Plongeurs non assignés → groupe sans label (affiché après les palanquées)
@@ -265,7 +282,7 @@ export async function exportFicheSecuriteAvecPalanquees(
   const buffer = await wb.xlsx.writeBuffer();
   saveAs(
     new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
-    `fiche-securite-palanquees_${slot.slotDate}_${slot.startTime.replace(':', 'h')}.xlsx`,
+    `${slot.slotDate}-${slot.startTime.replace(':', '-')}-Fiche-securite-Saint-Lin.xlsx`,
   );
 }
 

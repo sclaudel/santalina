@@ -62,7 +62,9 @@ public class PalanqueeResource {
                                     @Valid RenamePalanqueeRequest req) {
         checkSlotAccess(slotId);
         Palanquee p = findPalanquee(slotId, id);
-        p.name = req.name();
+        p.name     = req.name();
+        p.depth    = req.depth();
+        p.duration = req.duration();
         return PalanqueeResponse.from(p);
     }
 
