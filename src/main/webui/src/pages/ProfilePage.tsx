@@ -6,6 +6,7 @@ export function ProfilePage() {
   const { user } = useAuth();
   const [firstName, setFirstName] = useState(user?.firstName || '');
   const [lastName, setLastName]   = useState(user?.lastName  || '');
+  const [phone, setPhone]         = useState(user?.phone || '');
   const [licenseNumber, setLicenseNumber] = useState(user?.licenseNumber || '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -13,11 +14,22 @@ export function ProfilePage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Charge le profil complet depuis l'API pour avoir phone & licenseNumber à jour
   useEffect(() => {
-    setFirstName(user?.firstName || '');
-    setLastName(user?.lastName  || '');
-    setLicenseNumber(user?.licenseNumber || '');
-  }, [user]);
+    authService.getProfile().then(profile => {
+      setFirstName(profile.firstName || '');
+      setLastName(profile.lastName   || '');
+      setPhone(profile.phone || '');
+      setLicenseNumber(profile.licenseNumber || '');
+    }).catch(() => {
+      // Repli sur les données du contexte si l'API échoue
+      setFirstName(user?.firstName || '');
+      setLastName(user?.lastName   || '');
+      setPhone(user?.phone || '');
+      setLicenseNumber(user?.licenseNumber || '');
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const ROLE_LABELS: Record<string, string> = {
     ADMIN: '🔑 Administrateur',
@@ -29,11 +41,11 @@ export function ProfilePage() {
     e.preventDefault();
     setMsg(''); setError(''); setLoading(true);
     try {
-      await authService.updateProfile(firstName, lastName, licenseNumber || undefined);
+      const updated = await authService.updateProfile(firstName, lastName, phone || undefined, licenseNumber || undefined);
       setMsg('Profil mis à jour avec succès !');
       if (user) {
-        const updated = { ...user, firstName, lastName, name: `${firstName} ${lastName}`.trim(), licenseNumber: licenseNumber || undefined };
-        localStorage.setItem('user', JSON.stringify(updated));
+        const stored = { ...user, ...updated };
+        localStorage.setItem('user', JSON.stringify(stored));
         window.location.reload();
       }
     } catch {
@@ -70,6 +82,8 @@ export function ProfilePage() {
           <div>
             <h2>{user.firstName} {user.lastName}</h2>
             <p className="profile-email">📧 {user.email}</p>
+            {user.phone && <p className="profile-email">📞 {user.phone}</p>}
+            {user.licenseNumber && <p className="profile-email">🏅 Licence : {user.licenseNumber}</p>}
             <span className="role-badge-large">{ROLE_LABELS[user.role]}</span>
           </div>
         </div>
@@ -89,6 +103,15 @@ export function ProfilePage() {
                 <label>Nom</label>
                 <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} required minLength={2} />
               </div>
+            </div>
+            <div className="form-group">
+              <label>Téléphone <span style={{ fontWeight: 400, color: 'var(--gray-500)' }}>(optionnel)</span></label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                placeholder="Ex : 0612345678 ou +33612345678"
+              />
             </div>
             <div className="form-group">
               <label>N° de licence fédérale <span style={{ fontWeight: 400, color: 'var(--gray-500)' }}>(optionnel)</span></label>

@@ -39,8 +39,8 @@ export const authService = {
     return res.data;
   },
 
-  async updateProfile(firstName: string, lastName: string, licenseNumber?: string): Promise<User> {
-    const res = await api.put<User>('/users/me', { firstName, lastName, licenseNumber: licenseNumber || null });
+  async updateProfile(firstName: string, lastName: string, phone?: string, licenseNumber?: string): Promise<User> {
+    const res = await api.put<User>('/users/me', { firstName, lastName, phone: phone || null, licenseNumber: licenseNumber || null });
     return res.data;
   },
 
