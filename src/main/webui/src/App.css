@@ -310,7 +310,7 @@ body {
   position: fixed; z-index: 99998;
   background: var(--white); border-radius: var(--radius-lg);
   box-shadow: 0 4px 20px rgba(0,0,0,0.14); border: 1px solid var(--gray-200);
-  padding: 10px 12px; pointer-events: none;
+  padding: 8px 12px; pointer-events: none;
   animation: slotHoverFadeIn 0.12s ease;
 }
 @keyframes slotHoverFadeIn {
@@ -319,7 +319,7 @@ body {
 }
 .slot-hover-tooltip-header {
   display: flex; justify-content: space-between; align-items: center;
-  gap: 8px; margin-bottom: 5px;
+  gap: 8px; margin-bottom: 3px;
 }
 .slot-hover-tooltip-title {
   font-weight: 700; font-size: 13px; color: var(--gray-900);
@@ -329,14 +329,14 @@ body {
   font-size: 11px; color: var(--primary); font-weight: 600; white-space: nowrap; flex-shrink: 0;
 }
 .slot-hover-tooltip-capacity {
-  font-size: 12px; font-weight: 600; margin-bottom: 7px;
+  font-size: 12px; font-weight: 600; margin-bottom: 4px;
 }
 .slot-hover-diver-list {
-  list-style: none; display: flex; flex-direction: column; gap: 2px;
+  list-style: none; display: flex; flex-direction: column; gap: 1px;
 }
 .slot-hover-diver-item {
   display: flex; align-items: center; gap: 5px;
-  padding: 3px 4px; border-radius: 3px; font-size: 12px;
+  padding: 1px 4px; border-radius: 3px; font-size: 12px;
 }
 .slot-hover-diver-director { background: #fff7ed; }
 .slot-hover-diver-name { font-weight: 600; color: var(--gray-800); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
