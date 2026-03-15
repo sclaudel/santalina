@@ -71,7 +71,8 @@ public class BookingNotificationMailer {
 
         LOG.infof("Envoi notification création créneau à %s (slot id=%d)", notifEmail, slot.id);
         try {
-            mailer.send(Mail.withHtml(notifEmail, "🤿 Nouveau créneau — " + slotLabel, body));
+            String siteName = configService.getSiteName();
+            mailer.send(Mail.withHtml(notifEmail, "[" + siteName + "] Nouveau créneau — " + slotLabel, body));
         } catch (Exception e) {
             LOG.errorf(e, "Échec de l'envoi de la notification de création de créneau à %s", notifEmail);
         }
