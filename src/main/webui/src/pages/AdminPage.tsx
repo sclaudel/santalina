@@ -579,13 +579,13 @@ export function AdminPage() {
             <div className="form-row">
               <div className="form-group">
                 <label>Téléphone</label>
-                <input type="tel" placeholder="+33 6 12 34 56 78" value={createForm.phone ?? ''}
+                <input type="tel" placeholder="0612345678 ou +33612345678" value={createForm.phone ?? ''}
                   onChange={e => setCreateForm(f => ({ ...f, phone: e.target.value }))} />
               </div>
               <div className="form-group">
                 <label>N° de licence fédérale</label>
-                <input type="text" placeholder="Ex : 12345678A" value={createForm.licenseNumber ?? ''}
-                  onChange={e => setCreateForm(f => ({ ...f, licenseNumber: e.target.value }))} maxLength={50} />
+                <input type="text" placeholder="Ex : A-14-1223422222" value={createForm.licenseNumber ?? ''}
+                  onChange={e => setCreateForm(f => ({ ...f, licenseNumber: e.target.value }))} maxLength={20} />
               </div>
               <div className="form-group">
                 <label>Mot de passe *</label>
@@ -641,13 +641,13 @@ export function AdminPage() {
             </div>
             <div className="form-group">
               <label>Téléphone</label>
-              <input type="tel" placeholder="+33 6 12 34 56 78" value={editForm.phone ?? ''}
+              <input type="tel" placeholder="0612345678 ou +33612345678" value={editForm.phone ?? ''}
                 onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))} />
             </div>
             <div className="form-group">
               <label>N° de licence fédérale</label>
-              <input type="text" placeholder="Ex : 12345678A" value={editForm.licenseNumber ?? ''}
-                onChange={e => setEditForm(f => ({ ...f, licenseNumber: e.target.value }))} maxLength={50} />
+              <input type="text" placeholder="Ex : A-14-1223422222" value={editForm.licenseNumber ?? ''}
+                onChange={e => setEditForm(f => ({ ...f, licenseNumber: e.target.value }))} maxLength={20} />
             </div>
             <div className="form-actions">
               <button type="button" className="btn btn-outline" onClick={cancelEditUser}>Annuler</button>

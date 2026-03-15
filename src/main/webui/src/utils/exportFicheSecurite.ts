@@ -201,6 +201,6 @@ export async function exportFicheSecurite(slot: DiveSlot, divers: SlotDiver[]): 
   const buffer = await wb.xlsx.writeBuffer();
   saveAs(
     new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
-    `fiche-securite_${slot.slotDate}_${slot.startTime.replace(':', 'h')}.xlsx`,
+    `${slot.slotDate}-${slot.startTime.replace(':', '-')}-Fiche-securite-Saint-Lin.xlsx`,
   );
 }

@@ -249,7 +249,14 @@ export function HelpPage() {
             <li>Choisissez <strong>— aucune —</strong> pour effacer l'aptitude.</li>
             <li>Les aptitudes saisies ici apparaissent dans la <strong>colonne D</strong> de la fiche de sécurité Excel exportée.</li>
           </ul>
-          <div className="help-tip">💡 Les modifications de niveau et d'aptitudes sont enregistrées immédiatement sur le serveur.</div>
+          <h4>Définir la profondeur et le temps d'une palanquée</h4>
+          <ul>
+            <li>Dans l'en-tête de chaque colonne palanquée, deux menus déroulants compacts sont affichés : <strong>Prof. ▾</strong> et <strong>Temps ▾</strong>.</li>
+            <li>Cliquez sur <strong>Prof. ▾</strong> pour choisir la profondeur maximale : 6 m, 12 m, 20 m, 30 m, 40 m, 50 m ou 60 m.</li>
+            <li>Cliquez sur <strong>Temps ▾</strong> pour choisir la durée maximale : de 10' à 240' par pas de 10 minutes.</li>
+            <li>Ces valeurs sont exportées dans la fiche de sécurité Excel, dans les cellules <strong>Profondeur max</strong> et <strong>Temps max</strong> de chaque groupe de plongeurs.</li>
+          </ul>
+          <div className="help-tip">💡 Les modifications de niveau, aptitudes, profondeur et temps sont enregistrées immédiatement sur le serveur.</div>
         </>
       ),
     },

@@ -32,7 +32,7 @@ public class UserService {
         if (user == null) throw new NotFoundException("Utilisateur non trouvé");
         user.firstName     = request.firstName().trim();
         user.lastName      = request.lastName().trim().toUpperCase();
-        user.phone         = request.phone();
+        user.phone         = normalizePhone(request.phone());
         user.licenseNumber = request.licenseNumber() != null ? request.licenseNumber().trim() : null;
         user.persist();
         return UserResponse.from(user);
@@ -91,7 +91,7 @@ public class UserService {
         user.email        = request.email();
         user.firstName    = request.firstName().trim();
         user.lastName     = request.lastName().trim().toUpperCase();
-        user.phone        = request.phone();
+        user.phone        = normalizePhone(request.phone());
         user.licenseNumber = request.licenseNumber() != null ? request.licenseNumber().trim() : null;
         user.passwordHash = PasswordUtil.hash(request.password());
         user.roles        = new HashSet<>(request.roles());
@@ -126,9 +126,17 @@ public class UserService {
         user.email     = request.email();
         user.firstName = request.firstName().trim();
         user.lastName  = request.lastName().trim().toUpperCase();
-        user.phone     = request.phone();
+        user.phone     = normalizePhone(request.phone());
         user.licenseNumber = request.licenseNumber() != null ? request.licenseNumber().trim() : null;
         user.persist();
         return UserResponse.from(user);
+    }
+
+    /** Normalise un numéro de téléphone français au format +33XXXXXXXXX */
+    private static String normalizePhone(String phone) {
+        if (phone == null || phone.isBlank()) return null;
+        String clean = phone.trim().replaceAll("[\\s.\\-()]", "");
+        if (clean.startsWith("0")) return "+33" + clean.substring(1);
+        return clean;
     }
 }
