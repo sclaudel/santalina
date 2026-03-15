@@ -116,6 +116,7 @@ export interface AppConfig {
   bookingCloseHour: number;
   exclusiveSlotTypes: string[];
   defaultSlotHours: number;
+  notificationBookingEmail: string;
 }
 
 export interface PeriodStat {

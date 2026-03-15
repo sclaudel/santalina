@@ -45,6 +45,10 @@ export function AdminPage() {
   const [bookingCloseHour, setBookingCloseHour] = useState<number>(-1);
   const [bookingHoursLoading, setBookingHoursLoading] = useState(false);
 
+  // Email de notification de réservation
+  const [notificationEmail, setNotificationEmail]       = useState('');
+  const [notificationEmailLoading, setNotificationEmailLoading] = useState(false);
+
   // Recherche et pagination utilisateurs
   const [userSearch, setUserSearch]   = useState('');
   const [userPage, setUserPage]       = useState(1);
@@ -67,6 +71,7 @@ export function AdminPage() {
       setLevelsText((c.levels ?? []).join('\n'));
       setBookingOpenHour(c.bookingOpenHour ?? -1);
       setBookingCloseHour(c.bookingCloseHour ?? -1);
+      setNotificationEmail(c.notificationBookingEmail ?? '');
     } catch {
       setError('Erreur lors du chargement des données');
     }
@@ -221,6 +226,17 @@ export function AdminPage() {
       setMsg(`Fenêtre de réservation mise à jour : ${openLabel}, ${closeLabel}`);
     } catch (err: unknown) { setError(getErrorMessage(err)); }
     finally { setBookingHoursLoading(false); }
+  };
+
+  const handleUpdateNotificationEmail = async (e: React.FormEvent) => {
+    e.preventDefault(); setMsg(''); setError(''); setNotificationEmailLoading(true);
+    try {
+      const updated = await adminService.updateNotificationEmail(notificationEmail);
+      setConfig(updated);
+      setNotificationEmail(updated.notificationBookingEmail ?? '');
+      setMsg(notificationEmail ? `Email de notification mis à jour : ${notificationEmail}` : 'Notifications désactivées');
+    } catch (err: unknown) { setError(getErrorMessage(err)); }
+    finally { setNotificationEmailLoading(false); }
   };
 
   const toggleCreateRole = (role: UserRole) => {
@@ -424,6 +440,45 @@ export function AdminPage() {
               <button type="submit" className="btn btn-primary" disabled={bookingHoursLoading} style={{ alignSelf: 'flex-end' }}>
                 {bookingHoursLoading ? '...' : '💾 Enregistrer'}
               </button>
+            </form>
+          </div>
+
+          {/* Email de notification de réservation */}
+          <div className="toggle-setting" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 12 }}>
+            <div className="toggle-setting-info">
+              <strong>📧 Email de notification de création de créneau</strong>
+              <span>
+                Chaque fois qu'un créneau est créé, un email est envoyé à cette adresse.
+                Laisser vide pour désactiver les notifications.
+              </span>
+            </div>
+            {config && (
+              <div style={{ fontSize: 13, color: '#6b7280' }}>
+                Actuellement&nbsp;:&nbsp;
+                {config.notificationBookingEmail
+                  ? <span style={{ color: '#16a34a' }}>📬 {config.notificationBookingEmail}</span>
+                  : <span style={{ color: '#9ca3af' }}>désactivé</span>}
+              </div>
+            )}
+            <form onSubmit={handleUpdateNotificationEmail} className="form form-inline" style={{ gap: 12 }}>
+              <div className="form-group" style={{ minWidth: 280 }}>
+                <label>Adresse email</label>
+                <input
+                  type="email"
+                  value={notificationEmail}
+                  onChange={e => setNotificationEmail(e.target.value)}
+                  placeholder="Ex : directeur@club-plongee.fr"
+                />
+              </div>
+              <button type="submit" className="btn btn-primary" disabled={notificationEmailLoading} style={{ alignSelf: 'flex-end' }}>
+                {notificationEmailLoading ? '...' : '💾 Enregistrer'}
+              </button>
+              {notificationEmail && (
+                <button type="button" className="btn btn-outline" style={{ alignSelf: 'flex-end' }}
+                  onClick={() => { setNotificationEmail(''); }}>
+                  ✕ Vider
+                </button>
+              )}
             </form>
           </div>
         </div>

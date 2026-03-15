@@ -7,6 +7,7 @@ import org.santalina.diving.domain.UserRole;
 import org.santalina.diving.dto.SlotDto.SlotRequest;
 import org.santalina.diving.dto.SlotDto.SlotResponse;
 import org.santalina.diving.dto.SlotDto.UpdateSlotInfoRequest;
+import org.santalina.diving.mail.BookingNotificationMailer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -28,6 +29,9 @@ public class SlotService {
 
     @Inject
     ConfigService configService;
+
+    @Inject
+    BookingNotificationMailer bookingNotificationMailer;
 
     /**
      * Retourne les créneaux d'une journée
@@ -95,6 +99,7 @@ public class SlotService {
         slot.persist();
         LOG.infof("Créneau créé (id=%d) le %s de %s à %s par %s",
                 slot.id, slot.slotDate, slot.startTime, slot.endTime, currentUser.email);
+        bookingNotificationMailer.sendSlotCreatedNotification(slot);
         return SlotResponse.from(slot);
     }
 

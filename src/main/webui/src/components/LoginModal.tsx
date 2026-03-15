@@ -58,7 +58,7 @@ export function LoginModal({ onClose, selfRegistration = true }: Props) {
         await login(email, password);
         onClose();
       } else if (mode === 'register') {
-        const msg = await register(email, firstName, lastName, phone, captchaId, captchaAnswer);
+        const msg = await register(email, firstName, lastName, phone, gdprAccepted, captchaId, captchaAnswer);
         setRegisterDone(true);
         setSuccess(msg);
       } else {
@@ -128,9 +128,9 @@ export function LoginModal({ onClose, selfRegistration = true }: Props) {
             <div className="form-group">
               <label>Téléphone *</label>
               <input type="tel" value={phone} onChange={e => setPhone(e.target.value)}
-                required placeholder="+33 6 12 34 56 78"
-                pattern="^[+]?[0-9 .\-()]{7,20}$"
-                title="Numéro de téléphone valide (ex: +33 6 12 34 56 78)" />
+                required placeholder="0612345678"
+                pattern="^(0[1-9][0-9]{8}|\+33[1-9][0-9]{8})$"
+                title="Numéro de téléphone français valide (ex: 0612345678 ou +33612345678)" />
             </div>
           )}
 

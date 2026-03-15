@@ -64,6 +64,8 @@ public class AuthService {
         user.firstName             = request.firstName().trim();
         user.lastName              = request.lastName().trim().toUpperCase();
         user.phone                 = request.phone();
+        user.consentGiven          = request.consentGiven();
+        user.consentDate           = request.consentGiven() ? LocalDateTime.now() : null;
         user.passwordHash          = null;
         user.role                  = UserRole.DIVER;
         user.roles                 = new java.util.HashSet<>();

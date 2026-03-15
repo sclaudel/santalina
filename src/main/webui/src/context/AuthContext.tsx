@@ -6,7 +6,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, firstName: string, lastName: string, phone: string, captchaId: string, captchaAnswer: string) => Promise<string>;
+  register: (email: string, firstName: string, lastName: string, phone: string, gdprAccepted: boolean, captchaId: string, captchaAnswer: string) => Promise<string>;
   activateAccount: (token: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
@@ -52,8 +52,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(userData);
   };
 
-  const register = async (email: string, firstName: string, lastName: string, phone: string, captchaId: string, captchaAnswer: string): Promise<string> => {
-    const data = await authService.register(email, firstName, lastName, phone, captchaId, captchaAnswer);
+  const register = async (email: string, firstName: string, lastName: string, phone: string, gdprAccepted: boolean, captchaId: string, captchaAnswer: string): Promise<string> => {
+    const data = await authService.register(email, firstName, lastName, phone, gdprAccepted, captchaId, captchaAnswer);
     return data.message;
   };
 

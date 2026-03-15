@@ -29,6 +29,7 @@ public class ConfigService {
     private static final String KEY_BOOKING_CLOSE_HOUR   = "booking.close.hour";
     private static final String KEY_EXCLUSIVE_SLOT_TYPES = "slot.exclusive.types";
     private static final String KEY_DEFAULT_SLOT_HOURS   = "slot.default.hours";
+    private static final String KEY_NOTIFICATION_BOOKING_EMAIL = "notification.booking.email";
 
     private static final String DEFAULT_SLOT_TYPES =
         "Club - Plongée|Club - Apnée|Club - Nage avec Palme|CODEP - Plongée|CODEP - Apnée|CODEP - Nage avec Palme|Externe - SDIS - Gendarmerie";
@@ -95,6 +96,11 @@ public class ConfigService {
         return getIntValueWithNegative(KEY_BOOKING_CLOSE_HOUR, -1);
     }
 
+    /** Adresse email de notification pour les nouvelles réservations (vide = pas d'envoi) */
+    public String getNotificationBookingEmail() {
+        return getStringValue(KEY_NOTIFICATION_BOOKING_EMAIL, "");
+    }
+
     public ConfigResponse getConfig() {
         return new ConfigResponse(
                 getMaxDivers(), getSlotMinHours(), getSlotMaxHours(),
@@ -102,7 +108,8 @@ public class ConfigService {
                 getSlotTypes(), getClubs(), getLevels(),
                 isPublicAccess(), isSelfRegistration(),
                 getBookingOpenHour(), getBookingCloseHour(),
-                getExclusiveSlotTypes(), getDefaultSlotHours()
+                getExclusiveSlotTypes(), getDefaultSlotHours(),
+                getNotificationBookingEmail()
         );
     }
 
@@ -162,6 +169,12 @@ public class ConfigService {
         return getConfig();
     }
 
+    @Transactional
+    public ConfigResponse updateNotificationBookingEmail(String email) {
+        forceUpsert(KEY_NOTIFICATION_BOOKING_EMAIL, email != null ? email.trim() : "");
+        return getConfig();
+    }
+
     // ---- Init au démarrage ----
 
     @Transactional
@@ -191,6 +204,7 @@ public class ConfigService {
         upsertIfMissing(KEY_BOOKING_CLOSE_HOUR,   "-1");
         upsertIfMissing(KEY_EXCLUSIVE_SLOT_TYPES, "");
         upsertIfMissing(KEY_DEFAULT_SLOT_HOURS,   "2");
+        upsertIfMissing(KEY_NOTIFICATION_BOOKING_EMAIL, "");
     }
 
     // ---- Helpers privés ----
