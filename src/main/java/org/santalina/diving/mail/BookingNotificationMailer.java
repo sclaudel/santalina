@@ -69,12 +69,18 @@ public class BookingNotificationMailer {
                 notesInfo
         );
 
-        LOG.infof("Envoi notification création créneau à %s (slot id=%d)", notifEmail, slot.id);
-        try {
-            String siteName = configService.getSiteName();
-            mailer.send(Mail.withHtml(notifEmail, "[" + siteName + "] Nouveau créneau — " + slotLabel, body));
-        } catch (Exception e) {
-            LOG.errorf(e, "Échec de l'envoi de la notification de création de créneau à %s", notifEmail);
+        String siteName = configService.getSiteName();
+        String subject = "[" + siteName + "] Nouveau créneau — " + slotLabel;
+        String[] recipients = notifEmail.split(",");
+        for (String recipient : recipients) {
+            String email = recipient.trim();
+            if (email.isBlank()) continue;
+            LOG.infof("Envoi notification création créneau à %s (slot id=%d)", email, slot.id);
+            try {
+                mailer.send(Mail.withHtml(email, subject, body));
+            } catch (Exception e) {
+                LOG.errorf(e, "Échec de l'envoi de la notification de création de créneau à %s", email);
+            }
         }
     }
 }

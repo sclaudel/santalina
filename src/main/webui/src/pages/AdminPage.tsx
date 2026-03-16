@@ -446,10 +446,10 @@ export function AdminPage() {
           {/* Email de notification de réservation */}
           <div className="toggle-setting" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 12 }}>
             <div className="toggle-setting-info">
-              <strong>📧 Email de notification de création de créneau</strong>
+              <strong>📧 Emails de notification de création de créneau</strong>
               <span>
-                Chaque fois qu'un créneau est créé, un email est envoyé à cette adresse.
-                Laisser vide pour désactiver les notifications.
+                Chaque fois qu'un créneau est créé, un email est envoyé à ces adresses.
+                Plusieurs adresses possibles, séparées par des virgules. Laisser vide pour désactiver.
               </span>
             </div>
             {config && (
@@ -461,13 +461,13 @@ export function AdminPage() {
               </div>
             )}
             <form onSubmit={handleUpdateNotificationEmail} className="form form-inline" style={{ gap: 12 }}>
-              <div className="form-group" style={{ minWidth: 280 }}>
-                <label>Adresse email</label>
+              <div className="form-group" style={{ minWidth: 380 }}>
+                <label>Adresses email (séparées par des virgules)</label>
                 <input
-                  type="email"
+                  type="text"
                   value={notificationEmail}
                   onChange={e => setNotificationEmail(e.target.value)}
-                  placeholder="Ex : directeur@club-plongee.fr"
+                  placeholder="Ex : directeur@club.fr, secretaire@club.fr"
                 />
               </div>
               <button type="submit" className="btn btn-primary" disabled={notificationEmailLoading} style={{ alignSelf: 'flex-end' }}>
