@@ -232,9 +232,9 @@
 - name: Corriger le propriétaire des clés DKIM sur l'hôte (OpenDKIM tourne avec uid 101 dans le conteneur)
   ansible.builtin.file:
     path: "{{ app_dir }}/dkim_keys"
-    owner: "101"
-    group: "101"
-    mode: "0640"
+    owner: "1000"
+    group: "1000"
+    mode: "0755"
     recurse: true
   become: true
   when: not (mail_disabled | default(false)) and dkim_key_check is defined and not dkim_key_check.failed | default(true)
