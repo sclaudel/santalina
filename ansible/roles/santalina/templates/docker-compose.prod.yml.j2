@@ -79,7 +79,8 @@ services:
       RELAYHOST: "{{ app_smtp_relayhost }}"
 {% endif %}
     healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 25"]
+        # Evite les logs de connexion/déconnexion Postfix générés par une sonde TCP sur le port 25.
+        test: ["CMD-SHELL", "postfix status >/dev/null 2>&1"]
       interval: 10s
       timeout: 5s
       retries: 12
