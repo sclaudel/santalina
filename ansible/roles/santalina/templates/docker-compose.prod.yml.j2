@@ -38,24 +38,22 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       MAILER_FROM: ${MAILER_FROM}
-      # Pointe vers le conteneur SMTP local sur le réseau interne
       APP_BASE_URL: "https://{{ app_domain }}"
       MAILER_HOST: smtp
       MAILER_PORT: "25"
-      # STARTTLS désactivé : connexion interne Docker, pas de TLS nécessaire
       MAILER_START_TLS: DISABLED
       MAILER_SSL: "false"
       MAILER_TRUST_ALL: "false"
 {% if mail_disabled | default(false) %}
-      # Mode mail désactivé : les emails sont logués sans être envoyés (DNS/SMTP non prêts)
       QUARKUS_MAILER_MOCK: "true"
 {% endif %}
-      # Niveaux de log (TRACE|DEBUG|INFO|WARN|ERROR)
       LOG_LEVEL: "{{ app_log_level | default('INFO') }}"
       APP_LOG_LEVEL: "{{ app_app_log_level | default('INFO') }}"
       MAILER_LOG_LEVEL: "{{ app_mailer_log_level | default('INFO') }}"
       JWT_PRIVATE_KEY_PATH: /run/secrets/jwt_private_key
       JWT_PUBLIC_KEY_PATH: /run/secrets/jwt_public_key
+      # Chemin du log SMTP monté en lecture seule depuis le conteneur smtp
+      APP_LOGS_SMTP_PATH: /deployments/data/logs/smtp/mail.log
     secrets:
       - jwt_private_key
       - jwt_public_key
@@ -66,10 +64,12 @@ services:
         condition: service_healthy
     volumes:
       - app_data:/deployments/data
-      # Bind mount logs — accessibles depuis l'hôte pour logrotate / consultation
+      # Logs applicatifs Quarkus — bind mount sur l'hôte pour logrotate / consultation
       - ./logs/app:/deployments/data/logs
-      # Logs nginx montés en lecture seule — consultables depuis l'UI admin
+      # Logs nginx — montés en lecture seule pour l'UI admin
       - ./logs/nginx:/deployments/data/logs/nginx:ro
+      # Logs SMTP — montés en lecture seule pour l'UI admin
+      - ./logs/smtp:/deployments/data/logs/smtp:ro
     networks:
       - internal
 
@@ -85,24 +85,21 @@ services:
         max-file: "15"
     environment:
       HOSTNAME: {{ app_domain }}
-      # Domaine autorisé à envoyer des mails (extrait de l'adresse expéditeur)
       ALLOWED_SENDER_DOMAINS: "{{ app_mailer_from | regex_replace('^.*@(.*)$', '\\1') }}"
-      # Gènère automatiquement une paire de clés DKIM au démarrage si absente
       DKIM_AUTOGENERATE: "true"
 {% if app_smtp_relayhost is defined and app_smtp_relayhost %}
-      # Relay SMTP externe optionnel
       RELAYHOST: "{{ app_smtp_relayhost }}"
 {% endif %}
     healthcheck:
-      # Evite les logs de connexion/déconnexion Postfix générés par une sonde TCP sur le port 25.
       test: ["CMD-SHELL", "postfix status >/dev/null 2>&1"]
       interval: 10s
       timeout: 5s
       retries: 12
       start_period: 30s
     volumes:
-      # Bind mount sur l'hôte — survit à docker compose down -v
       - ./dkim_keys:/etc/opendkim/keys
+      # Expose /var/log/mail.log (rsyslog Debian) sur l'hôte pour l'UI admin
+      - ./logs/smtp/mail.log:/var/log/mail.log
     networks:
       - internal
 
@@ -117,13 +114,11 @@ services:
       - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      # Bind mounts : les certificats restent sur le VPS même après docker compose down -v
       - ./letsencrypt:/etc/letsencrypt:ro
       - ./certbot-www:/var/www/certbot:ro
-      # Logs nginx accessibles depuis l'hôte pour fail2ban
+      # Logs nginx accessibles depuis l'hôte pour fail2ban + logrotate
       - ./logs/nginx:/var/log/nginx
 {% if self_signed_ssl | default(false) %}
-      # Certificat auto-signé (ignoré si Let's Encrypt est utilisé)
       - ./certs:/etc/certs:ro
 {% endif %}
     depends_on:
@@ -138,10 +133,8 @@ services:
     restart: unless-stopped
     logging: *default-logging
     volumes:
-      # Bind mounts : persistance garantie même après docker compose down -v
       - ./letsencrypt:/etc/letsencrypt
       - ./certbot-www:/var/www/certbot
-    # Vérifie le renouvellement toutes les 12 heures
     entrypoint: >
       /bin/sh -c 'trap exit TERM;
       while :; do
@@ -153,7 +146,7 @@ services:
 networks:
   internal:
     driver: bridge
-    
+
 secrets:
   jwt_private_key:
     file: ./keys/privateKey.pem

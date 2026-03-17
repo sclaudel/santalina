@@ -14,15 +14,14 @@
     dateformat -%Y-%m-%d
     sharedscripts
     postrotate
-        # Envoie le signal USR1 à Nginx pour rouvrir les fichiers de log
+        # Signal USR1 : Nginx rouvre ses fichiers de log sans interrompre le service
         docker exec santalina-nginx nginx -s reopen 2>/dev/null || true
     endscript
 }
 
-# ── Logs applicatifs Quarkus ──────────────────────────────────────────────────
+# ── Logs applicatifs Quarkus ───────────────────────────────────��──────────────
 # Quarkus gère sa propre rotation (file-suffix + max-backup-index dans
-# application.properties). Cette règle logrotate sert de filet de sécurité
-# si les fichiers rotatés par Quarkus ne sont pas nettoyés correctement.
+# application.properties). Cette règle sert de filet de sécurité.
 {{ app_dir }}/logs/app/santalina.log {
     daily
     rotate 15
@@ -35,3 +34,17 @@
     copytruncate
 }
 
+# ── Logs SMTP (Postfix via rsyslog) ──────────────────────────────────────────
+# /var/log/mail.log du conteneur smtp est bind-mounté sur l'hôte.
+# copytruncate : tronque le fichier en place (rsyslog conserve le fd ouvert).
+{{ app_dir }}/logs/smtp/mail.log {
+    daily
+    rotate 15
+    missingok
+    notifempty
+    compress
+    delaycompress
+    dateext
+    dateformat -%Y-%m-%d
+    copytruncate
+}

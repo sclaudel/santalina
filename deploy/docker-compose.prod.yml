@@ -42,20 +42,16 @@ services:
       MAILER_FROM: ${MAILER_FROM}
       MAILER_HOST: ${MAILER_HOST}
       MAILER_PORT: ${MAILER_PORT}
-      # DISABLED pour un SMTP interne sans TLS (ex: Postfix local)
-      # OPTIONAL ou REQUIRED pour un relay externe (ex: SendGrid, OVH, Gmail)
       MAILER_START_TLS: ${MAILER_START_TLS:-DISABLED}
       MAILER_SSL: ${MAILER_SSL:-false}
       MAILER_TRUST_ALL: ${MAILER_TRUST_ALL:-false}
-      # Niveaux de log (TRACE|DEBUG|INFO|WARN|ERROR)
-      # LOG_LEVEL      : niveau racine (défaut : INFO)
-      # APP_LOG_LEVEL  : code org.santalina uniquement (défaut : INFO)
-      # MAILER_LOG_LEVEL : couches SMTP — mettre DEBUG pour diagnostiquer l'envoi (défaut : INFO)
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       APP_LOG_LEVEL: ${APP_LOG_LEVEL:-INFO}
       MAILER_LOG_LEVEL: ${MAILER_LOG_LEVEL:-INFO}
       JWT_PRIVATE_KEY_PATH: /run/secrets/jwt_private_key
       JWT_PUBLIC_KEY_PATH: /run/secrets/jwt_public_key
+      # Chemin du log SMTP monté en lecture seule depuis le conteneur smtp
+      APP_LOGS_SMTP_PATH: /deployments/data/logs/smtp/mail.log
     secrets:
       - jwt_private_key
       - jwt_public_key
@@ -64,10 +60,12 @@ services:
         condition: service_healthy
     volumes:
       - app_data:/deployments/data
-      # Bind mount logs — accessibles depuis l'hôte pour logrotate / consultation
+      # Logs applicatifs Quarkus — bind mount sur l'hôte pour logrotate / consultation
       - ./logs/app:/deployments/data/logs
-      # Logs nginx montés en lecture seule — consultables depuis l'UI admin
+      # Logs nginx — montés en lecture seule pour l'UI admin
       - ./logs/nginx:/deployments/data/logs/nginx:ro
+      # Logs SMTP — montés en lecture seule pour l'UI admin
+      - ./logs/smtp:/deployments/data/logs/smtp:ro
     networks:
       - internal
 
@@ -84,14 +82,14 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - certbot_certs:/etc/letsencrypt:ro
       - certbot_www:/var/www/certbot:ro
-      # Logs nginx accessibles depuis l'hôte pour fail2ban / logrotate
+      # Logs nginx accessibles depuis l'hôte pour fail2ban + logrotate
       - ./logs/nginx:/var/log/nginx
     depends_on:
       - app
     networks:
       - internal
 
-  # ── Certbot — renouvellement automatique des certificats SSL ─────────────
+  # ── Certbot �� renouvellement automatique des certificats SSL ─────────────
   certbot:
     image: certbot/certbot
     container_name: santalina-certbot
@@ -100,7 +98,6 @@ services:
     volumes:
       - certbot_certs:/etc/letsencrypt
       - certbot_www:/var/www/certbot
-    # Vérifie et renouvelle les certificats toutes les 12 heures
     entrypoint: >
       /bin/sh -c 'trap exit TERM;
       while :; do
@@ -108,14 +105,14 @@ services:
         sleep 12h & wait $${!};
       done;'
 
-# ── Docker secrets (clés RSA JWT) ────────────────────────────────────────────
+# ── Docker secrets (clés RSA JWT) ──────────────────────────��─────────────────
 secrets:
   jwt_private_key:
     file: ./keys/privateKey.pem
   jwt_public_key:
     file: ./keys/publicKey.pem
 
-# ── Réseau interne ────────────────────────────────────────────────────────────
+# ── Réseau interne ──────────────────────────────────────────────────────────���─
 networks:
   internal:
     driver: bridge
