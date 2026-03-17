@@ -79,10 +79,11 @@ sudo ufw status
 ### 3. Préparer le répertoire de déploiement
 
 ```bash
-sudo mkdir -p /opt/santalina/keys /opt/santalina/nginx
+sudo mkdir -p /opt/santalina/keys /opt/santalina/nginx /opt/santalina/logs/app /opt/santalina/logs/nginx
 sudo chown -R $USER:$USER /opt/santalina
 chmod 750 /opt/santalina
 chmod 700 /opt/santalina/keys
+chmod 777 /opt/santalina/logs/app
 ```
 
 ### 4. Générer les clés RSA JWT
@@ -245,14 +246,37 @@ docker compose exec db pg_dump -U santalina santalina > backup_$(date +%Y%m%d).s
 ├── keys/
 │   ├── privateKey.pem       ← clé privée RSA JWT (chmod 600)
 │   └── publicKey.pem        ← clé publique RSA JWT (chmod 600)
-└── nginx/
-    └── nginx.conf           ← configuration Nginx
+├── nginx/
+│   └── nginx.conf           ← configuration Nginx
+└── logs/
+    ├── app/                 ← logs applicatifs Quarkus (bind mount)
+    │   ├── santalina.log
+    │   └── santalina.log.2026-03-16  ← fichiers rotatés par Quarkus (15 jours)
+    └── nginx/               ← logs Nginx (bind mount, lu par fail2ban)
+        ├── access.log
+        └── error.log
 
 Volumes Docker gérés automatiquement :
   santalina_postgres_data    ← données PostgreSQL
   santalina_app_data         ← données applicatives
   santalina_certbot_certs    ← certificats Let's Encrypt
   santalina_certbot_www      ← challenge ACME
+```
+
+### Rotation des logs
+
+| Service     | Mécanisme                  | Rétention | Détails                                                      |
+|-------------|----------------------------|-----------|--------------------------------------------------------------|
+| Application | Quarkus (intégré)          | 15 jours  | Rotation quotidienne, suffixe `.yyyy-MM-dd`                  |
+| Nginx       | logrotate (`/etc/logrotate.d/santalina`) | 15 jours | Rotation quotidienne, compression, signal `nginx -s reopen`  |
+| SMTP        | Docker `json-file` driver  | 15 × 10 Mo | Rotation automatique par taille                              |
+| Autres      | Docker `json-file` driver  | 5 × 10 Mo  | Rotation automatique par taille                              |
+
+Les logs SMTP ne sont pas exportés en fichier. Pour les consulter :
+
+```bash
+docker logs santalina-smtp
+docker logs --since 24h santalina-smtp
 ```
 
 ---

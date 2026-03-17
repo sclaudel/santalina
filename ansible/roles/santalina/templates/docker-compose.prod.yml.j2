@@ -5,6 +5,11 @@ services:
     image: postgres:16-alpine
     container_name: santalina-db
     restart: unless-stopped
+    logging: &default-logging
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
     environment:
       POSTGRES_DB: santalina
       POSTGRES_USER: santalina
@@ -24,6 +29,7 @@ services:
     image: {{ dockerhub_username }}/santalina:{{ app_image_tag | default('latest') }}
     container_name: santalina-app
     restart: unless-stopped
+    logging: *default-logging
     environment:
       QUARKUS_PROFILE: prod
       JDBC_URL: jdbc:postgresql://db:5432/santalina
@@ -60,6 +66,10 @@ services:
         condition: service_healthy
     volumes:
       - app_data:/deployments/data
+      # Bind mount logs — accessibles depuis l'hôte pour logrotate / consultation
+      - ./logs/app:/deployments/data/logs
+      # Logs nginx montés en lecture seule — consultables depuis l'UI admin
+      - ./logs/nginx:/deployments/data/logs/nginx:ro
     networks:
       - internal
 
@@ -68,6 +78,11 @@ services:
     image: boky/postfix
     container_name: santalina-smtp
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "15"
     environment:
       HOSTNAME: {{ app_domain }}
       # Domaine autorisé à envoyer des mails (extrait de l'adresse expéditeur)
@@ -96,6 +111,7 @@ services:
     image: nginx:1.25-alpine
     container_name: santalina-nginx
     restart: unless-stopped
+    logging: *default-logging
     ports:
       - "80:80"
       - "443:443"
@@ -120,6 +136,7 @@ services:
     image: certbot/certbot
     container_name: santalina-certbot
     restart: unless-stopped
+    logging: *default-logging
     volumes:
       # Bind mounts : persistance garantie même après docker compose down -v
       - ./letsencrypt:/etc/letsencrypt

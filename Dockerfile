@@ -9,7 +9,9 @@
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /deployments
 
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup \
+    && mkdir -p /deployments/data/logs \
+    && chown -R appuser:appgroup /deployments/data
 USER appuser
 
 COPY --chown=appuser:appgroup build/quarkus-app/lib/ lib/

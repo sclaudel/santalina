@@ -1,0 +1,37 @@
+# ── Rotation des logs Santalina ────────────────────────────────────────────────
+# Déployé par Ansible — ne pas modifier manuellement.
+# Rotation quotidienne, conservation 15 jours, compression des anciens fichiers.
+
+# ── Logs Nginx (access + error) ───────────────────────────────────────────────
+{{ app_dir }}/logs/nginx/*.log {
+    daily
+    rotate 15
+    missingok
+    notifempty
+    compress
+    delaycompress
+    dateext
+    dateformat -%Y-%m-%d
+    sharedscripts
+    postrotate
+        # Envoie le signal USR1 à Nginx pour rouvrir les fichiers de log
+        docker exec santalina-nginx nginx -s reopen 2>/dev/null || true
+    endscript
+}
+
+# ── Logs applicatifs Quarkus ──────────────────────────────────────────────────
+# Quarkus gère sa propre rotation (file-suffix + max-backup-index dans
+# application.properties). Cette règle logrotate sert de filet de sécurité
+# si les fichiers rotatés par Quarkus ne sont pas nettoyés correctement.
+{{ app_dir }}/logs/app/santalina.log {
+    daily
+    rotate 15
+    missingok
+    notifempty
+    compress
+    delaycompress
+    dateext
+    dateformat -%Y-%m-%d
+    copytruncate
+}
+

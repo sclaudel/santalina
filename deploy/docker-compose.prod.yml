@@ -5,6 +5,11 @@ services:
     image: postgres:16-alpine
     container_name: santalina-db
     restart: unless-stopped
+    logging: &default-logging
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
     environment:
       POSTGRES_DB: santalina
       POSTGRES_USER: santalina
@@ -25,6 +30,7 @@ services:
     image: DOCKERHUB_USERNAME/santalina:latest
     container_name: santalina-app
     restart: unless-stopped
+    logging: *default-logging
     environment:
       QUARKUS_PROFILE: prod
       JDBC_URL: jdbc:postgresql://db:5432/santalina
@@ -58,6 +64,10 @@ services:
         condition: service_healthy
     volumes:
       - app_data:/deployments/data
+      # Bind mount logs — accessibles depuis l'hôte pour logrotate / consultation
+      - ./logs/app:/deployments/data/logs
+      # Logs nginx montés en lecture seule — consultables depuis l'UI admin
+      - ./logs/nginx:/deployments/data/logs/nginx:ro
     networks:
       - internal
 
@@ -66,6 +76,7 @@ services:
     image: nginx:1.25-alpine
     container_name: santalina-nginx
     restart: unless-stopped
+    logging: *default-logging
     ports:
       - "80:80"
       - "443:443"
@@ -73,6 +84,8 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - certbot_certs:/etc/letsencrypt:ro
       - certbot_www:/var/www/certbot:ro
+      # Logs nginx accessibles depuis l'hôte pour fail2ban / logrotate
+      - ./logs/nginx:/var/log/nginx
     depends_on:
       - app
     networks:
@@ -83,6 +96,7 @@ services:
     image: certbot/certbot
     container_name: santalina-certbot
     restart: unless-stopped
+    logging: *default-logging
     volumes:
       - certbot_certs:/etc/letsencrypt
       - certbot_www:/var/www/certbot
