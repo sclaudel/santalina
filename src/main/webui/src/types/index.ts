@@ -99,6 +99,16 @@ export interface SlotRequest {
   notes?: string;
   slotType?: string;
   club?: string;
+  // Récurrence
+  recurring?: boolean;
+  recurringDays?: number[];   // 1=Lun … 7=Dim (ISO)
+  recurringUntil?: string;    // YYYY-MM-DD
+}
+
+export interface BatchSlotResponse {
+  slots: DiveSlot[];
+  created: number;
+  skipped: number;
 }
 
 export interface AppConfig {
@@ -117,6 +127,26 @@ export interface AppConfig {
   exclusiveSlotTypes: string[];
   defaultSlotHours: number;
   notificationBookingEmail: string;
+  maxRecurringMonths: number;
+}
+
+// Logs
+export interface LogInfo {
+  id: string;
+  label: string;
+  available: boolean;
+  sizeBytes: number;
+  info: string;
+}
+
+// Backup / Import
+export interface ImportResult {
+  success: boolean;
+  message: string;
+  configRestored: number;
+  usersRestored: number;
+  slotsRestored: number;
+  diversRestored: number;
 }
 
 export interface PeriodStat {

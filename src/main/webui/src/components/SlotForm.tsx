@@ -27,6 +27,23 @@ function toMinutes(time: string): number {
   return h * 60 + m;
 }
 
+// Jours de la semaine ISO (1=Lun … 7=Dim)
+const DAYS_OF_WEEK = [
+  { value: 1, label: 'Lun' },
+  { value: 2, label: 'Mar' },
+  { value: 3, label: 'Mer' },
+  { value: 4, label: 'Jeu' },
+  { value: 5, label: 'Ven' },
+  { value: 6, label: 'Sam' },
+  { value: 7, label: 'Dim' },
+];
+
+function addMonths(dateStr: string, months: number): string {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setMonth(d.getMonth() + months);
+  return d.toISOString().slice(0, 10);
+}
+
 export function SlotForm({ date, config, onCreated, onCancel, initialStartTime }: Props) {
   const safeConfig = {
     maxDivers: config?.maxDivers > 0 ? config.maxDivers : 25,
@@ -38,6 +55,7 @@ export function SlotForm({ date, config, onCreated, onCancel, initialStartTime }
     clubs: config?.clubs ?? [],
     bookingOpenHour: config?.bookingOpenHour ?? -1,
     bookingCloseHour: config?.bookingCloseHour ?? -1,
+    maxRecurringMonths: config?.maxRecurringMonths > 0 ? config.maxRecurringMonths : 4,
   };
   const times = timeOptions(safeConfig.slotResolutionMinutes);
 
@@ -61,6 +79,20 @@ export function SlotForm({ date, config, onCreated, onCancel, initialStartTime }
   const [club, setClub]               = useState(safeConfig.clubs[0] ?? '');
   const [error, setError]             = useState('');
   const [loading, setLoading]         = useState(false);
+  const [successMsg, setSuccessMsg]   = useState('');
+
+  // Récurrence
+  const [recurring, setRecurring]         = useState(false);
+  const [recurringDays, setRecurringDays] = useState<number[]>([]);
+  const [recurringUntil, setRecurringUntil] = useState(() => addMonths(date, 1));
+
+  const maxUntilDate = addMonths(slotDate, safeConfig.maxRecurringMonths);
+
+  const toggleDay = (day: number) => {
+    setRecurringDays(prev =>
+      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+    );
+  };
 
   const handleStartTimeChange = (newStart: string) => {
     setStartTime(newStart);
@@ -80,6 +112,7 @@ export function SlotForm({ date, config, onCreated, onCancel, initialStartTime }
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccessMsg('');
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const slotDateVal = new Date(slotDate + 'T00:00:00');
@@ -96,15 +129,33 @@ export function SlotForm({ date, config, onCreated, onCancel, initialStartTime }
       setError(`Le nombre de plongeurs ne peut pas dépasser ${safeConfig.maxDivers}`);
       return;
     }
+    if (recurring && recurringDays.length === 0) {
+      setError('Sélectionnez au moins un jour pour la récurrence');
+      return;
+    }
+    if (recurring && recurringUntil <= slotDate) {
+      setError('La date de fin de récurrence doit être après la date de début');
+      return;
+    }
     setLoading(true);
     try {
       const req: SlotRequest = {
-        slotDate: slotDate, startTime, endTime, diverCount, title, notes,
+        slotDate, startTime, endTime, diverCount, title, notes,
         slotType: slotType || undefined,
         club: club || undefined,
+        recurring: recurring || undefined,
+        recurringDays: recurring ? recurringDays : undefined,
+        recurringUntil: recurring ? recurringUntil : undefined,
       };
-      await slotService.create(req);
-      onCreated();
+      const result = await slotService.create(req);
+      if (result.created > 1) {
+        setSuccessMsg(
+          `✅ ${result.created} créneau(x) créé(s)${result.skipped > 0 ? `, ${result.skipped} ignoré(s) (conflits)` : ''}`
+        );
+        setTimeout(() => onCreated(), 1800);
+      } else {
+        onCreated();
+      }
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       setError(msg || 'Erreur lors de la création du créneau');
@@ -118,15 +169,11 @@ export function SlotForm({ date, config, onCreated, onCancel, initialStartTime }
       <div className="slot-form" onClick={e => e.stopPropagation()}>
         <h3>➕ Nouveau créneau</h3>
         {error && <div className="alert alert-error">{error}</div>}
+        {successMsg && <div className="alert alert-success">{successMsg}</div>}
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Date</label>
-            <input
-              type="date"
-              value={slotDate}
-              onChange={e => setSlotDate(e.target.value)}
-              required
-            />
+            <input type="date" value={slotDate} onChange={e => setSlotDate(e.target.value)} required />
           </div>
           <div className="form-row">
             <div className="form-group">
@@ -138,8 +185,7 @@ export function SlotForm({ date, config, onCreated, onCancel, initialStartTime }
                     (safeConfig.bookingOpenHour  !== -1 && h <  safeConfig.bookingOpenHour) ||
                     (safeConfig.bookingCloseHour !== -1 && h >= safeConfig.bookingCloseHour);
                   return (
-                    <option key={t} value={t} disabled={forbidden}
-                      style={forbidden ? { color: '#9ca3af' } : {}}>
+                    <option key={t} value={t} disabled={forbidden} style={forbidden ? { color: '#9ca3af' } : {}}>
                       {t}
                     </option>
                   );
@@ -151,12 +197,9 @@ export function SlotForm({ date, config, onCreated, onCancel, initialStartTime }
               <select value={endTime} onChange={e => setEndTime(e.target.value)}>
                 {times.map(t => {
                   const diff = toMinutes(t) - toMinutes(startTime);
-                  const disabled =
-                    diff < safeConfig.slotMinHours * 60 ||
-                    diff > safeConfig.slotMaxHours * 60;
+                  const disabled = diff < safeConfig.slotMinHours * 60 || diff > safeConfig.slotMaxHours * 60;
                   return (
-                    <option key={t} value={t} disabled={disabled}
-                      style={disabled ? { color: '#9ca3af' } : {}}>
+                    <option key={t} value={t} disabled={disabled} style={disabled ? { color: '#9ca3af' } : {}}>
                       {t}
                     </option>
                   );
@@ -166,17 +209,13 @@ export function SlotForm({ date, config, onCreated, onCancel, initialStartTime }
           </div>
           <div className="form-group">
             <label>Nombre de plongeurs (max {safeConfig.maxDivers})</label>
-            <input
-              type="number" min={2} max={safeConfig.maxDivers}
-              value={diverCountStr}
+            <input type="number" min={2} max={safeConfig.maxDivers} value={diverCountStr}
               onChange={e => setDiverCountStr(e.target.value)}
               onBlur={() => {
                 const val = parseInt(diverCountStr, 10);
                 if (!diverCountStr || isNaN(val) || val < 2) setDiverCountStr('2');
                 else if (val > safeConfig.maxDivers) setDiverCountStr(String(safeConfig.maxDivers));
-              }}
-              required
-            />
+              }} required />
           </div>
           {safeConfig.slotTypes.length > 0 && (
             <div className="form-group">
@@ -204,10 +243,63 @@ export function SlotForm({ date, config, onCreated, onCancel, initialStartTime }
             <label>Notes (optionnel)</label>
             <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Informations supplémentaires..." />
           </div>
+
+          {/* ── Récurrence ── */}
+          <div className="form-group" style={{ borderTop: '1px solid #e5e7eb', paddingTop: 12, marginTop: 4 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none' }}>
+              <input type="checkbox" checked={recurring} onChange={e => setRecurring(e.target.checked)}
+                style={{ width: 16, height: 16, accentColor: '#2563eb' }} />
+              <span style={{ fontWeight: 600 }}>🔁 Créneau récurrent</span>
+            </label>
+            <p style={{ color: '#6b7280', fontSize: 13, margin: '4px 0 0 26px' }}>
+              Crée ce créneau sur les jours sélectionnés jusqu'à la date de fin (max {safeConfig.maxRecurringMonths} mois).
+            </p>
+          </div>
+
+          {recurring && (
+            <div style={{ background: '#f0f9ff', borderRadius: 8, padding: 14, marginTop: 4, border: '1px solid #bae6fd' }}>
+              <div className="form-group" style={{ marginBottom: 12 }}>
+                <label style={{ fontWeight: 600 }}>Jours de répétition</label>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
+                  {DAYS_OF_WEEK.map(d => {
+                    const selected = recurringDays.includes(d.value);
+                    return (
+                      <button key={d.value} type="button" onClick={() => toggleDay(d.value)}
+                        style={{
+                          padding: '6px 12px', borderRadius: 6, fontWeight: 600, fontSize: 13,
+                          cursor: 'pointer', border: '2px solid',
+                          borderColor: selected ? '#2563eb' : '#d1d5db',
+                          background: selected ? '#2563eb' : '#fff',
+                          color: selected ? '#fff' : '#374151',
+                          transition: 'all .15s',
+                        }}>
+                        {d.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {recurringDays.length === 0 && (
+                  <p style={{ color: '#dc2626', fontSize: 12, marginTop: 4 }}>Sélectionnez au moins un jour.</p>
+                )}
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label style={{ fontWeight: 600 }}>Répéter jusqu'au</label>
+                <input type="date" value={recurringUntil} min={slotDate} max={maxUntilDate}
+                  onChange={e => setRecurringUntil(e.target.value)} required={recurring}
+                  style={{ marginTop: 4 }} />
+                <p style={{ color: '#6b7280', fontSize: 12, marginTop: 4 }}>
+                  Maximum : {maxUntilDate} ({safeConfig.maxRecurringMonths} mois)
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="form-actions">
             <button type="button" className="btn btn-outline" onClick={onCancel}>Annuler</button>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'Création...' : 'Créer le créneau'}
+              {loading
+                ? (recurring ? 'Création en cours...' : 'Création...')
+                : (recurring ? '🔁 Créer les créneaux récurrents' : 'Créer le créneau')}
             </button>
           </div>
         </form>

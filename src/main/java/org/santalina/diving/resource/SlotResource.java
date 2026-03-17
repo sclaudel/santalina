@@ -65,8 +65,8 @@ public class SlotResource {
     public Response create(@Valid SlotRequest request) {
         User currentUser = User.findByEmail(jwt.getName());
         if (currentUser == null) throw new NotAuthorizedException("Utilisateur non trouvé");
-        SlotResponse slot = slotService.createSlot(request, currentUser);
-        return Response.status(201).entity(slot).build();
+        BatchSlotResponse batch = slotService.createSlots(request, currentUser);
+        return Response.status(201).entity(batch).build();
     }
 
     @DELETE

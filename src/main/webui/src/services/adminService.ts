@@ -1,5 +1,5 @@
 import api from './api';
-import type { User, AppConfig, CreateUserRequest, UpdateUserAdminRequest, UserRole, UserSearchResult } from '../types';
+import type { User, AppConfig, CreateUserRequest, UpdateUserAdminRequest, UserRole, UserSearchResult, LogInfo, ImportResult } from '../types';
 
 export const adminService = {
   async getAllUsers(): Promise<User[]> {
@@ -88,6 +88,73 @@ export const adminService = {
 
   async updateNotificationEmail(email: string): Promise<AppConfig> {
     const res = await api.put<AppConfig>('/config/notification-email', { email });
+    return res.data;
+  },
+
+  async updateMaxRecurringMonths(maxRecurringMonths: number): Promise<AppConfig> {
+    const res = await api.put<AppConfig>('/config/max-recurring-months', { maxRecurringMonths });
+    return res.data;
+  },
+
+  // ---- Logs ----
+
+  async getLogs(): Promise<LogInfo[]> {
+    const res = await api.get<LogInfo[]>('/admin/logs');
+    return res.data;
+  },
+
+  async downloadLog(service: string): Promise<void> {
+    const res = await api.get(`/admin/logs/${service}/download`, { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    const disposition = res.headers['content-disposition'] ?? '';
+    const match = disposition.match(/filename="?([^"]+)"?/);
+    link.setAttribute('download', match ? match[1] : `${service}.log`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
+  async tailLog(service: string, lines = 200): Promise<string> {
+    const res = await api.get<string>(`/admin/logs/${service}/tail`, {
+      params: { lines },
+      responseType: 'text',
+    });
+    return res.data;
+  },
+
+  // ---- Backup / Import ----
+
+  async downloadBackupConfigUsers(): Promise<void> {
+    const res = await api.get('/admin/backup/export/config-users', { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/json' }));
+    const link = document.createElement('a');
+    link.href = url;
+    const today = new Date().toISOString().slice(0, 10);
+    link.setAttribute('download', `santalina-config-users-${today}.json`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
+  async downloadBackupFull(): Promise<void> {
+    const res = await api.get('/admin/backup/export/full', { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/json' }));
+    const link = document.createElement('a');
+    link.href = url;
+    const today = new Date().toISOString().slice(0, 10);
+    link.setAttribute('download', `santalina-full-${today}.json`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
+  async importBackup(data: unknown): Promise<ImportResult> {
+    const res = await api.post<ImportResult>('/admin/backup/import', data);
     return res.data;
   },
 };

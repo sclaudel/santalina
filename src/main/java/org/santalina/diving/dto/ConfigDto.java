@@ -23,7 +23,12 @@ public class ConfigDto {
             int bookingCloseHour,
             List<String> exclusiveSlotTypes,
             int defaultSlotHours,
-            String notificationBookingEmail
+            String notificationBookingEmail,
+            int maxRecurringMonths
+    ) {}
+
+    public record UpdateMaxRecurringMonthsRequest(
+            @NotNull @Min(1) @jakarta.validation.constraints.Max(24) Integer maxRecurringMonths
     ) {}
 
     public record UpdateMaxDiversRequest(

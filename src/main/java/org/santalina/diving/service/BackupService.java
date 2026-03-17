@@ -1,0 +1,234 @@
+package org.santalina.diving.service;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
+import org.jboss.logging.Logger;
+import org.santalina.diving.domain.*;
+import org.santalina.diving.dto.BackupDto.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@ApplicationScoped
+public class BackupService {
+
+    private static final Logger LOG = Logger.getLogger(BackupService.class);
+    private static final String BACKUP_VERSION = "1.0";
+
+    @Inject
+    EntityManager em;
+
+    // ---- Exports ----
+
+    /** Export configuration + utilisateurs (sans créneaux). */
+    public BackupData exportConfigUsers() {
+        List<ConfigEntry> config = AppConfigEntry.<AppConfigEntry>listAll()
+                .stream()
+                .map(e -> new ConfigEntry(e.configKey, e.configValue))
+                .collect(Collectors.toList());
+
+        List<UserEntry> users = User.<User>listAll()
+                .stream()
+                .map(this::toUserEntry)
+                .collect(Collectors.toList());
+
+        LOG.infof("Export config-users : %d entrées de config, %d utilisateurs", config.size(), users.size());
+        return new BackupData(BACKUP_VERSION, "config-users", LocalDateTime.now(),
+                config, users, null, null);
+    }
+
+    /** Export complet (config + utilisateurs + créneaux + plongeurs). */
+    public BackupData exportFull() {
+        List<ConfigEntry> config = AppConfigEntry.<AppConfigEntry>listAll()
+                .stream()
+                .map(e -> new ConfigEntry(e.configKey, e.configValue))
+                .collect(Collectors.toList());
+
+        List<UserEntry> users = User.<User>listAll()
+                .stream()
+                .map(this::toUserEntry)
+                .collect(Collectors.toList());
+
+        List<SlotEntry> slots = DiveSlot.<DiveSlot>listAll()
+                .stream()
+                .map(this::toSlotEntry)
+                .collect(Collectors.toList());
+
+        List<DiverEntry> divers = SlotDiver.<SlotDiver>listAll()
+                .stream()
+                .map(this::toDiverEntry)
+                .collect(Collectors.toList());
+
+        LOG.infof("Export full : %d config, %d users, %d slots, %d divers",
+                config.size(), users.size(), slots.size(), divers.size());
+        return new BackupData(BACKUP_VERSION, "full", LocalDateTime.now(),
+                config, users, slots, divers);
+    }
+
+    // ---- Import ----
+
+    /**
+     * Importe une sauvegarde en vidant d'abord toutes les données existantes.
+     * L'opération est atomique (tout dans une transaction).
+     */
+    @Transactional
+    public ImportResult importBackup(BackupData backup) {
+        LOG.warnf("Démarrage de l'import (type=%s, exportedAt=%s)", backup.type(), backup.exportedAt());
+
+        // 1. Vider dans l'ordre des dépendances
+        em.createNativeQuery("DELETE FROM slot_divers").executeUpdate();
+        em.createNativeQuery("DELETE FROM palanquees").executeUpdate();
+        em.createNativeQuery("DELETE FROM dive_slots").executeUpdate();
+        em.createNativeQuery("DELETE FROM user_roles").executeUpdate();
+        em.createNativeQuery("DELETE FROM users").executeUpdate();
+        em.createNativeQuery("DELETE FROM app_config").executeUpdate();
+
+        // 2. Restaurer la configuration
+        int configCount = 0;
+        if (backup.config() != null) {
+            for (ConfigEntry e : backup.config()) {
+                AppConfigEntry entry = new AppConfigEntry();
+                entry.configKey   = e.key();
+                entry.configValue = e.value();
+                entry.updatedAt   = LocalDateTime.now();
+                entry.persist();
+                configCount++;
+            }
+        }
+
+        // 3. Restaurer les utilisateurs
+        int userCount = 0;
+        if (backup.users() != null) {
+            for (UserEntry u : backup.users()) {
+                User user = new User();
+                user.email          = u.email();
+                user.passwordHash   = u.passwordHash();
+                user.firstName      = u.firstName();
+                user.lastName       = u.lastName();
+                user.phone          = u.phone();
+                user.licenseNumber  = u.licenseNumber();
+                user.activated      = u.activated();
+                user.consentGiven   = u.consentGiven();
+                user.consentDate    = u.consentDate();
+                user.createdAt      = LocalDateTime.now();
+                user.updatedAt      = LocalDateTime.now();
+                // Rôles
+                if (u.roles() != null) {
+                    for (String roleName : u.roles()) {
+                        try { user.roles.add(UserRole.valueOf(roleName)); } catch (Exception ignored) {}
+                    }
+                }
+                user.role = user.roles.stream()
+                        .filter(r -> r == UserRole.ADMIN).findFirst()
+                        .orElse(user.roles.stream()
+                                .filter(r -> r == UserRole.DIVE_DIRECTOR).findFirst()
+                                .orElse(UserRole.DIVER));
+                user.persist();
+                userCount++;
+            }
+        }
+        em.flush();
+
+        // 4. Restaurer les créneaux (seulement si export full)
+        int slotCount = 0;
+        if (backup.slots() != null) {
+            for (SlotEntry s : backup.slots()) {
+                DiveSlot slot = new DiveSlot();
+                slot.slotDate  = s.slotDate();
+                slot.startTime = s.startTime();
+                slot.endTime   = s.endTime();
+                slot.diverCount = s.diverCount();
+                slot.title     = s.title();
+                slot.notes     = s.notes();
+                slot.slotType  = s.slotType();
+                slot.club      = s.club();
+                slot.createdAt = s.createdAt() != null ? s.createdAt() : LocalDateTime.now();
+                slot.updatedAt = LocalDateTime.now();
+                // Lier au créateur si possible
+                if (s.createdById() != null) {
+                    User creator = User.find("email",
+                            backup.users().stream()
+                                    .filter(u -> u.id() != null && u.id().equals(s.createdById()))
+                                    .map(UserEntry::email).findFirst().orElse(null))
+                            .firstResult();
+                    slot.createdBy = creator;
+                }
+                slot.persist();
+                slotCount++;
+            }
+        }
+        em.flush();
+
+        // 5. Restaurer les plongeurs
+        int diverCount = 0;
+        if (backup.divers() != null) {
+            for (DiverEntry d : backup.divers()) {
+                // Retrouver le créneau correspondant par position dans la liste
+                DiveSlot linkedSlot = null;
+                if (d.slotId() != null && backup.slots() != null) {
+                    // On cherche le slot par son slotDate+startTime de l'entrée originale
+                    final Long origSlotId = d.slotId();
+                    SlotEntry origSlot = backup.slots().stream()
+                            .filter(s -> origSlotId.equals(s.id()))
+                            .findFirst().orElse(null);
+                    if (origSlot != null) {
+                        linkedSlot = DiveSlot.find(
+                                "slotDate = ?1 and startTime = ?2 and endTime = ?3",
+                                origSlot.slotDate(), origSlot.startTime(), origSlot.endTime())
+                                .firstResult();
+                    }
+                }
+                if (linkedSlot == null) continue; // créneau introuvable → ignorer ce plongeur
+
+                SlotDiver diver = new SlotDiver();
+                diver.slot          = linkedSlot;
+                diver.firstName     = d.firstName();
+                diver.lastName      = d.lastName();
+                diver.level         = d.level();
+                diver.email         = d.email();
+                diver.phone         = d.phone();
+                diver.isDirector    = d.isDirector();
+                diver.aptitudes     = d.aptitudes();
+                diver.licenseNumber = d.licenseNumber();
+                diver.addedAt       = LocalDateTime.now();
+                diver.persist();
+                diverCount++;
+            }
+        }
+
+        LOG.infof("Import terminé : %d config, %d users, %d slots, %d divers",
+                configCount, userCount, slotCount, diverCount);
+
+        return new ImportResult(true,
+                String.format("Import réussi : %d config, %d utilisateurs, %d créneaux, %d plongeurs",
+                        configCount, userCount, slotCount, diverCount),
+                configCount, userCount, slotCount, diverCount);
+    }
+
+    // ---- Mappeurs ----
+
+    private UserEntry toUserEntry(User u) {
+        List<String> roles = u.roles.stream().map(Enum::name).collect(Collectors.toList());
+        return new UserEntry(u.id, u.email, u.passwordHash,
+                u.firstName, u.lastName, u.phone, u.licenseNumber,
+                u.activated, u.consentGiven, u.consentDate, roles);
+    }
+
+    private SlotEntry toSlotEntry(DiveSlot s) {
+        return new SlotEntry(s.id, s.slotDate, s.startTime, s.endTime,
+                s.diverCount, s.title, s.notes, s.slotType, s.club,
+                s.createdBy != null ? s.createdBy.id : null, s.createdAt);
+    }
+
+    private DiverEntry toDiverEntry(SlotDiver d) {
+        return new DiverEntry(d.id, d.slot != null ? d.slot.id : null,
+                d.firstName, d.lastName, d.level, d.email, d.phone,
+                d.isDirector, d.aptitudes, d.licenseNumber);
+    }
+}
+
+
+

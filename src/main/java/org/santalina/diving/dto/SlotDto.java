@@ -20,7 +20,11 @@ public class SlotDto {
             String title,
             String notes,
             String slotType,
-            String club
+            String club,
+            // Champs récurrence
+            Boolean recurring,
+            List<Integer> recurringDays,   // 1=Lun … 7=Dim (ISO DayOfWeek)
+            LocalDate recurringUntil
     ) {}
 
     public record UpdateDiverCountRequest(
@@ -70,4 +74,11 @@ public class SlotDto {
             );
         }
     }
+
+    /** Réponse pour une création simple ou en lot (récurrence) */
+    public record BatchSlotResponse(
+            List<SlotResponse> slots,
+            int created,
+            int skipped
+    ) {}
 }
