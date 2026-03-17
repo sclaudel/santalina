@@ -149,9 +149,7 @@ export function SlotForm({ date, config, onCreated, onCancel, initialStartTime }
       };
       const result = await slotService.create(req);
       if (result.created > 1) {
-        setSuccessMsg(
-          `✅ ${result.created} créneau(x) créé(s)${result.skipped > 0 ? `, ${result.skipped} ignoré(s) (conflits)` : ''}`
-        );
+        setSuccessMsg(`✅ ${result.created} créneau(x) récurrent(s) créé(s) avec succès.`);
         setTimeout(() => onCreated(), 1800);
       } else {
         onCreated();
