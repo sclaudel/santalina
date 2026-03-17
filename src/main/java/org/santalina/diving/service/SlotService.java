@@ -92,7 +92,7 @@ public class SlotService {
             return new BatchSlotResponse(List.of(slot), 1, 0);
         }
 
-        // --- Création récurrente ---
+        // --- Création récurrente (tout ou rien) ---
         LocalDate today     = LocalDate.now();
         LocalDate startDate = request.slotDate();
         LocalDate untilDate = request.recurringUntil();
@@ -108,41 +108,83 @@ public class SlotService {
             throw new BadRequestException("La date de fin de récurrence doit être après la date de début");
         }
 
+        // Validation commune (heures, capacité) — une seule fois
+        validateSlotTimes(request.startTime(), request.endTime());
+        checkSlotTimeWindow(request.startTime(), request.endTime());
+        validateDiverCount(request.diverCount());
+
         // Jours ISO valides (1=Lun … 7=Dim)
         Set<Integer> days = request.recurringDays().stream()
                 .filter(d -> d >= 1 && d <= 7)
                 .collect(Collectors.toSet());
 
-        List<SlotResponse> created = new ArrayList<>();
-        int skipped = 0;
-
+        // Calcul des dates candidates (futures uniquement)
+        List<LocalDate> candidateDates = new ArrayList<>();
         LocalDate cursor = startDate;
         while (!cursor.isAfter(untilDate)) {
-            int dow = cursor.getDayOfWeek().getValue(); // 1=Mon, 7=Sun
-            if (days.contains(dow)) {
-                if (!cursor.isBefore(today)) {
-                    try {
-                        SlotResponse slot = createSlot(request, cursor, currentUser);
-                        created.add(slot);
-                    } catch (BadRequestException ex) {
-                        LOG.debugf("Créneau récurrent ignoré le %s : %s", cursor, ex.getMessage());
-                        skipped++;
-                    }
-                } else {
-                    skipped++;
-                }
+            int dow = cursor.getDayOfWeek().getValue();
+            if (days.contains(dow) && !cursor.isBefore(today)) {
+                candidateDates.add(cursor);
             }
             cursor = cursor.plusDays(1);
         }
 
-        if (created.isEmpty()) {
+        if (candidateDates.isEmpty()) {
             throw new BadRequestException(
-                "Aucun créneau récurrent n'a pu être créé (conflits ou dates dans le passé)");
+                "Aucun créneau récurrent à créer : toutes les dates sélectionnées sont dans le passé ou aucun jour n'est sélectionné");
         }
 
-        LOG.infof("Récurrence : %d créneau(x) créé(s), %d ignoré(s) par %s",
-                created.size(), skipped, currentUser.email);
-        return new BatchSlotResponse(created, created.size(), skipped);
+        // Passe 1 : vérification de TOUS les conflits avant toute création
+        List<String> conflictDates = new ArrayList<>();
+        for (LocalDate date : candidateDates) {
+            try {
+                checkExclusiveConflict(date, request.startTime(), request.endTime(), request.slotType(), null);
+                checkCapacity(date, request.startTime(), request.endTime(), request.diverCount(), null);
+            } catch (BadRequestException ex) {
+                conflictDates.add(date.toString());
+                LOG.debugf("Conflit détecté le %s : %s", date, ex.getMessage());
+            }
+        }
+
+        if (!conflictDates.isEmpty()) {
+            throw new BadRequestException(
+                "Impossible de créer la série récurrente : " + conflictDates.size() +
+                " conflit(s) détecté(s) sur : " + String.join(", ", conflictDates));
+        }
+
+        // Passe 2 : création de tous les créneaux (sans mail individuel)
+        List<DiveSlot> createdSlots = new ArrayList<>();
+        for (LocalDate date : candidateDates) {
+            DiveSlot slot = persistSlot(request, date, currentUser);
+            createdSlots.add(slot);
+            LOG.infof("Créneau récurrent créé (id=%d) le %s par %s", slot.id, date, currentUser.email);
+        }
+
+        // Un seul mail de récapitulatif pour toute la série
+        bookingNotificationMailer.sendRecurringSlotsSummary(createdSlots);
+
+        LOG.infof("Récurrence : %d créneau(x) créé(s) par %s", createdSlots.size(), currentUser.email);
+        List<SlotResponse> responses = createdSlots.stream().map(SlotResponse::from).toList();
+        return new BatchSlotResponse(responses, createdSlots.size(), 0);
+    }
+
+    /**
+     * Helper privé : persiste un créneau sans validation ni envoi de mail.
+     * Utilisé exclusivement dans le flux récurrent (validation faite en amont).
+     */
+    private DiveSlot persistSlot(SlotRequest request, LocalDate date, User currentUser) {
+        DiveSlot slot = new DiveSlot();
+        slot.slotDate   = date;
+        slot.startTime  = request.startTime();
+        slot.endTime    = request.endTime();
+        slot.diverCount = request.diverCount();
+        slot.title      = request.title();
+        slot.notes      = request.notes();
+        slot.slotType   = request.slotType();
+        slot.club       = request.club();
+        slot.createdBy  = currentUser;
+        slot.persist();
+        return slot;
     }
 
     /**
@@ -159,17 +201,7 @@ public class SlotService {
         checkExclusiveConflict(overrideDate, request.startTime(), request.endTime(), request.slotType(), null);
         checkCapacity(overrideDate, request.startTime(), request.endTime(), request.diverCount(), null);
 
-        DiveSlot slot = new DiveSlot();
-        slot.slotDate  = overrideDate;
-        slot.startTime = request.startTime();
-        slot.endTime   = request.endTime();
-        slot.diverCount = request.diverCount();
-        slot.title    = request.title();
-        slot.notes    = request.notes();
-        slot.slotType = request.slotType();
-        slot.club     = request.club();
-        slot.createdBy = currentUser;
-        slot.persist();
+        DiveSlot slot = persistSlot(request, overrideDate, currentUser);
         LOG.infof("Créneau créé (id=%d) le %s de %s à %s par %s",
                 slot.id, slot.slotDate, slot.startTime, slot.endTime, currentUser.email);
         bookingNotificationMailer.sendSlotCreatedNotification(slot);

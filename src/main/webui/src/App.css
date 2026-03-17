@@ -562,6 +562,7 @@ body {
 .slot-form {
   background: var(--white); border-radius: var(--radius-lg); padding: 28px;
   width: 100%; max-width: 480px; box-shadow: var(--shadow-lg);
+  max-height: calc(100dvh - 40px); overflow-y: auto;
 }
 .slot-form h3 { font-size: 18px; font-weight: 700; margin-bottom: 18px; }
 
