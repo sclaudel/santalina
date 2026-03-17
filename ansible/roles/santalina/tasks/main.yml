@@ -48,6 +48,14 @@
     group: "{{ ansible_user }}"
     mode: "0755"
 
+- name: Créer le répertoire des logs applicatifs (bind mount vers le conteneur app)
+  ansible.builtin.file:
+    path: "{{ app_dir }}/logs/app"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0777"
+
 - name: Créer le répertoire des clés DKIM (bind mount — persiste après docker compose down -v)
   ansible.builtin.file:
     path: "{{ app_dir }}/dkim_keys"
@@ -114,6 +122,22 @@
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
     mode: "0640"
+
+# ── Rotation des logs (logrotate) ─────────────────────────────────────────────
+- name: Installer logrotate (si absent)
+  ansible.builtin.apt:
+    name: logrotate
+    state: present
+  become: true
+
+- name: Déployer la configuration logrotate (rotation quotidienne, 15 jours)
+  ansible.builtin.template:
+    src: logrotate-santalina.j2
+    dest: /etc/logrotate.d/santalina
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
 
 # ── Vérification préalable du certificat SSL ──────────────────────────────────
 # Le certificat est stocké dans un bind mount ({{ app_dir }}/letsencrypt) sur le VPS.
