@@ -101,4 +101,11 @@ public class ConfigResource {
     public ConfigResponse updateNotificationEmail(UpdateNotificationEmailRequest request) {
         return configService.updateNotificationBookingEmail(request.email());
     }
+
+    @PUT
+    @Path("/max-recurring-months")
+    @RolesAllowed("ADMIN")
+    public ConfigResponse updateMaxRecurringMonths(@Valid UpdateMaxRecurringMonthsRequest request) {
+        return configService.updateMaxRecurringMonths(request.maxRecurringMonths());
+    }
 }

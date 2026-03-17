@@ -1,5 +1,5 @@
 import api from './api';
-import type { DiveSlot, SlotRequest } from '../types';
+import type { DiveSlot, SlotRequest, BatchSlotResponse } from '../types';
 
 export interface SlotInfoUpdate {
   title?: string;
@@ -32,8 +32,8 @@ export const slotService = {
     return res.data;
   },
 
-  async create(slot: SlotRequest): Promise<DiveSlot> {
-    const res = await api.post<DiveSlot>('/slots', slot);
+  async create(slot: SlotRequest): Promise<BatchSlotResponse> {
+    const res = await api.post<BatchSlotResponse>('/slots', slot);
     return res.data;
   },
 
@@ -51,4 +51,3 @@ export const slotService = {
     await api.delete(`/slots/${id}`);
   },
 };
-

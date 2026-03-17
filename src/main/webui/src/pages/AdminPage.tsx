@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { adminService } from '../services/adminService';
-import type { User, AppConfig, CreateUserRequest, UpdateUserAdminRequest, UserRole } from '../types';
+import type { User, AppConfig, CreateUserRequest, UpdateUserAdminRequest, UserRole, LogInfo, ImportResult } from '../types';
 import { getErrorMessage } from '../utils/errorUtils';
 
 
@@ -57,6 +57,22 @@ export function AdminPage() {
   // Nombre total d'administrateurs (permet de protéger le dernier)
   const adminCount = users.filter(u => (u.roles ?? [u.role]).includes('ADMIN')).length;
 
+  // Durée de récurrence
+  const [newMaxRecurringMonths, setNewMaxRecurringMonths] = useState('4');
+  const [recurringLoading, setRecurringLoading] = useState(false);
+
+  // Logs
+  const [logs, setLogs]                 = useState<LogInfo[]>([]);
+  const [logsLoading, setLogsLoading]   = useState(false);
+  const [logTail, setLogTail]           = useState<{ service: string; content: string } | null>(null);
+  const [logTailLoading, setLogTailLoading] = useState(false);
+
+  // Backup / Import
+  const [backupLoading, setBackupLoading]   = useState(false);
+  const [importLoading, setImportLoading]   = useState(false);
+  const [importResult, setImportResult]     = useState<ImportResult | null>(null);
+  const importFileRef = useRef<HTMLInputElement>(null);
+
   const loadData = async () => {
     try {
       const [u, c] = await Promise.all([adminService.getAllUsers(), adminService.getConfig()]);
@@ -65,6 +81,7 @@ export function AdminPage() {
       setNewMax(String(c.maxDivers));
       setNewSiteName(c.siteName ?? '');
       setNewDefaultSlotHours(String(c.defaultSlotHours ?? 2));
+      setNewMaxRecurringMonths(String(c.maxRecurringMonths ?? 4));
       setSlotTypesText((c.slotTypes ?? []).join('\n'));
       setExclusiveSlotTypes(c.exclusiveSlotTypes ?? []);
       setClubsText((c.clubs ?? []).join('\n'));
@@ -110,6 +127,17 @@ export function AdminPage() {
     } catch (err: unknown) {
       setError(getErrorMessage(err));
     } finally { setLoading(false); }
+  };
+
+  const handleUpdateMaxRecurringMonths = async (e: React.FormEvent) => {
+    e.preventDefault(); setMsg(''); setError(''); setRecurringLoading(true);
+    try {
+      const updated = await adminService.updateMaxRecurringMonths(Number(newMaxRecurringMonths));
+      setConfig(updated);
+      setNewMaxRecurringMonths(String(updated.maxRecurringMonths));
+      setMsg(`Durée max de récurrence mise à jour : ${updated.maxRecurringMonths} mois`);
+    } catch (err: unknown) { setError(getErrorMessage(err)); }
+    finally { setRecurringLoading(false); }
   };
 
   /** Basculer un rôle dans la liste d'un utilisateur */
@@ -278,6 +306,57 @@ export function AdminPage() {
     } catch (err: unknown) {
       setEditError(getErrorMessage(err));
     } finally { setEditLoading(false); }
+  };
+
+  const handleLoadLogs = async () => {
+    setLogsLoading(true);
+    try {
+      const data = await adminService.getLogs();
+      setLogs(data);
+    } catch { setError('Erreur lors du chargement des logs'); }
+    finally { setLogsLoading(false); }
+  };
+
+  const handleDownloadLog = async (service: string) => {
+    try {
+      await adminService.downloadLog(service);
+    } catch { setError('Erreur lors du téléchargement du log'); }
+  };
+
+  const handleTailLog = async (service: string) => {
+    setLogTailLoading(true); setLogTail(null);
+    try {
+      const content = await adminService.tailLog(service, 300);
+      setLogTail({ service, content });
+    } catch { setError('Erreur lors de la lecture du log'); }
+    finally { setLogTailLoading(false); }
+  };
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!confirm(`⚠️ ATTENTION : cet import va EFFACER TOUTES les données actuelles (utilisateurs, créneaux, configuration) et les remplacer par le contenu du fichier "${file.name}".\n\nCette opération est irréversible. Continuer ?`)) {
+      e.target.value = '';
+      return;
+    }
+    setImportLoading(true); setImportResult(null); setMsg(''); setError('');
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      const result = await adminService.importBackup(data);
+      setImportResult(result);
+      if (result.success) {
+        setMsg(result.message);
+        await loadData(); // Recharger la config importée
+      } else {
+        setError(result.message);
+      }
+    } catch (err: unknown) {
+      setError('Erreur lors de l\'import : ' + getErrorMessage(err));
+    } finally {
+      setImportLoading(false);
+      if (importFileRef.current) importFileRef.current.value = '';
+    }
   };
 
   return (
@@ -481,6 +560,180 @@ export function AdminPage() {
               )}
             </form>
           </div>
+        </div>
+      </div>
+
+      {/* ── Créneaux récurrents ── */}
+      <div className="admin-section">
+        <h2>🔁 Créneaux récurrents</h2>
+        <p style={{ color: '#6b7280', fontSize: 13, marginBottom: 16 }}>
+          Lors de la création d'un créneau, il est possible de le répéter sur plusieurs semaines.
+          Ce paramètre définit la durée maximale autorisée pour une récurrence.
+        </p>
+        {config && (
+          <div className="config-item" style={{ marginBottom: 16 }}>
+            <span>Durée max actuelle</span>
+            <strong>{config.maxRecurringMonths ?? 4} mois</strong>
+          </div>
+        )}
+        <form onSubmit={handleUpdateMaxRecurringMonths} className="form form-inline" style={{ maxWidth: 360 }}>
+          <div className="form-group">
+            <label>Durée maximale de récurrence (en mois)</label>
+            <select value={newMaxRecurringMonths} onChange={e => setNewMaxRecurringMonths(e.target.value)}>
+              {[1, 2, 3, 4, 6, 8, 12, 18, 24].map(m => (
+                <option key={m} value={m}>{m} mois</option>
+              ))}
+            </select>
+          </div>
+          <button type="submit" className="btn btn-primary" disabled={recurringLoading}>
+            {recurringLoading ? '...' : '💾 Enregistrer'}
+          </button>
+        </form>
+      </div>
+
+      {/* ── Téléchargement des logs ── */}
+      <div className="admin-section">
+        <h2>📋 Logs des services</h2>
+        <p style={{ color: '#6b7280', fontSize: 13, marginBottom: 16 }}>
+          Téléchargez ou consultez les journaux de l'application, du serveur web et du serveur SMTP.
+          En production, les logs Nginx doivent être montés dans le volume partagé
+          (<code>/deployments/data/logs/</code>) pour être accessibles ici.
+        </p>
+        {logs.length === 0 ? (
+          <button className="btn btn-outline" onClick={handleLoadLogs} disabled={logsLoading}>
+            {logsLoading ? '⏳ Chargement...' : '🔍 Charger la liste des logs'}
+          </button>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {logs.map(log => (
+              <div key={log.id} style={{
+                display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+                padding: '12px 16px', borderRadius: 8, border: '1px solid #e5e7eb',
+                background: log.available ? '#f9fafb' : '#fff7ed',
+              }}>
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  <strong>{log.label}</strong>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
+                    {log.available
+                      ? `✅ Disponible — ${(log.sizeBytes / 1024).toFixed(1)} Ko`
+                      : `⚠️ ${log.info}`}
+                  </div>
+                </div>
+                {log.available && (
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="btn btn-small" style={{ background: '#dbeafe', color: '#1d4ed8', border: 'none' }}
+                      onClick={() => handleTailLog(log.id)} disabled={logTailLoading}>
+                      👁 Aperçu
+                    </button>
+                    <button className="btn btn-small" style={{ background: '#d1fae5', color: '#065f46', border: 'none' }}
+                      onClick={() => handleDownloadLog(log.id)}>
+                      ⬇️ Télécharger
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        {/* Aperçu inline du log */}
+        {logTail && (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <strong style={{ fontSize: 14 }}>📄 Aperçu — {logTail.service} (300 dernières lignes)</strong>
+              <button className="btn btn-small btn-outline" onClick={() => setLogTail(null)}>✕ Fermer</button>
+            </div>
+            <pre style={{
+              background: '#111827', color: '#d1fae5', padding: 14, borderRadius: 8,
+              fontSize: 11, maxHeight: 400, overflowY: 'auto', whiteSpace: 'pre-wrap',
+              wordBreak: 'break-all', fontFamily: 'monospace',
+            }}>
+              {logTail.content || '(fichier vide)'}
+            </pre>
+          </div>
+        )}
+      </div>
+
+      {/* ── Sauvegarde & Restauration ── */}
+      <div className="admin-section">
+        <h2>💾 Sauvegarde &amp; Restauration</h2>
+        <p style={{ color: '#6b7280', fontSize: 13, marginBottom: 20 }}>
+          Exportez les données de l'application en JSON pour les sauvegarder ou les migrer vers une autre instance.
+          L'import efface toutes les données existantes avant de les restaurer.
+        </p>
+
+        {/* Exports */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 24 }}>
+          <div style={{ flex: 1, minWidth: 260, padding: 16, borderRadius: 8, border: '1px solid #e5e7eb', background: '#f9fafb' }}>
+            <h3 style={{ margin: '0 0 6px', fontSize: 15 }}>📤 Export Configuration &amp; Utilisateurs</h3>
+            <p style={{ color: '#6b7280', fontSize: 13, margin: '0 0 12px' }}>
+              Exporte la configuration du site et la liste des utilisateurs (sans les créneaux).
+              Utile pour sauvegarder les paramètres.
+            </p>
+            <button className="btn btn-primary" disabled={backupLoading}
+              onClick={async () => {
+                setBackupLoading(true);
+                try { await adminService.downloadBackupConfigUsers(); }
+                catch { setError('Erreur lors de l\'export'); }
+                finally { setBackupLoading(false); }
+              }}>
+              {backupLoading ? '⏳ ...' : '📥 Télécharger (Config + Utilisateurs)'}
+            </button>
+          </div>
+          <div style={{ flex: 1, minWidth: 260, padding: 16, borderRadius: 8, border: '1px solid #e5e7eb', background: '#f9fafb' }}>
+            <h3 style={{ margin: '0 0 6px', fontSize: 15 }}>📤 Export Complet</h3>
+            <p style={{ color: '#6b7280', fontSize: 13, margin: '0 0 12px' }}>
+              Exporte toutes les données : configuration, utilisateurs, créneaux et plongeurs inscrits.
+              Utile pour migrer ou faire une sauvegarde complète.
+            </p>
+            <button className="btn btn-primary" disabled={backupLoading}
+              onClick={async () => {
+                setBackupLoading(true);
+                try { await adminService.downloadBackupFull(); }
+                catch { setError('Erreur lors de l\'export'); }
+                finally { setBackupLoading(false); }
+              }}>
+              {backupLoading ? '⏳ ...' : '📥 Télécharger (Export complet)'}
+            </button>
+          </div>
+        </div>
+
+        {/* Import */}
+        <div style={{ padding: 16, borderRadius: 8, border: '2px dashed #fca5a5', background: '#fff7f7' }}>
+          <h3 style={{ margin: '0 0 6px', fontSize: 15, color: '#dc2626' }}>
+            ⚠️ Import (remplace toutes les données)
+          </h3>
+          <p style={{ color: '#7f1d1d', fontSize: 13, margin: '0 0 12px' }}>
+            <strong>Attention :</strong> l'import supprime <strong>irrémédiablement</strong> toutes les données actuelles
+            (configuration, utilisateurs, créneaux, plongeurs) avant de restaurer le fichier sélectionné.
+            Assurez-vous d'avoir une sauvegarde récente.
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <input
+              ref={importFileRef}
+              type="file"
+              accept=".json,application/json"
+              onChange={handleImportFile}
+              disabled={importLoading}
+              style={{ fontSize: 13 }}
+            />
+            {importLoading && <span style={{ color: '#dc2626' }}>⏳ Import en cours...</span>}
+          </div>
+          {importResult && (
+            <div style={{
+              marginTop: 12, padding: 10, borderRadius: 6,
+              background: importResult.success ? '#d1fae5' : '#fee2e2',
+              color: importResult.success ? '#065f46' : '#991b1b',
+              fontSize: 13,
+            }}>
+              {importResult.message}
+              {importResult.success && (
+                <span style={{ marginLeft: 8, opacity: 0.8 }}>
+                  ({importResult.configRestored} config, {importResult.usersRestored} utilisateurs,
+                  {importResult.slotsRestored} créneaux, {importResult.diversRestored} plongeurs)
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

@@ -30,6 +30,7 @@ public class ConfigService {
     private static final String KEY_EXCLUSIVE_SLOT_TYPES = "slot.exclusive.types";
     private static final String KEY_DEFAULT_SLOT_HOURS   = "slot.default.hours";
     private static final String KEY_NOTIFICATION_BOOKING_EMAIL = "notification.booking.email";
+    private static final String KEY_MAX_RECURRING_MONTHS       = "max.recurring.months";
 
     private static final String DEFAULT_SLOT_TYPES =
         "Club - Plongée|Club - Apnée|Club - Nage avec Palme|CODEP - Plongée|CODEP - Apnée|CODEP - Nage avec Palme|Externe - SDIS - Gendarmerie";
@@ -101,6 +102,11 @@ public class ConfigService {
         return getStringValue(KEY_NOTIFICATION_BOOKING_EMAIL, "");
     }
 
+    /** Durée maximale (en mois) pour la récurrence d'un créneau */
+    public int getMaxRecurringMonths() {
+        return getIntValue(KEY_MAX_RECURRING_MONTHS, 4);
+    }
+
     public ConfigResponse getConfig() {
         return new ConfigResponse(
                 getMaxDivers(), getSlotMinHours(), getSlotMaxHours(),
@@ -109,7 +115,8 @@ public class ConfigService {
                 isPublicAccess(), isSelfRegistration(),
                 getBookingOpenHour(), getBookingCloseHour(),
                 getExclusiveSlotTypes(), getDefaultSlotHours(),
-                getNotificationBookingEmail()
+                getNotificationBookingEmail(),
+                getMaxRecurringMonths()
         );
     }
 
@@ -175,6 +182,12 @@ public class ConfigService {
         return getConfig();
     }
 
+    @Transactional
+    public ConfigResponse updateMaxRecurringMonths(int months) {
+        forceUpsert(KEY_MAX_RECURRING_MONTHS, String.valueOf(months));
+        return getConfig();
+    }
+
     // ---- Init au démarrage ----
 
     @Transactional
@@ -205,6 +218,7 @@ public class ConfigService {
         upsertIfMissing(KEY_EXCLUSIVE_SLOT_TYPES, "");
         upsertIfMissing(KEY_DEFAULT_SLOT_HOURS,   "2");
         upsertIfMissing(KEY_NOTIFICATION_BOOKING_EMAIL, "");
+        upsertIfMissing(KEY_MAX_RECURRING_MONTHS, "4");
     }
 
     // ---- Helpers privés ----

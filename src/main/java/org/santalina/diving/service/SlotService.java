@@ -4,6 +4,7 @@ import org.santalina.diving.domain.DiveSlot;
 import org.santalina.diving.domain.SlotDiver;
 import org.santalina.diving.domain.User;
 import org.santalina.diving.domain.UserRole;
+import org.santalina.diving.dto.SlotDto.BatchSlotResponse;
 import org.santalina.diving.dto.SlotDto.SlotRequest;
 import org.santalina.diving.dto.SlotDto.SlotResponse;
 import org.santalina.diving.dto.SlotDto.UpdateSlotInfoRequest;
@@ -19,7 +20,10 @@ import org.jboss.logging.Logger;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class SlotService {
@@ -73,34 +77,111 @@ public class SlotService {
     }
 
     /**
-     * Créer un créneau (ADMIN ou DIVE_DIRECTOR)
+     * Créer un créneau ou plusieurs créneaux (récurrence).
+     * Retourne toujours un BatchSlotResponse.
      */
     @Transactional
-    public SlotResponse createSlot(SlotRequest request, User currentUser) {
-        if (request.slotDate().isBefore(LocalDate.now())) {
+    public BatchSlotResponse createSlots(SlotRequest request, User currentUser) {
+        boolean recurring = Boolean.TRUE.equals(request.recurring())
+                && request.recurringDays() != null && !request.recurringDays().isEmpty()
+                && request.recurringUntil() != null;
+
+        if (!recurring) {
+            // Création simple (comportement original)
+            SlotResponse slot = createSlot(request, currentUser);
+            return new BatchSlotResponse(List.of(slot), 1, 0);
+        }
+
+        // --- Création récurrente ---
+        LocalDate today     = LocalDate.now();
+        LocalDate startDate = request.slotDate();
+        LocalDate untilDate = request.recurringUntil();
+
+        // Vérifier la durée max de récurrence
+        int maxMonths = configService.getMaxRecurringMonths();
+        LocalDate maxUntil = startDate.plusMonths(maxMonths);
+        if (untilDate.isAfter(maxUntil)) {
+            throw new BadRequestException(
+                "La récurrence ne peut pas dépasser " + maxMonths + " mois (jusqu'au " + maxUntil + " maximum)");
+        }
+        if (untilDate.isBefore(startDate)) {
+            throw new BadRequestException("La date de fin de récurrence doit être après la date de début");
+        }
+
+        // Jours ISO valides (1=Lun … 7=Dim)
+        Set<Integer> days = request.recurringDays().stream()
+                .filter(d -> d >= 1 && d <= 7)
+                .collect(Collectors.toSet());
+
+        List<SlotResponse> created = new ArrayList<>();
+        int skipped = 0;
+
+        LocalDate cursor = startDate;
+        while (!cursor.isAfter(untilDate)) {
+            int dow = cursor.getDayOfWeek().getValue(); // 1=Mon, 7=Sun
+            if (days.contains(dow)) {
+                if (!cursor.isBefore(today)) {
+                    try {
+                        SlotResponse slot = createSlot(request, cursor, currentUser);
+                        created.add(slot);
+                    } catch (BadRequestException ex) {
+                        LOG.debugf("Créneau récurrent ignoré le %s : %s", cursor, ex.getMessage());
+                        skipped++;
+                    }
+                } else {
+                    skipped++;
+                }
+            }
+            cursor = cursor.plusDays(1);
+        }
+
+        if (created.isEmpty()) {
+            throw new BadRequestException(
+                "Aucun créneau récurrent n'a pu être créé (conflits ou dates dans le passé)");
+        }
+
+        LOG.infof("Récurrence : %d créneau(x) créé(s), %d ignoré(s) par %s",
+                created.size(), skipped, currentUser.email);
+        return new BatchSlotResponse(created, created.size(), skipped);
+    }
+
+    /**
+     * Créer un créneau (ADMIN ou DIVE_DIRECTOR) pour une date spécifique.
+     */
+    @Transactional
+    public SlotResponse createSlot(SlotRequest request, LocalDate overrideDate, User currentUser) {
+        if (overrideDate.isBefore(LocalDate.now())) {
             throw new BadRequestException("Impossible de créer un créneau dans le passé");
         }
         validateSlotTimes(request.startTime(), request.endTime());
         checkSlotTimeWindow(request.startTime(), request.endTime());
         validateDiverCount(request.diverCount());
-        checkExclusiveConflict(request.slotDate(), request.startTime(), request.endTime(), request.slotType(), null);
-        checkCapacity(request.slotDate(), request.startTime(), request.endTime(), request.diverCount(), null);
+        checkExclusiveConflict(overrideDate, request.startTime(), request.endTime(), request.slotType(), null);
+        checkCapacity(overrideDate, request.startTime(), request.endTime(), request.diverCount(), null);
 
         DiveSlot slot = new DiveSlot();
-        slot.slotDate = request.slotDate();
+        slot.slotDate  = overrideDate;
         slot.startTime = request.startTime();
-        slot.endTime = request.endTime();
+        slot.endTime   = request.endTime();
         slot.diverCount = request.diverCount();
-        slot.title = request.title();
-        slot.notes = request.notes();
+        slot.title    = request.title();
+        slot.notes    = request.notes();
         slot.slotType = request.slotType();
-        slot.club = request.club();
+        slot.club     = request.club();
         slot.createdBy = currentUser;
         slot.persist();
         LOG.infof("Créneau créé (id=%d) le %s de %s à %s par %s",
                 slot.id, slot.slotDate, slot.startTime, slot.endTime, currentUser.email);
         bookingNotificationMailer.sendSlotCreatedNotification(slot);
         return SlotResponse.from(slot);
+    }
+
+    /**
+     * Créer un créneau (ADMIN ou DIVE_DIRECTOR) — date prise depuis la requête.
+     */
+    @Transactional
+    public SlotResponse createSlot(SlotRequest request, User currentUser) {
+        return createSlot(request, request.slotDate(), currentUser);
     }
 
     /**
