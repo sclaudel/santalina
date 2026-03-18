@@ -61,7 +61,7 @@ services:
       db:
         condition: service_healthy
       smtp:
-        condition: service_started
+        condition: service_healthy
     volumes:
       - app_data:/deployments/data
       # Logs applicatifs Quarkus — bind mount sur l'hôte pour logrotate / consultation
@@ -98,11 +98,8 @@ services:
       start_period: 60s
     volumes:
       - ./dkim_keys:/etc/opendkim/keys
-      # Expose /var/log/mail.log (rsyslog Debian) sur l'hôte pour l'UI admin
+      # Expose /var/log/mail.log sur l'hôte pour l'UI admin
       - ./logs/smtp/mail.log:/var/log/mail.log
-      # Surcharge rsyslog.conf : désactive imklog (interdit en conteneur non-privilégié)
-      # et garantit l'écriture des logs mail dans le fichier bind-monté ci-dessus.
-      - ./rsyslog-postfix.conf:/etc/rsyslog.conf:ro
     networks:
       - internal
 
