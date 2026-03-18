@@ -17,8 +17,8 @@ $ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
 $FileCreateMode 0644
 $DirCreateMode 0755
 $Umask 0022
-# Répertoire de travail rsyslog — /tmp disponible dans tous les conteneurs Alpine
-$WorkDirectory /tmp/rsyslog
+# Répertoire de travail rsyslog — /tmp existe toujours dans le conteneur
+$WorkDirectory /tmp
 
 # ── Logs mail → fichier bind-monté sur l'hôte (logrotate + UI admin) ─────────
 mail.*    /var/log/mail.log
