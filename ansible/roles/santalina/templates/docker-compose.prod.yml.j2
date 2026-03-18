@@ -84,6 +84,7 @@ services:
         max-size: "10m"
         max-file: "15"
     environment:
+      POSTFIX_maillog_file: {{ app_log_file}}
       HOSTNAME: {{ app_domain }}
       ALLOWED_SENDER_DOMAINS: "{{ app_mailer_from | regex_replace('^.*@(.*)$', '\\1') }}"
       DKIM_AUTOGENERATE: "true"
