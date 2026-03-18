@@ -100,6 +100,9 @@ services:
       - ./dkim_keys:/etc/opendkim/keys
       # Expose /var/log/mail.log (rsyslog Debian) sur l'hôte pour l'UI admin
       - ./logs/smtp/mail.log:/var/log/mail.log
+      # Surcharge rsyslog.conf : désactive imklog (interdit en conteneur non-privilégié)
+      # et garantit l'écriture des logs mail dans le fichier bind-monté ci-dessus.
+      - ./rsyslog-postfix.conf:/etc/rsyslog.conf:ro
     networks:
       - internal
 

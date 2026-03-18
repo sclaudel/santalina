@@ -74,6 +74,14 @@
     modification_time: preserve
     access_time: preserve
 
+- name: Déployer la configuration rsyslog pour le conteneur SMTP (désactive imklog, non accessible en conteneur)
+  ansible.builtin.template:
+    src: rsyslog-postfix.conf.j2
+    dest: "{{ app_dir }}/rsyslog-postfix.conf"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+
 - name: Créer le répertoire des logs applicatifs (bind mount vers le conteneur app)
   ansible.builtin.file:
     path: "{{ app_dir }}/logs/app"

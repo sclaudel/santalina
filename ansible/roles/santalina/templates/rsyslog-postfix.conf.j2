@@ -1,0 +1,23 @@
+# ── rsyslog.conf — conteneur Postfix (boky/postfix) ──────────────────────────
+# Déployé par Ansible — ne pas modifier manuellement.
+#
+# imklog est DÉSACTIVÉ : /proc/kmsg n'est pas accessible dans un conteneur
+# non-privilégié et provoque des erreurs au démarrage ainsi que l'arrêt du
+# traitement des logs.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Socket Unix système (/dev/log) — source des messages Postfix/OpenDKIM
+module(load="imuxsock")
+
+$ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
+$FileCreateMode 0644
+$DirCreateMode 0755
+$Umask 0022
+$WorkDirectory /var/spool/rsyslog
+
+# ── Logs mail → fichier bind-monté sur l'hôte (logrotate + UI admin) ─────────
+mail.*    /var/log/mail.log
+
+# ── Tous les messages → stdout (visible via docker compose logs) ──────────────
+*.*       /dev/stdout
+
