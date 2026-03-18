@@ -48,6 +48,7 @@ app_mailer_from: noreply@santalina.com
 # Remettre à false (ou supprimer) une fois l'authentification email en place.
 # Voir : ansible/docs/smtp-authentication.md
 mail_disabled: false
+app_log_file: /var/log/mail.log
 
 # ── Niveaux de log applicatifs ────────────────────────────────────────────
 # Valeurs valides : TRACE, DEBUG, INFO, WARN, ERROR
