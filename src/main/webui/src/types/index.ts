@@ -147,6 +147,7 @@ export interface ImportResult {
   usersRestored: number;
   slotsRestored: number;
   diversRestored: number;
+  palanqueesRestored: number;
 }
 
 export interface PeriodStat {

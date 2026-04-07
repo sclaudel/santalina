@@ -37,7 +37,7 @@ public class BackupService {
 
         LOG.infof("Export config-users : %d entrées de config, %d utilisateurs", config.size(), users.size());
         return new BackupData(BACKUP_VERSION, "config-users", LocalDateTime.now(),
-                config, users, null, null);
+                config, users, null, null, null);
     }
 
     /** Export complet (config + utilisateurs + créneaux + plongeurs). */
@@ -62,10 +62,15 @@ public class BackupService {
                 .map(this::toDiverEntry)
                 .collect(Collectors.toList());
 
-        LOG.infof("Export full : %d config, %d users, %d slots, %d divers",
-                config.size(), users.size(), slots.size(), divers.size());
+        List<PalanqueeEntry> palanquees = Palanquee.<Palanquee>listAll()
+                .stream()
+                .map(this::toPalanqueeEntry)
+                .collect(Collectors.toList());
+
+        LOG.infof("Export full : %d config, %d users, %d slots, %d divers, %d palanquees",
+                config.size(), users.size(), slots.size(), divers.size(), palanquees.size());
         return new BackupData(BACKUP_VERSION, "full", LocalDateTime.now(),
-                config, users, slots, divers);
+                config, users, slots, divers, palanquees);
     }
 
     // ---- Import ----
@@ -199,13 +204,60 @@ public class BackupService {
             }
         }
 
-        LOG.infof("Import terminé : %d config, %d users, %d slots, %d divers",
-                configCount, userCount, slotCount, diverCount);
+        // 6. Restaurer les palanquées et réassigner les plongeurs
+        int palanqueeCount = 0;
+        if (backup.palanquees() != null && backup.slots() != null) {
+            for (PalanqueeEntry pe : backup.palanquees()) {
+                // Retrouver le créneau correspondant
+                final Long origSlotId = pe.slotId();
+                SlotEntry origSlot = backup.slots().stream()
+                        .filter(s -> origSlotId.equals(s.id()))
+                        .findFirst().orElse(null);
+                if (origSlot == null) continue;
+
+                DiveSlot linkedSlot = DiveSlot.find(
+                        "slotDate = ?1 and startTime = ?2 and endTime = ?3",
+                        origSlot.slotDate(), origSlot.startTime(), origSlot.endTime())
+                        .firstResult();
+                if (linkedSlot == null) continue;
+
+                Palanquee pal = new Palanquee();
+                pal.slot     = linkedSlot;
+                pal.name     = pe.name();
+                pal.position = pe.position();
+                pal.depth    = pe.depth();
+                pal.duration = pe.duration();
+                pal.persist();
+                palanqueeCount++;
+
+                // Réassigner les plongeurs de cette palanquée
+                final Long origPalId = pe.id();
+                if (backup.divers() != null) {
+                    for (DiverEntry de : backup.divers()) {
+                        if (origPalId.equals(de.palanqueeId())) {
+                            // Retrouver le plongeur restauré par slot + nom
+                            SlotDiver sd = SlotDiver.find(
+                                    "slot = ?1 and firstName = ?2 and lastName = ?3",
+                                    linkedSlot, de.firstName(), de.lastName())
+                                    .firstResult();
+                            if (sd != null) {
+                                sd.palanquee = pal;
+                                sd.palanqueePosition = de.palanqueePosition();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        em.flush();
+
+        LOG.infof("Import terminé : %d config, %d users, %d slots, %d divers, %d palanquees",
+                configCount, userCount, slotCount, diverCount, palanqueeCount);
 
         return new ImportResult(true,
-                String.format("Import réussi : %d config, %d utilisateurs, %d créneaux, %d plongeurs",
-                        configCount, userCount, slotCount, diverCount),
-                configCount, userCount, slotCount, diverCount);
+                String.format("Import réussi : %d config, %d utilisateurs, %d créneaux, %d plongeurs, %d palanquées",
+                        configCount, userCount, slotCount, diverCount, palanqueeCount),
+                configCount, userCount, slotCount, diverCount, palanqueeCount);
     }
 
     // ---- Mappeurs ----
@@ -226,7 +278,13 @@ public class BackupService {
     private DiverEntry toDiverEntry(SlotDiver d) {
         return new DiverEntry(d.id, d.slot != null ? d.slot.id : null,
                 d.firstName, d.lastName, d.level, d.email, d.phone,
-                d.isDirector, d.aptitudes, d.licenseNumber);
+                d.isDirector, d.aptitudes, d.licenseNumber,
+                d.palanquee != null ? d.palanquee.id : null, d.palanqueePosition);
+    }
+
+    private PalanqueeEntry toPalanqueeEntry(Palanquee p) {
+        return new PalanqueeEntry(p.id, p.slot != null ? p.slot.id : null,
+                p.name, p.position, p.depth, p.duration);
     }
 }
 

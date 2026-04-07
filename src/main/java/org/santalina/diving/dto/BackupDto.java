@@ -14,8 +14,9 @@ public class BackupDto {
             LocalDateTime exportedAt,
             List<ConfigEntry> config,
             List<UserEntry> users,
-            List<SlotEntry> slots,    // null si type="config-users"
-            List<DiverEntry> divers   // null si type="config-users"
+            List<SlotEntry> slots,        // null si type="config-users"
+            List<DiverEntry> divers,      // null si type="config-users"
+            List<PalanqueeEntry> palanquees // null si type="config-users"
     ) {}
 
     public record ConfigEntry(
@@ -61,7 +62,18 @@ public class BackupDto {
             String phone,
             boolean isDirector,
             String aptitudes,
-            String licenseNumber
+            String licenseNumber,
+            Long palanqueeId,
+            int palanqueePosition
+    ) {}
+
+    public record PalanqueeEntry(
+            Long id,
+            Long slotId,
+            String name,
+            int position,
+            String depth,
+            String duration
     ) {}
 
     /** Réponse d'un import */
@@ -71,7 +83,8 @@ public class BackupDto {
             int configRestored,
             int usersRestored,
             int slotsRestored,
-            int diversRestored
+            int diversRestored,
+            int palanqueesRestored
     ) {}
 }
 
