@@ -11,11 +11,12 @@ interface Props {
   onSelectDay: (date: string) => void;
   onAdd: (date: string, startTime?: string) => void;
   onOpenPalanquees?: (slotId: number) => void;
+  autoExpandSlotId?: number;
 }
 
 const DAYS_FR = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 
-export function WeekView({ weekStart, config, onSelectDay, onAdd, onOpenPalanquees }: Props) {
+export function WeekView({ weekStart, config, onSelectDay, onAdd, onOpenPalanquees, autoExpandSlotId }: Props) {
   const { user, isAuthenticated } = useAuth();
   const [allSlots, setAllSlots] = useState<DiveSlot[]>([]);
   const [loading, setLoading]   = useState(true);
@@ -107,6 +108,7 @@ export function WeekView({ weekStart, config, onSelectDay, onAdd, onOpenPalanque
                 endHour={endHour}
                 onClickTime={canEdit ? (time) => onAdd(d, time) : undefined}
                 onOpenPalanquees={onOpenPalanquees}
+                autoExpandSlotId={autoExpandSlotId}
               />
             </div>
           ))}

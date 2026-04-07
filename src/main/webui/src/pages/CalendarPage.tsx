@@ -20,10 +20,17 @@ function isMobile(): boolean {
   return window.innerWidth < 768;
 }
 
-export function CalendarPage({ onNavigate }: { onNavigate?: (page: string) => void } = {}) {
+export function CalendarPage({ onNavigate, returnContext, onReturnConsumed }: {
+  onNavigate?: (page: string) => void;
+  returnContext?: { date: string; viewMode: string; slotId?: number } | null;
+  onReturnConsumed?: () => void;
+} = {}) {
   const { user, isAuthenticated }   = useAuth();
-  const [viewMode, setViewMode]     = useState<ViewMode>(() => isMobile() ? 'day' : 'week');
-  const [selectedDate, setSelectedDate] = useState(dayjs().format('YYYY-MM-DD'));
+  const [viewMode, setViewMode]     = useState<ViewMode>(() => {
+    if (returnContext?.viewMode === 'day' || returnContext?.viewMode === 'week' || returnContext?.viewMode === 'month') return returnContext.viewMode;
+    return isMobile() ? 'day' : 'week';
+  });
+  const [selectedDate, setSelectedDate] = useState(returnContext?.date || dayjs().format('YYYY-MM-DD'));
   const [config, setConfig] = useState<AppConfig>({
     maxDivers: 25, slotMinHours: 1, slotMaxHours: 10, slotResolutionMinutes: 15,
     siteName: 'Carrière de Saint-Lin', slotTypes: [], clubs: [], levels: [],
@@ -43,6 +50,11 @@ export function CalendarPage({ onNavigate }: { onNavigate?: (page: string) => vo
   useEffect(() => {
     adminService.getConfig().then(setConfig).catch(() => {});
   }, []);
+
+  // Consommer le contexte de retour après initialisation
+  useEffect(() => {
+    if (returnContext) onReturnConsumed?.();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const weekStart = dayjs(selectedDate).startOf('isoWeek').format('YYYY-MM-DD');
   const selDay    = dayjs(selectedDate);
@@ -132,14 +144,16 @@ export function CalendarPage({ onNavigate }: { onNavigate?: (page: string) => vo
 
         {viewMode === 'day' && (
           <DayView key={`day-${childKey}`} date={selectedDate} config={config} onAdd={openFormWithDate}
-            onOpenPalanquees={onNavigate ? (id) => onNavigate(`palanquee-${id}`) : undefined}
+            onOpenPalanquees={onNavigate ? (id) => onNavigate(`palanquee-${id}-day`) : undefined}
+            autoExpandSlotId={returnContext?.slotId}
           />
         )}
         {viewMode === 'week' && (
           <WeekView key={`week-${childKey}`} weekStart={weekStart} config={config}
             onSelectDay={d => { setSelectedDate(d); setViewMode('day'); }}
             onAdd={openFormWithDate}
-            onOpenPalanquees={onNavigate ? (id) => onNavigate(`palanquee-${id}`) : undefined}
+            onOpenPalanquees={onNavigate ? (id) => onNavigate(`palanquee-${id}-week`) : undefined}
+            autoExpandSlotId={returnContext?.slotId}
           />
         )}
         {viewMode === 'month' && (

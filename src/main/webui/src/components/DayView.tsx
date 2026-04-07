@@ -9,9 +9,10 @@ interface Props {
   config: AppConfig;
   onAdd: (date: string, startTime?: string) => void;
   onOpenPalanquees?: (slotId: number) => void;
+  autoExpandSlotId?: number;
 }
 
-export function DayView({ date, config, onAdd, onOpenPalanquees }: Props) {
+export function DayView({ date, config, onAdd, onOpenPalanquees, autoExpandSlotId }: Props) {
   const { user, isAuthenticated } = useAuth();
   const [slots, setSlots]       = useState<DiveSlot[]>([]);
   const [loading, setLoading]   = useState(true);
@@ -74,6 +75,7 @@ export function DayView({ date, config, onAdd, onOpenPalanquees }: Props) {
           currentUserRole={user?.role}
           onClickTime={canEdit ? (time) => onAdd(date, time) : undefined}
           onOpenPalanquees={onOpenPalanquees}
+          autoExpandSlotId={autoExpandSlotId}
         />
       )}
     </div>
