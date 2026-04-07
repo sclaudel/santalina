@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NavBar } from './components/NavBar';
 import { CalendarPage } from './pages/CalendarPage';
@@ -24,6 +24,9 @@ function AppContent() {
 
   const [currentPage, setCurrentPage] = useState<string>('calendar');
   const [appConfig, setAppConfig] = useState<AppConfig | null>(null);
+  // Contexte de retour vers le calendrier (date + vue + slotId) après navigation palanquées
+  const calendarReturnRef = useRef<{ date: string; viewMode: string; slotId?: number } | null>(null);
+  const calendarViewModeRef = useRef<string>('day');
 
   useEffect(() => {
     adminService.getConfig().then(setAppConfig).catch(() => {});
@@ -35,6 +38,14 @@ function AppContent() {
     if (page === 'my-stats' && !hasRole('DIVE_DIRECTOR')) return;
     if (page === 'profile' && !isAuthenticated) return;
     if (page.startsWith('palanquee-') && !hasRole('ADMIN') && !hasRole('DIVE_DIRECTOR')) return;
+    // Mémoriser le viewMode encodé dans la navigation palanquée (palanquee-{id}-{viewMode})
+    if (page.startsWith('palanquee-')) {
+      const parts = page.split('-');
+      // parts: ['palanquee', slotId, viewMode?]
+      if (parts.length >= 3) {
+        calendarViewModeRef.current = parts.slice(2).join('-'); // 'day' ou 'week'
+      }
+    }
     setCurrentPage(page);
   };
 
@@ -67,7 +78,13 @@ function AppContent() {
     <div className="app">
       <NavBar onNavigate={navigate} currentPage={currentPage} selfRegistration={selfRegistration} />
       <div className="app-content">
-        {currentPage === 'calendar' && <CalendarPage onNavigate={navigate} />}
+        {currentPage === 'calendar' && (
+          <CalendarPage
+            onNavigate={navigate}
+            returnContext={calendarReturnRef.current}
+            onReturnConsumed={() => { calendarReturnRef.current = null; }}
+          />
+        )}
         {currentPage === 'profile' && isAuthenticated && <ProfilePage />}
         {currentPage === 'admin' && user?.role === 'ADMIN' && <AdminPage />}
         {currentPage === 'stats' && user?.role === 'ADMIN' && <StatsPage />}
@@ -76,7 +93,12 @@ function AppContent() {
         {currentPage.startsWith('palanquee-') && (hasRole('ADMIN') || hasRole('DIVE_DIRECTOR')) && (
           <PalanqueePage
             slotId={parseInt(currentPage.split('-')[1], 10)}
-            onBack={() => navigate('calendar')}
+            onBack={(slotDate, slotId) => {
+              if (slotDate) {
+                calendarReturnRef.current = { date: slotDate, viewMode: calendarViewModeRef.current, slotId };
+              }
+              navigate('calendar');
+            }}
           />
         )}
       </div>
