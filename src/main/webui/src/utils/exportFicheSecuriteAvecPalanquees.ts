@@ -186,10 +186,33 @@ async function loadFreshSheet(
     }));
   }
 
-  // ④ Injecter dans la feuille destination
+  // ④ Le setter du modèle ExcelJS ignore les cellules de type Merge (= cellules
+  //    non-maîtres dans les plages fusionnées), ce qui perd leurs styles (bordures).
+  //    On capture ces styles AVANT l'import pour les restaurer ensuite.
+  const mergeCellStyles: { address: string; style: any }[] = [];
+  if (Array.isArray(wsModel.rows)) {
+    for (const row of wsModel.rows) {
+      if (!row?.cells) continue;
+      for (const cell of row.cells) {
+        if (cell.type === 1 /* ExcelJS ValueType.Merge */ && cell.style) {
+          mergeCellStyles.push({
+            address: cell.address,
+            style: JSON.parse(JSON.stringify(cell.style)),
+          });
+        }
+      }
+    }
+  }
+
+  // ⑤ Injecter dans la feuille destination
   wsModel.id   = destId;
   wsModel.name = name;
   (dest as any).model = wsModel;
+
+  // ⑥ Restaurer les styles des cellules fusionnées non-maîtres
+  for (const { address, style } of mergeCellStyles) {
+    dest.getCell(address).style = style;
+  }
 
   return dest;
 }
