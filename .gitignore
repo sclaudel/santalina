@@ -15,6 +15,7 @@ keys/
 ansible/vars.yml
 ansible/vars-santalina.yml
 ansible/inventory.ini
+ansible/inventory-santalina.ini
 
 # Déploiement — variables d'environnement de production
 deploy/.env
