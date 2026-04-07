@@ -1258,6 +1258,8 @@ body {
   flex-direction: row;
   flex-wrap: wrap;
   gap: 8px;
+  max-height: 30vh;
+  overflow-y: auto;
 }
 
 .palanquee-cards-area--pool .palanquee-postit {
