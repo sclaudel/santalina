@@ -13,6 +13,7 @@ keys/
 
 # Ansible — fichiers contenant des secrets (ip, mdp, clés ssh...)
 ansible/vars.yml
+ansible/vars-santalina.yml
 ansible/inventory.ini
 
 # Déploiement — variables d'environnement de production
