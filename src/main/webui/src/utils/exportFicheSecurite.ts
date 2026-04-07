@@ -180,7 +180,31 @@ export async function exportFicheSecurite(slot: DiveSlot, divers: SlotDiver[]): 
     const wsTmp = wbTmp.getWorksheet(1)!;
 
     const wsNew = wb.addWorksheet(`Page ${page}`);
-    wsNew.model = { ...wsTmp.model, name: `Page ${page}`, id: wsNew.id } as typeof wsNew.model;
+    const tmpModel: any = { ...wsTmp.model, name: `Page ${page}`, id: wsNew.id };
+
+    // ExcelJS model setter skips Merge-type cells (non-master cells in merged
+    // ranges), losing their border styles. Capture them before import.
+    const mergeCellStyles: { address: string; style: any }[] = [];
+    if (Array.isArray(tmpModel.rows)) {
+      for (const row of tmpModel.rows) {
+        if (!row?.cells) continue;
+        for (const cell of row.cells) {
+          if (cell.type === 1 /* ExcelJS ValueType.Merge */ && cell.style) {
+            mergeCellStyles.push({
+              address: cell.address,
+              style: JSON.parse(JSON.stringify(cell.style)),
+            });
+          }
+        }
+      }
+    }
+
+    wsNew.model = tmpModel as typeof wsNew.model;
+
+    // Restore border styles on merged cells that were skipped
+    for (const { address, style } of mergeCellStyles) {
+      wsNew.getCell(address).style = style;
+    }
 
     fillHeader(wsNew, slot, sorted, page, totalPages);
     fillPageDivers(wsNew, pageDivers, modelStyles, modelHeight);
