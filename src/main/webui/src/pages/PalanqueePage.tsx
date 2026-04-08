@@ -235,7 +235,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
   const [exporting, setExporting] = useState(false);
 
   // ── mobile ─────────────────────────────────────────────────────────────────
-  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 768px)').matches);
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(pointer: coarse), (max-width: 768px)').matches);
   const [mobilePickedId, setMobilePickedId] = useState<number | null>(null);
   const [activePalIdx, setActivePalIdx] = useState(0);
 
@@ -273,7 +273,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
 
   // Suivi responsive
   useEffect(() => {
-    const mq = window.matchMedia('(max-width: 768px)');
+    const mq = window.matchMedia('(pointer: coarse), (max-width: 768px)');
     const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
