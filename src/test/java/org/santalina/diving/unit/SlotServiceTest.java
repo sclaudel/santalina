@@ -70,7 +70,7 @@ class SlotServiceTest {
         var request = new org.santalina.diving.dto.SlotDto.SlotRequest(
                 LocalDate.now().minusDays(1),
                 LocalTime.of(9, 0), LocalTime.of(11, 0),
-                5, null, null, null, null);
+                5, null, null, null, null, null, null, null);
         assertThrows(jakarta.ws.rs.BadRequestException.class,
                 () -> slotService.createSlot(request, null));
     }
@@ -80,7 +80,7 @@ class SlotServiceTest {
         var request = new org.santalina.diving.dto.SlotDto.SlotRequest(
                 LocalDate.now().plusDays(1),
                 LocalTime.of(9, 0), LocalTime.of(9, 0),
-                5, null, null, null, null);
+                5, null, null, null, null, null, null, null);
         assertThrows(jakarta.ws.rs.BadRequestException.class,
                 () -> slotService.createSlot(request, null));
     }
@@ -91,7 +91,7 @@ class SlotServiceTest {
         var request = new org.santalina.diving.dto.SlotDto.SlotRequest(
                 LocalDate.now().plusDays(1),
                 LocalTime.of(9, 0), LocalTime.of(9, 30),
-                5, null, null, null, null);
+                5, null, null, null, null, null, null, null);
         assertThrows(jakarta.ws.rs.BadRequestException.class,
                 () -> slotService.createSlot(request, null));
     }
@@ -102,7 +102,7 @@ class SlotServiceTest {
         var request = new org.santalina.diving.dto.SlotDto.SlotRequest(
                 LocalDate.now().plusDays(1),
                 LocalTime.of(0, 0), LocalTime.of(11, 0),
-                5, null, null, null, null);
+                5, null, null, null, null, null, null, null);
         assertThrows(jakarta.ws.rs.BadRequestException.class,
                 () -> slotService.createSlot(request, null));
     }
@@ -112,7 +112,7 @@ class SlotServiceTest {
         var request = new org.santalina.diving.dto.SlotDto.SlotRequest(
                 LocalDate.now().plusDays(1),
                 LocalTime.of(9, 0), LocalTime.of(11, 0),
-                30, null, null, null, null);
+                30, null, null, null, null, null, null, null);
         assertThrows(jakarta.ws.rs.BadRequestException.class,
                 () -> slotService.createSlot(request, null));
     }
