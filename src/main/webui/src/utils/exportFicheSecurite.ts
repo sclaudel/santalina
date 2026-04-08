@@ -1,6 +1,16 @@
 import ExcelJS from 'exceljs';
-import { saveAs } from 'file-saver';
 import type { DiveSlot, SlotDiver } from '../types';
+
+function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 /** Formate une date YYYY-MM-DD en jj/mm/aaaa */
 function fmtDate(d: string): string {
@@ -223,7 +233,7 @@ export async function exportFicheSecurite(slot: DiveSlot, divers: SlotDiver[]): 
 
   // ── Export ──────────────────────────────────────────────────────────���─────
   const buffer = await wb.xlsx.writeBuffer();
-  saveAs(
+  downloadBlob(
     new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
     `${slot.slotDate}-${slot.startTime.replace(':', '-')}-Fiche-securite-Saint-Lin.xlsx`,
   );
