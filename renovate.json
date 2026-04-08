@@ -81,6 +81,34 @@
       "description": "Alertes de vulnérabilité : priorité haute",
       "matchCategories": ["security"],
       "prPriority": 10
+    },
+
+    {
+      "description": "Quarkus plugin et BOM doivent rester alignés — grouper ensemble",
+      "matchManagers": ["gradle"],
+      "matchPackageNames": ["io.quarkus**"],
+      "matchFileNames": ["gradle.properties"],
+      "groupName": "Quarkus",
+      "addLabels": ["quarkus"]
+    },
+
+    {
+      "description": "Toolchain frontend (eslint, typescript, vite) — bloquer les majeurs pour éviter les incompatibilités de peer deps",
+      "matchManagers": ["npm"],
+      "matchPackageNames": [
+        "eslint",
+        "@eslint/js",
+        "typescript",
+        "typescript-eslint",
+        "vite",
+        "@vitejs/plugin-react",
+        "eslint-plugin-react-hooks",
+        "eslint-plugin-react-refresh",
+        "globals"
+      ],
+      "matchUpdateTypes": ["major"],
+      "enabled": false,
+      "addLabels": ["breaking-change"]
     }
 
   ]
