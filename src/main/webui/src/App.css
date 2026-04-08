@@ -1665,8 +1665,8 @@ body {
 .palanquee-mobile-action-btn--pool { background: rgba(16,185,129,0.4); }
 .palanquee-mobile-action-btn--cancel { background: rgba(239,68,68,0.35); margin-left: auto; }
 
-/* Sur mobile on ajoute un padding en bas pour éviter que la barre cache le contenu */
-@media (max-width: 768px) {
+/* Sur mobile/tablette on ajoute un padding en bas pour éviter que la barre cache le contenu */
+@media (pointer: coarse), (max-width: 768px) {
   .palanquee-page { padding-bottom: 100px; }
   .palanquee-board { display: none; } /* remplacé par la vue mobile */
   .palanquee-column { flex: none; width: 100%; min-width: unset; }
