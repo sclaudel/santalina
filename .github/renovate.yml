@@ -1,0 +1,39 @@
+name: Renovate — Mise à jour des dépendances
+
+# ┌─────────────────────────────────────────────────────────────────────────┐
+# │  Renovate self-hosted — détecte les mises à jour Gradle + npm.         │
+# │                                                                         │
+# │  Pré-requis : créer un secret RENOVATE_TOKEN contenant un              │
+# │  Personal Access Token (classic) avec les scopes : repo, workflow.     │
+# │    → Settings > Developer settings > Personal access tokens > Classic  │
+# │  Le GITHUB_TOKEN natif ne suffit pas : les PRs qu'il crée ne          │
+# │  déclenchent pas les workflows (limitation GitHub anti-boucle).        │
+# └─────────────────────────────────────────────────────────────────────────┘
+
+on:
+  # Exécution hebdomadaire le lundi matin (heure de Paris)
+  schedule:
+    - cron: '0 8 * * 1'  # Lundi 8h UTC = 10h CEST / 9h CET
+
+  # Déclenchement manuel pour tester ou forcer un scan
+  workflow_dispatch:
+
+# Empêcher les exécutions concurrentes de Renovate
+concurrency:
+  group: renovate
+  cancel-in-progress: false
+
+jobs:
+  renovate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Run Renovate
+        uses: renovatebot/github-action@v39
+        with:
+          configurationFile: renovate.json
+          token: ${{ secrets.RENOVATE_TOKEN }}
+        env:
+          RENOVATE_ONBOARDING: false
+          # Décommenter pour déboguer si Renovate ne détecte rien :
+          # LOG_LEVEL: debug

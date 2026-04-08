@@ -48,7 +48,7 @@
 
     {
       "_comment": "Grouper toutes les dépendances Quarkus (BOM + extensions)",
-      "matchPackagePrefixes": ["io.quarkus"],
+      "matchPackageNames": ["io.quarkus**"],
       "groupName": "Quarkus",
       "addLabels": ["quarkus"],
       "automerge": false
