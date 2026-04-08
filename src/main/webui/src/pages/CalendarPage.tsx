@@ -22,7 +22,7 @@ function isMobile(): boolean {
 
 export function CalendarPage({ onNavigate, returnContext, onReturnConsumed }: {
   onNavigate?: (page: string) => void;
-  returnContext?: { date: string; viewMode: string; slotId?: number } | null;
+  returnContext?: { date: string; viewMode: string } | null;
   onReturnConsumed?: () => void;
 } = {}) {
   const { user, isAuthenticated }   = useAuth();
@@ -145,7 +145,6 @@ export function CalendarPage({ onNavigate, returnContext, onReturnConsumed }: {
         {viewMode === 'day' && (
           <DayView key={`day-${childKey}`} date={selectedDate} config={config} onAdd={openFormWithDate}
             onOpenPalanquees={onNavigate ? (id) => onNavigate(`palanquee-${id}-day`) : undefined}
-            autoExpandSlotId={returnContext?.slotId}
           />
         )}
         {viewMode === 'week' && (
@@ -153,7 +152,6 @@ export function CalendarPage({ onNavigate, returnContext, onReturnConsumed }: {
             onSelectDay={d => { setSelectedDate(d); setViewMode('day'); }}
             onAdd={openFormWithDate}
             onOpenPalanquees={onNavigate ? (id) => onNavigate(`palanquee-${id}-week`) : undefined}
-            autoExpandSlotId={returnContext?.slotId}
           />
         )}
         {viewMode === 'month' && (

@@ -24,8 +24,8 @@ function AppContent() {
 
   const [currentPage, setCurrentPage] = useState<string>('calendar');
   const [appConfig, setAppConfig] = useState<AppConfig | null>(null);
-  // Contexte de retour vers le calendrier (date + vue + slotId) après navigation palanquées
-  const calendarReturnRef = useRef<{ date: string; viewMode: string; slotId?: number } | null>(null);
+  // Contexte de retour vers le calendrier (date + vue) après navigation palanquées
+  const calendarReturnRef = useRef<{ date: string; viewMode: string } | null>(null);
   const calendarViewModeRef = useRef<string>('day');
 
   useEffect(() => {
@@ -93,9 +93,9 @@ function AppContent() {
         {currentPage.startsWith('palanquee-') && (hasRole('ADMIN') || hasRole('DIVE_DIRECTOR')) && (
           <PalanqueePage
             slotId={parseInt(currentPage.split('-')[1], 10)}
-            onBack={(slotDate, slotId) => {
+            onBack={(slotDate) => {
               if (slotDate) {
-                calendarReturnRef.current = { date: slotDate, viewMode: calendarViewModeRef.current, slotId };
+                calendarReturnRef.current = { date: slotDate, viewMode: calendarViewModeRef.current };
               }
               navigate('calendar');
             }}

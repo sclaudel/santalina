@@ -215,7 +215,7 @@ function DropZone({
 // ── PalanqueePage ─────────────────────────────────────────────────────────────
 interface Props {
   slotId: number;
-  onBack: (slotDate?: string, slotId?: number) => void;
+  onBack: (slotDate?: string) => void;
 }
 
 export function PalanqueePage({ slotId, onBack }: Props) {
@@ -582,7 +582,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
     <div className="palanquee-page">
       {/* En-tête */}
       <div className="palanquee-page-header">
-        <button className="palanquee-back-btn" onClick={() => onBack(slot?.slotDate, slotId)}>← Retour</button>
+        <button className="palanquee-back-btn" onClick={() => onBack(slot?.slotDate)}>← Retour</button>
         <div className="palanquee-page-title-block">
           <h2 className="palanquee-page-title">🤿 Organisation des palanquées</h2>
           {slot && (

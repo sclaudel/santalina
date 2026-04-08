@@ -30,7 +30,6 @@ interface Props {
   canEdit: boolean;
   currentUserId?: number;
   currentUserRole?: string;
-  autoExpand?: boolean;
 }
 
 const LEVEL_COLORS: Record<string, string> = {
@@ -93,7 +92,7 @@ function timeOptions(resolutionMinutes: number): string[] {
 
 export function SlotBlock({
   slot, height, onDelete, onRefresh, onOpenPalanquees,
-  canEdit, currentUserId, currentUserRole, maxDivers = 25, config, autoExpand,
+  canEdit, currentUserId, currentUserRole, maxDivers = 25, config,
 }: Props) {
   const [showTooltip, setShowTooltip]         = useState(false);
   const [showDiverForm, setShowDiverForm]     = useState(false);
@@ -242,27 +241,6 @@ export function SlotBlock({
     } catch { /* silencieux */ }
     finally { setLoading(false); }
   };
-
-  // Auto-expand : ouvrir automatiquement le tooltip au montage (retour palanquées)
-  useEffect(() => {
-    if (!autoExpand) return;
-    // Petit délai pour attendre le rendu du bloc dans le DOM
-    const t = setTimeout(async () => {
-      computePos();
-      setShowTooltip(true);
-      setLoading(true);
-      try {
-        const [fresh, pals] = await Promise.all([
-          slotDiverService.getBySlot(slot.id),
-          palanqueeService.getBySlot(slot.id),
-        ]);
-        setDivers(fresh);
-        setPalanquees(pals);
-      } catch { /* silencieux */ }
-      finally { setLoading(false); }
-    }, 100);
-    return () => clearTimeout(t);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Clic en dehors → fermer
   useEffect(() => {
