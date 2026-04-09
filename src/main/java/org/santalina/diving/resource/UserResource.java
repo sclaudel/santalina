@@ -1,6 +1,7 @@
 package org.santalina.diving.resource;
 
 import org.santalina.diving.dto.UserDto.*;
+import org.santalina.diving.dto.AuthDto.LoginResponse;
 import org.santalina.diving.service.UserService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -37,6 +38,13 @@ public class UserResource {
     @RolesAllowed({"ADMIN", "DIVE_DIRECTOR", "DIVER"})
     public UserResponse updateProfile(@Valid UpdateProfileRequest request) {
         return userService.updateProfile(jwt.getName(), request);
+    }
+
+    @PATCH
+    @Path("/me/email")
+    @RolesAllowed({"ADMIN", "DIVE_DIRECTOR", "DIVER"})
+    public LoginResponse updateEmail(@Valid UpdateEmailRequest request) {
+        return userService.updateEmail(jwt.getName(), request);
     }
 
     @GET

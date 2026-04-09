@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { slotDiverService } from '../services/slotDiverService';
 import { palanqueeService } from '../services/palanqueeService';
 import { slotService } from '../services/slotService';
-import type { DiveSlot, SlotDiver, Palanquee } from '../types';
+import { waitingListService } from '../services/waitingListService';
+import type { DiveSlot, SlotDiver, Palanquee, WaitingListEntry } from '../types';
 
 // ── constantes ──────────────────────────────────────────────────────────────
 const LEVEL_COLORS: Record<string, string> = {
@@ -226,6 +227,12 @@ export function PalanqueePage({ slotId, onBack }: Props) {
   const [error, setError]           = useState('');
   const [draggedId, setDraggedId]   = useState<number | null>(null);
 
+  // Liste d'attente
+  const [waitingList, setWaitingList]     = useState<WaitingListEntry[]>([]);
+  const [approvingId, setApprovingId]     = useState<number | null>(null);
+  const [cancelingId, setCancelingId]     = useState<number | null>(null);
+  const [wlError, setWlError]             = useState('');
+
   // renaming state: palanqueeId → draft name
   const [renamingId, setRenamingId]     = useState<number | null>(null);
   const [renameDraft, setRenameDraft]   = useState('');
@@ -262,6 +269,13 @@ export function PalanqueePage({ slotId, onBack }: Props) {
       setSlot(slotData);
       setAllDivers(diversData);
       setPalanquees(pData);
+      // Charger la liste d'attente en silence (peut échouer si non autorisé)
+      try {
+        const wl = await waitingListService.getWaitingList(slotId);
+        setWaitingList(wl);
+      } catch {
+        setWaitingList([]);
+      }
     } catch {
       setError('Impossible de charger les données du créneau.');
     } finally {
@@ -555,6 +569,36 @@ export function PalanqueePage({ slotId, onBack }: Props) {
     } catch { await loadAll(); }
   }, [palanquees, slotId, loadAll]);
 
+  // ── liste d'attente ──────────────────────────────────────────────────────
+
+  const handleApprove = useCallback(async (entryId: number) => {
+    setApprovingId(entryId);
+    setWlError('');
+    try {
+      await waitingListService.approve(slotId, entryId);
+      await loadAll();
+    } catch (err: unknown) {
+      const m = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setWlError(m || 'Erreur lors de la validation');
+    } finally {
+      setApprovingId(null);
+    }
+  }, [slotId, loadAll]);
+
+  const handleCancelEntry = useCallback(async (entryId: number) => {
+    setCancelingId(entryId);
+    setWlError('');
+    try {
+      await waitingListService.cancel(slotId, entryId);
+      setWaitingList(prev => prev.filter(e => e.id !== entryId));
+    } catch (err: unknown) {
+      const m = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setWlError(m || 'Erreur lors de la suppression');
+    } finally {
+      setCancelingId(null);
+    }
+  }, [slotId]);
+
   // ── export Excel ─────────────────────────────────────────────────────────
   const handleExportExcel = async () => {
     if (!slot) return;
@@ -617,6 +661,100 @@ export function PalanqueePage({ slotId, onBack }: Props) {
       </div>
 
       {error && <div className="palanquee-error">{error}</div>}
+
+      {/* ── Liste d'attente (visible uniquement par le DP / ADMIN) ── */}
+      {waitingList.length > 0 && (
+        <div className="palanquee-waiting-list">
+          <div className="palanquee-waiting-list-header">
+            <div className="palanquee-waiting-list-title-row">
+              <h3 className="palanquee-waiting-list-title">
+                📋 Liste d'attente
+                <span className="palanquee-waiting-list-badge">{waitingList.length}</span>
+              </h3>
+              <span className="palanquee-waiting-list-hint">
+                Validez pour ajouter au pool · Refusez pour retirer
+              </span>
+            </div>
+            {slot && allDivers.length >= slot.diverCount && (
+              <div className="palanquee-wl-full-notice">
+                ⚠️ Créneau complet ({allDivers.length}/{slot.diverCount}) — retirez un plongeur pour pouvoir valider une inscription
+              </div>
+            )}
+          </div>
+          {wlError && <div className="palanquee-error" style={{ marginBottom: 8 }}>{wlError}</div>}
+          <div className="palanquee-waiting-list-entries">
+            {waitingList.map((entry, idx) => {
+              const regDate = new Date(entry.registeredAt).toLocaleDateString('fr-FR', {
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit',
+              });
+              return (
+                <div key={entry.id} className="palanquee-wl-entry">
+                  <div className="palanquee-wl-entry-rank">#{idx + 1}</div>
+
+                  <div className="palanquee-wl-entry-body">
+                    <div className="palanquee-wl-entry-top">
+                      <span className="palanquee-wl-entry-name">{entry.firstName} {entry.lastName}</span>
+                      <span className="palanquee-wl-entry-level">{entry.level}</span>
+                      {entry.preparedLevel && entry.preparedLevel !== 'Aucun' && (
+                        <span className="palanquee-wl-entry-prep" title="Niveau en préparation">
+                          → {entry.preparedLevel}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="palanquee-wl-entry-meta">
+                      <a href={`mailto:${entry.email}`} className="palanquee-wl-entry-email" title="Envoyer un e-mail">
+                        ✉️ {entry.email}
+                      </a>
+                      {entry.numberOfDives !== undefined && (
+                        <span className="palanquee-wl-chip" title="Nombre de plongées">
+                          🤿 {entry.numberOfDives} plongée{entry.numberOfDives > 1 ? 's' : ''}
+                        </span>
+                      )}
+                      {entry.lastDiveDate && (
+                        <span className="palanquee-wl-chip" title="Dernière plongée">
+                          📅 {entry.lastDiveDate}
+                        </span>
+                      )}
+                      <span className="palanquee-wl-chip palanquee-wl-chip--date" title="Date d'inscription">
+                        ⏱ {regDate}
+                      </span>
+                    </div>
+
+                    {entry.comment && (
+                      <div className="palanquee-wl-entry-comment">
+                        💬 <em>{entry.comment}</em>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="palanquee-wl-entry-actions">
+                    <button
+                      className="btn-wl-approve"
+                      disabled={approvingId === entry.id || (slot !== null && allDivers.length >= slot.diverCount)}
+                      onClick={() => handleApprove(entry.id)}
+                      title={slot && allDivers.length >= slot.diverCount
+                        ? "Créneau complet — retirez un plongeur d'abord"
+                        : "Valider — ajoute le plongeur dans la liste des inscrits"}
+                    >
+                      {approvingId === entry.id ? '…' : '✓ Valider'}
+                    </button>
+                    <button
+                      className="btn-wl-cancel"
+                      disabled={cancelingId === entry.id}
+                      onClick={() => handleCancelEntry(entry.id)}
+                      title="Refuser et retirer de la liste d'attente"
+                    >
+                      {cancelingId === entry.id ? '…' : '✕ Refuser'}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="palanquee-hint">
         {isMobile

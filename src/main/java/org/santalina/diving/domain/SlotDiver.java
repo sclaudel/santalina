@@ -81,4 +81,10 @@ public class SlotDiver extends PanacheEntityBase {
         return count("slot.id = ?1 and lower(firstName) = lower(?2) and lower(lastName) = lower(?3) and id != ?4",
                 slotId, firstName, lastName, excludeId) > 0;
     }
+
+    /** Vérifie si un email est le directeur de plongée assigné sur un créneau. */
+    public static boolean isAssignedDirectorByEmail(Long slotId, String email) {
+        if (email == null || email.isBlank()) return false;
+        return count("slot.id = ?1 and isDirector = true and lower(email) = lower(?2)", slotId, email) > 0;
+    }
 }

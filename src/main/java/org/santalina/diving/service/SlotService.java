@@ -8,6 +8,7 @@ import org.santalina.diving.dto.SlotDto.BatchSlotResponse;
 import org.santalina.diving.dto.SlotDto.SlotRequest;
 import org.santalina.diving.dto.SlotDto.SlotResponse;
 import org.santalina.diving.dto.SlotDto.UpdateSlotInfoRequest;
+import org.santalina.diving.dto.WaitingListDto.UpdateRegistrationRequest;
 import org.santalina.diving.mail.BookingNotificationMailer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -226,9 +227,12 @@ public class SlotService {
         DiveSlot slot = DiveSlot.findById(id);
         if (slot == null) throw new NotFoundException("Créneau non trouvé");
 
-        if (currentUser.role == UserRole.DIVE_DIRECTOR &&
-                (slot.createdBy == null || !slot.createdBy.id.equals(currentUser.id))) {
-            throw new ForbiddenException("Vous ne pouvez modifier que vos propres créneaux");
+        if (currentUser.role == UserRole.DIVE_DIRECTOR) {
+            boolean isCreator = slot.createdBy != null && slot.createdBy.id.equals(currentUser.id);
+            boolean isAssignedDP = SlotDiver.isAssignedDirectorByEmail(slot.id, currentUser.email);
+            if (!isCreator && !isAssignedDP) {
+                throw new ForbiddenException("Vous ne pouvez modifier que vos propres créneaux");
+            }
         }
 
         boolean dateOrTimeChanged = request.slotDate() != null
@@ -260,6 +264,32 @@ public class SlotService {
     }
 
     /**
+     * Activer / désactiver l'inscription libre sur un créneau.
+     * Seul le créateur du créneau (ou un admin) peut modifier ce paramètre.
+     */
+    @Transactional
+    public SlotResponse updateRegistration(Long id, UpdateRegistrationRequest request, User currentUser) {
+        DiveSlot slot = DiveSlot.findById(id);
+        if (slot == null) throw new NotFoundException("Créneau non trouvé");
+
+        if (currentUser.role == UserRole.DIVE_DIRECTOR) {
+            boolean isCreator = slot.createdBy != null && slot.createdBy.id.equals(currentUser.id);
+            boolean isAssignedDP = SlotDiver.isAssignedDirectorByEmail(slot.id, currentUser.email);
+            if (!isCreator && !isAssignedDP) {
+                throw new ForbiddenException("Vous ne pouvez modifier que vos propres créneaux");
+            }
+        }
+
+        slot.registrationOpen      = request.registrationOpen();
+        slot.registrationOpensAt   = request.registrationOpensAt();
+        slot.persist();
+
+        LOG.infof("Inscriptions libres %s (id=%d) par %s",
+                slot.registrationOpen ? "activées" : "désactivées", id, currentUser.email);
+        return SlotResponse.from(slot);
+    }
+
+    /**
      * Supprimer un créneau
      * - ADMIN : peut supprimer n'importe lequel
      * - DIVE_DIRECTOR : seulement les siens
@@ -269,11 +299,14 @@ public class SlotService {
         DiveSlot slot = DiveSlot.findById(id);
         if (slot == null) throw new NotFoundException("Créneau non trouvé");
 
-        if (currentUser.role == UserRole.DIVE_DIRECTOR &&
-                (slot.createdBy == null || !slot.createdBy.id.equals(currentUser.id))) {
-            LOG.warnf("Suppression refusée : %s tente de supprimer le créneau id=%d qui ne lui appartient pas",
-                    currentUser.email, id);
-            throw new ForbiddenException("Vous ne pouvez supprimer que vos propres créneaux");
+        if (currentUser.role == UserRole.DIVE_DIRECTOR) {
+            boolean isCreator = slot.createdBy != null && slot.createdBy.id.equals(currentUser.id);
+            boolean isAssignedDP = SlotDiver.isAssignedDirectorByEmail(slot.id, currentUser.email);
+            if (!isCreator && !isAssignedDP) {
+                LOG.warnf("Suppression refusée : %s tente de supprimer le créneau id=%d qui ne lui appartient pas",
+                        currentUser.email, id);
+                throw new ForbiddenException("Vous ne pouvez supprimer que vos propres créneaux");
+            }
         }
 
         LOG.infof("Créneau supprimé (id=%d) par %s", id, currentUser.email);
@@ -291,9 +324,12 @@ public class SlotService {
         DiveSlot slot = DiveSlot.findById(id);
         if (slot == null) throw new NotFoundException("Créneau non trouvé");
 
-        if (currentUser.role == UserRole.DIVE_DIRECTOR &&
-                (slot.createdBy == null || !slot.createdBy.id.equals(currentUser.id))) {
-            throw new ForbiddenException("Vous ne pouvez modifier que vos propres créneaux");
+        if (currentUser.role == UserRole.DIVE_DIRECTOR) {
+            boolean isCreator = slot.createdBy != null && slot.createdBy.id.equals(currentUser.id);
+            boolean isAssignedDP = SlotDiver.isAssignedDirectorByEmail(slot.id, currentUser.email);
+            if (!isCreator && !isAssignedDP) {
+                throw new ForbiddenException("Vous ne pouvez modifier que vos propres créneaux");
+            }
         }
 
         validateDiverCount(newDiverCount);

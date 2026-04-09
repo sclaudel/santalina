@@ -2,9 +2,11 @@ package org.santalina.diving.dto;
 
 import org.santalina.diving.domain.DiveSlot;
 import org.santalina.diving.domain.SlotDiver;
+import org.santalina.diving.domain.WaitingListEntry;
 import org.santalina.diving.dto.SlotDiverDto.SlotDiverResponse;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.*;
+import java.time.LocalDateTime;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -53,11 +55,15 @@ public class SlotDto {
             String club,
             Long createdById,
             String createdByName,
-            List<SlotDiverResponse> divers
+            List<SlotDiverResponse> divers,
+            boolean registrationOpen,
+            @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") LocalDateTime registrationOpensAt,
+            long waitingListCount
     ) {
         public static SlotResponse from(DiveSlot slot) {
             List<SlotDiverResponse> divers = SlotDiver.findBySlot(slot.id)
                     .stream().map(SlotDiverResponse::from).toList();
+            long waitingListCount = WaitingListEntry.countBySlot(slot.id);
             return new SlotResponse(
                     slot.id,
                     slot.slotDate,
@@ -70,7 +76,10 @@ public class SlotDto {
                     slot.club,
                     slot.createdBy != null ? slot.createdBy.id : null,
                     slot.createdBy != null ? slot.createdBy.fullName() : null,
-                    divers
+                    divers,
+                    slot.registrationOpen,
+                    slot.registrationOpensAt,
+                    waitingListCount
             );
         }
     }

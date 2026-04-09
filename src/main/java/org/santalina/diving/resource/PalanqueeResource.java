@@ -137,7 +137,9 @@ public class PalanqueeResource {
 
         if ("DIVE_DIRECTOR".equals(role)) {
             User me = User.findByEmail(jwt.getName());
-            if (me == null || slot.createdBy == null || !slot.createdBy.id.equals(me.id)) {
+            boolean isCreator = me != null && slot.createdBy != null && slot.createdBy.id.equals(me.id);
+            boolean isAssignedDP = me != null && SlotDiver.isAssignedDirectorByEmail(slot.id, me.email);
+            if (!isCreator && !isAssignedDP) {
                 throw new ForbiddenException("Accès réservé au créateur du créneau");
             }
         }

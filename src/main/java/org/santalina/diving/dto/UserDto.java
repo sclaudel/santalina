@@ -38,6 +38,11 @@ public class UserDto {
             @Size(max = 20) String licenseNumber
     ) {}
 
+    /** Mise à jour de l'email de l'utilisateur connecté. Retourne un nouveau token JWT. */
+    public record UpdateEmailRequest(
+            @NotBlank @Email String email
+    ) {}
+
     /** Remplace UpdateRoleRequest — supporte maintenant plusieurs rôles */
     public record UpdateRolesRequest(
             @NotNull @Size(min = 1) Set<UserRole> roles

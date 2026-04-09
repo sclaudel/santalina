@@ -2,9 +2,12 @@ package org.santalina.diving.service;
 
 import org.santalina.diving.domain.User;
 import org.santalina.diving.domain.UserRole;
+import org.santalina.diving.dto.AuthDto.LoginResponse;
 import org.santalina.diving.dto.UserDto.*;
+import org.santalina.diving.security.JwtUtil;
 import org.santalina.diving.security.PasswordUtil;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
@@ -19,6 +22,9 @@ import java.util.List;
 public class UserService {
 
     private static final Logger LOG = Logger.getLogger(UserService.class);
+
+    @Inject
+    JwtUtil jwtUtil;
 
     public UserResponse getProfile(String email) {
         User user = User.findByEmail(email);
@@ -36,6 +42,26 @@ public class UserService {
         user.licenseNumber = request.licenseNumber() != null ? request.licenseNumber().trim() : null;
         user.persist();
         return UserResponse.from(user);
+    }
+
+    /** Met à jour l'email de l'utilisateur et retourne un nouveau token JWT. */
+    @Transactional
+    public LoginResponse updateEmail(String currentEmail, UpdateEmailRequest request) {
+        String newEmail = request.email().trim().toLowerCase();
+        if (newEmail.equalsIgnoreCase(currentEmail)) {
+            throw new BadRequestException("L'email est identique au précédent");
+        }
+        if (User.findByEmail(newEmail) != null) {
+            throw new BadRequestException("Cet email est déjà utilisé par un autre compte");
+        }
+        User user = User.findByEmail(currentEmail);
+        if (user == null) throw new NotFoundException("Utilisateur non trouvé");
+        user.email = newEmail;
+        user.persist();
+        LOG.infof("Email mis à jour : %s → %s", currentEmail, newEmail);
+        String token = jwtUtil.generateToken(user);
+        return new LoginResponse(token, user.email, user.firstName, user.lastName,
+                user.primaryRole(), user.id, user.roles);
     }
 
     public List<UserResponse> getAllUsers() {

@@ -44,6 +44,17 @@ export const authService = {
     return res.data;
   },
 
+  async updateEmail(email: string): Promise<LoginResponse> {
+    const res = await api.patch<LoginResponse>('/users/me/email', { email });
+    // Mettre à jour le token et l'utilisateur stockés
+    localStorage.setItem('token', res.data.token);
+    const stored = this.getStoredUser();
+    if (stored) {
+      localStorage.setItem('user', JSON.stringify({ ...stored, email: res.data.email }));
+    }
+    return res.data;
+  },
+
   logout(): void {
     localStorage.removeItem('token');
     localStorage.removeItem('user');

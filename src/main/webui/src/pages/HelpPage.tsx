@@ -261,6 +261,89 @@ export function HelpPage() {
       ),
     },
 
+    // ── INSCRIPTION LIBRE ─────────────────────────────────────────────────────
+    {
+      id: 'inscription-libre',
+      icon: '📋',
+      title: 'Inscription libre sur un créneau',
+      content: (
+        <>
+          <p>
+            Lorsqu'un directeur de plongée a <strong>activé les inscriptions libres</strong> sur un créneau,
+            tout plongeur inscrit sur la plateforme peut soumettre une demande d'inscription.
+          </p>
+
+          <h4>Pour les plongeurs (DIVER)</h4>
+          <ol>
+            <li>Un pictogramme 📋 apparaît sur les créneaux ouverts aux inscriptions libres.</li>
+            <li>Cliquez sur le créneau, puis sur <strong>📋 S'inscrire sur la liste d'attente</strong>.</li>
+            <li>
+              Remplissez le formulaire d'inscription :
+              <ul>
+                <li><strong>Prénom / Nom</strong> — champs obligatoires.</li>
+                <li><strong>E-mail</strong> (double saisie obligatoire pour éviter les erreurs)</li>
+                <li><strong>Niveau de certification</strong> — sélectionner parmi : N1, N2, N3, N4, N5, E2, E3, E4, PE12, PE40, PE60, MF1, MF2.</li>
+                <li><strong>Nombre de plongées effectuées</strong> — champ obligatoire.</li>
+                <li><strong>Date de la dernière plongée</strong> — champ obligatoire.</li>
+                <li><strong>Niveau en préparation</strong> — optionnel (vaste liste disponible).</li>
+                <li><strong>Commentaire pour le DP</strong> — optionnel, pour indiquer ce que vous souhaitez travailler ou faire durant la plongée.</li>
+              </ul>
+            </li>
+            <li>Cliquez sur <strong>M'inscrire sur la liste d'attente</strong>.</li>
+            <li>Un <strong>e-mail de confirmation</strong> est envoyé à l'adresse renseignée.</li>
+          </ol>
+          <div className="help-tip">
+            💡 Votre demande sera examinée par le directeur de plongée. Vous recevrez un e-mail de validation lorsqu'il aura accepté votre inscription.
+          </div>
+
+          <h4>Annuler sa demande d'inscription</h4>
+          <p>
+            Si vous souhaitez annuler votre demande, contactez directement le directeur de plongée du créneau.
+            Une annulation après validation de votre inscription génère automatiquement un e-mail de notification au directeur.
+          </p>
+          <div className="help-warning">
+            ⚠️ L'annulation peut perturber l'organisation des palanquées. Une fenêtre de confirmation vous rappelle cet impact avant de valider.
+          </div>
+
+          <h4>Pour les directeurs de plongée (DIVE_DIRECTOR)</h4>
+          <ol>
+            <li>Ouvrez le panneau de détails du créneau.</li>
+            <li>
+              Cliquez sur <strong>⚙️ Configurer les inscriptions libres</strong>.
+              <ul>
+                <li>Cochez <strong>Autoriser l'inscription libre des plongeurs</strong> pour ouvrir les inscriptions.</li>
+                <li>Renseignez optionnellement une <strong>date d'ouverture</strong> (les inscriptions ne seront acceptées qu'à partir de cette date/heure).</li>
+                <li>Sans date d'ouverture, les inscriptions sont actives immédiatement.</li>
+              </ul>
+            </li>
+            <li>Cliquez sur <strong>✓ Enregistrer</strong>.</li>
+          </ol>
+
+          <h4>Gérer la liste d'attente</h4>
+          <p>
+            La liste d'attente est accessible depuis la page <strong>Organisation des palanquées</strong> de votre créneau.
+            Elle est visible uniquement par vous (DP du créneau) et les administrateurs.
+          </p>
+          <ol>
+            <li>Les inscriptions apparaissent dans l'ordre d'arrivée (#1 = le premier inscrit).</li>
+            <li>
+              Pour chaque entrée, vous voyez : nom, niveau, e-mail, nombre de plongées, date de la dernière plongée, niveau en préparation et commentaire éventuel.
+            </li>
+            <li>
+              Cliquez sur <strong>✓ Valider</strong> pour accepter la demande :
+              le plongeur est transféré dans la liste des inscrits et reçoit un e-mail de confirmation.
+            </li>
+            <li>
+              Cliquez sur <strong>✕</strong> pour refuser / supprimer la demande sans notification.
+            </li>
+          </ol>
+          <div className="help-tip">
+            💡 Les plongeurs validés apparaissent dans le pool <strong>Non assignés</strong> de la page d'organisation des palanquées.
+          </div>
+        </>
+      ),
+    },
+
     // ── CONNEXION / INSCRIPTION ───────────────────────────────────────────────
     {
       id: 'connexion',
