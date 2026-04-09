@@ -6,6 +6,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 import org.santalina.diving.domain.DiveSlot;
+import org.santalina.diving.domain.SlotDiver;
 import org.santalina.diving.service.ConfigService;
 
 import java.util.List;
@@ -20,6 +21,94 @@ public class BookingNotificationMailer {
 
     @Inject
     ConfigService configService;
+
+    // -------------------------------------------------------------------------
+    // Inscriptions plongeurs — file d'attente
+    // -------------------------------------------------------------------------
+
+    /** Mail envoyé au plongeur quand son inscription est mise en attente */
+    public void sendRegistrationPendingToApplicant(DiveSlot slot, SlotDiver diver) {
+        if (diver.email == null || diver.email.isBlank()) return;
+        String siteName  = configService.getSiteName();
+        String slotLabel = slotLabel(slot);
+        String subject   = "[" + siteName + "] Inscription en attente — " + slotLabel;
+        String body = """
+                <html>
+                <body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+                  <h2 style="color:#1e40af;">🤿 Inscription enregistrée</h2>
+                  <p>Bonjour <strong>%s</strong>,</p>
+                  <p>Votre demande d'inscription sur le créneau <strong>%s</strong>
+                     (le <strong>%s de %s à %s</strong>) a bien été reçue.</p>
+                  <p>Elle est <strong>en attente de validation</strong> par le directeur de plongée.
+                     Vous recevrez un mail dès qu'elle sera traitée.</p>
+                  %s
+                  <hr style="border:1px solid #e5e7eb;margin-top:30px;"/>
+                  <p style="color:#6b7280;font-size:12px;">%s — Système de réservation</p>
+                </body>
+                </html>
+                """.formatted(
+                diver.firstName,
+                slotLabel,
+                slot.slotDate, slot.startTime, slot.endTime,
+                commentSection(diver.registrationComment),
+                siteName);
+        sendRegistrationMail(diver.email, subject, body);
+    }
+
+    /** Mail envoyé au plongeur quand son inscription est validée */
+    public void sendRegistrationValidatedToApplicant(DiveSlot slot, SlotDiver diver) {
+        if (diver.email == null || diver.email.isBlank()) return;
+        String siteName  = configService.getSiteName();
+        String slotLabel = slotLabel(slot);
+        String subject   = "[" + siteName + "] Inscription confirmée — " + slotLabel;
+        String body = """
+                <html>
+                <body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+                  <h2 style="color:#059669;">✅ Inscription confirmée !</h2>
+                  <p>Bonjour <strong>%s</strong>,</p>
+                  <p>Votre inscription sur le créneau <strong>%s</strong>
+                     (le <strong>%s de %s à %s</strong>) vient d'être <strong>validée</strong>
+                     par le directeur de plongée.</p>
+                  <p>Vous faites désormais partie des plongeurs confirmés sur cette sortie.
+                     Préparez votre matériel !</p>
+                  <hr style="border:1px solid #e5e7eb;margin-top:30px;"/>
+                  <p style="color:#6b7280;font-size:12px;">%s — Système de réservation</p>
+                </body>
+                </html>
+                """.formatted(
+                diver.firstName,
+                slotLabel,
+                slot.slotDate, slot.startTime, slot.endTime,
+                siteName);
+        sendRegistrationMail(diver.email, subject, body);
+    }
+
+    /** Mail envoyé au DP quand un plongeur annule sa participation */
+    public void sendCancellationToDirector(DiveSlot slot, SlotDiver diver) {
+        SlotDiver director = org.santalina.diving.domain.SlotDiver.findDirector(slot.id);
+        if (director == null || director.email == null || director.email.isBlank()) return;
+        String siteName  = configService.getSiteName();
+        String slotLabel = slotLabel(slot);
+        String subject   = "[" + siteName + "] Annulation — " + diver.firstName + " " + diver.lastName + " — " + slotLabel;
+        String body = """
+                <html>
+                <body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+                  <h2 style="color:#dc2626;">❌ Annulation d'inscription</h2>
+                  <p>Bonjour,</p>
+                  <p><strong>%s %s</strong> vient d'annuler sa participation au créneau
+                     <strong>%s</strong> (le <strong>%s de %s à %s</strong>).</p>
+                  <p>Une place s'est libérée. Pensez à consulter la liste d'attente.</p>
+                  <hr style="border:1px solid #e5e7eb;margin-top:30px;"/>
+                  <p style="color:#6b7280;font-size:12px;">%s — Système de réservation</p>
+                </body>
+                </html>
+                """.formatted(
+                diver.firstName, diver.lastName,
+                slotLabel,
+                slot.slotDate, slot.startTime, slot.endTime,
+                siteName);
+        sendRegistrationMail(director.email, subject, body);
+    }
 
     // -------------------------------------------------------------------------
     // Créneau simple
@@ -152,6 +241,52 @@ public class BookingNotificationMailer {
     // -------------------------------------------------------------------------
     // Helper interne
     // -------------------------------------------------------------------------
+
+    /**
+     * Envoie un mail lié aux inscriptions plongeurs.
+     * Si le mode simulation est activé, redirige vers l'adresse configurée
+     * en ajoutant une bannière indiquant le destinataire d'origine.
+     */
+    private void sendRegistrationMail(String recipient, String subject, String body) {
+        String actualRecipient;
+        String actualBody;
+        if (configService.isRegistrationSimulationEnabled()) {
+            String simAddress = configService.getRegistrationSimulationTo();
+            if (simAddress == null || simAddress.isBlank()) {
+                LOG.warnf("Mode simulation activé mais REGISTRATION_SIMULATION_TO est vide — mail ignoré");
+                return;
+            }
+            actualRecipient = simAddress.trim();
+            String banner = "<div style='background:#fef9c3;border:2px solid #eab308;padding:8px 12px;"
+                    + "border-radius:6px;margin-bottom:16px;font-size:13px;'>"
+                    + "<strong>[SIMULATION]</strong> Ce mail aurait été envoyé à : <code>" + recipient + "</code>"
+                    + "</div>";
+            actualBody = banner + body;
+            subject = "[SIM] " + subject;
+        } else {
+            actualRecipient = recipient;
+            actualBody      = body;
+        }
+        LOG.infof("Envoi mail inscription [%s] à %s", subject, actualRecipient);
+        try {
+            mailer.send(Mail.withHtml(actualRecipient, subject, actualBody));
+        } catch (Exception e) {
+            LOG.errorf(e, "Échec de l'envoi du mail à %s", actualRecipient);
+        }
+    }
+
+    /** Retourne le label lisible d'un créneau */
+    private static String slotLabel(DiveSlot slot) {
+        return (slot.title != null && !slot.title.isBlank())
+                ? slot.title
+                : "Créneau du " + slot.slotDate;
+    }
+
+    /** Génère la section commentaire si non vide */
+    private static String commentSection(String comment) {
+        if (comment == null || comment.isBlank()) return "";
+        return "<p><em>Votre commentaire pour le DP : " + comment + "</em></p>";
+    }
 
     private void sendToAll(String notifEmail, String subject, String body) {
         String[] recipients = notifEmail.split(",");

@@ -10,6 +10,7 @@ interface Props {
   canEdit: boolean;
   currentUserId?: number;
   currentUserRole?: string;
+  currentUserEmail?: string;
   /** Heure de début de la grille (fournie par WeekView pour aligner les colonnes) */
   startHour?: number;
   /** Heure de fin de la grille (fournie par WeekView pour aligner les colonnes) */
@@ -78,7 +79,7 @@ function computeColumns(slots: DiveSlot[]): Map<number, { col: number; totalCols
   return result;
 }
 
-export function TimeGrid({ slots, config, onDelete, onRefresh, canEdit, currentUserId, currentUserRole, startHour: startHourProp, endHour: endHourProp, onClickTime, onOpenPalanquees }: Props) {
+export function TimeGrid({ slots, config, onDelete, onRefresh, canEdit, currentUserId, currentUserRole, currentUserEmail, startHour: startHourProp, endHour: endHourProp, onClickTime, onOpenPalanquees }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoverTime, setHoverTime] = useState<{ time: string; y: number } | null>(null);
 
@@ -220,6 +221,7 @@ export function TimeGrid({ slots, config, onDelete, onRefresh, canEdit, currentU
                   canEdit={canEdit}
                   currentUserId={currentUserId}
                   currentUserRole={currentUserRole}
+                  currentUserEmail={currentUserEmail}
                   onOpenPalanquees={onOpenPalanquees}
                 />
               </div>

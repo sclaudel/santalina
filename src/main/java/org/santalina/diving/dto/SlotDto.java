@@ -6,6 +6,7 @@ import org.santalina.diving.dto.SlotDiverDto.SlotDiverResponse;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.*;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -21,6 +22,8 @@ public class SlotDto {
             String notes,
             String slotType,
             String club,
+            Boolean registrationEnabled,
+            Instant registrationOpensAt,
             // Champs récurrence
             Boolean recurring,
             List<Integer> recurringDays,   // 1=Lun … 7=Dim (ISO DayOfWeek)
@@ -38,7 +41,9 @@ public class SlotDto {
             String club,
             LocalDate slotDate,
             @JsonFormat(pattern = "HH:mm") LocalTime startTime,
-            @JsonFormat(pattern = "HH:mm") LocalTime endTime
+            @JsonFormat(pattern = "HH:mm") LocalTime endTime,
+            Boolean registrationEnabled,
+            Instant registrationOpensAt
     ) {}
 
     public record SlotResponse(
@@ -51,12 +56,15 @@ public class SlotDto {
             String notes,
             String slotType,
             String club,
+            boolean registrationEnabled,
+            Instant registrationOpensAt,
             Long createdById,
             String createdByName,
             List<SlotDiverResponse> divers
     ) {
         public static SlotResponse from(DiveSlot slot) {
-            List<SlotDiverResponse> divers = SlotDiver.findBySlot(slot.id)
+            // N'expose que les plongeurs CONFIRMED dans la réponse publique
+            List<SlotDiverResponse> divers = SlotDiver.findConfirmedBySlot(slot.id)
                     .stream().map(SlotDiverResponse::from).toList();
             return new SlotResponse(
                     slot.id,
@@ -68,6 +76,8 @@ public class SlotDto {
                     slot.notes,
                     slot.slotType,
                     slot.club,
+                    slot.registrationEnabled,
+                    slot.registrationOpensAt,
                     slot.createdBy != null ? slot.createdBy.id : null,
                     slot.createdBy != null ? slot.createdBy.fullName() : null,
                     divers

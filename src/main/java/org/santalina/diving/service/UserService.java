@@ -30,6 +30,17 @@ public class UserService {
     public UserResponse updateProfile(String email, UpdateProfileRequest request) {
         User user = User.findByEmail(email);
         if (user == null) throw new NotFoundException("Utilisateur non trouvé");
+
+        // Mise à jour email si modifié
+        String newEmail = request.email().trim().toLowerCase();
+        if (!newEmail.equalsIgnoreCase(user.email)) {
+            User existing = User.findByEmail(newEmail);
+            if (existing != null && !existing.id.equals(user.id)) {
+                throw new BadRequestException("Cet email est déjà utilisé par un autre compte");
+            }
+            user.email = newEmail;
+        }
+
         user.firstName     = request.firstName().trim();
         user.lastName      = request.lastName().trim().toUpperCase();
         user.phone         = normalizePhone(request.phone());

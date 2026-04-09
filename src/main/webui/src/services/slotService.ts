@@ -9,6 +9,8 @@ export interface SlotInfoUpdate {
   slotDate?: string;
   startTime?: string;
   endTime?: string;
+  registrationEnabled?: boolean;
+  registrationOpensAt?: string | null;   // ISO datetime ou null pour supprimer la date
 }
 
 export const slotService = {

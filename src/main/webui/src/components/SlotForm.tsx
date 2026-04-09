@@ -80,6 +80,8 @@ export function SlotForm({ date, config, onCreated, onCancel, initialStartTime }
   const [error, setError]             = useState('');
   const [loading, setLoading]         = useState(false);
   const [successMsg, setSuccessMsg]   = useState('');
+  const [registrationEnabled, setRegistrationEnabled] = useState(false);
+  const [registrationOpensAt, setRegistrationOpensAt] = useState('');
 
   // Récurrence
   const [recurring, setRecurring]         = useState(false);
@@ -146,6 +148,8 @@ export function SlotForm({ date, config, onCreated, onCancel, initialStartTime }
         recurring: recurring || undefined,
         recurringDays: recurring ? recurringDays : undefined,
         recurringUntil: recurring ? recurringUntil : undefined,
+        registrationEnabled: registrationEnabled || undefined,
+        registrationOpensAt: registrationEnabled && registrationOpensAt ? new Date(registrationOpensAt).toISOString() : undefined,
       };
       const result = await slotService.create(req);
       if (result.created > 1) {
@@ -241,6 +245,32 @@ export function SlotForm({ date, config, onCreated, onCancel, initialStartTime }
             <label>Notes (optionnel)</label>
             <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Informations supplémentaires..." />
           </div>
+
+          {/* ── Inscriptions plongeurs ── */}
+          <div className="form-group" style={{ borderTop: '1px solid #e5e7eb', paddingTop: 12, marginTop: 4 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none' }}>
+              <input type="checkbox" checked={registrationEnabled} onChange={e => setRegistrationEnabled(e.target.checked)}
+                style={{ width: 16, height: 16, accentColor: '#2563eb' }} />
+              <span style={{ fontWeight: 600 }}>📋 Activer les inscriptions plongeurs</span>
+            </label>
+            <p style={{ color: '#6b7280', fontSize: 13, margin: '4px 0 0 26px' }}>
+              Les plongeurs pourront s'inscrire sur ce créneau. Le DP affecté validera les demandes.
+            </p>
+          </div>
+
+          {registrationEnabled && (
+            <div style={{ background: '#f0f9ff', borderRadius: 8, padding: 14, marginTop: 4, border: '1px solid #bae6fd' }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label style={{ fontWeight: 600 }}>Ouverture des inscriptions (optionnel)</label>
+                <input type="datetime-local" value={registrationOpensAt}
+                  onChange={e => setRegistrationOpensAt(e.target.value)}
+                  style={{ marginTop: 4 }} />
+                <p style={{ color: '#6b7280', fontSize: 12, marginTop: 4 }}>
+                  Si vide, les inscriptions sont ouvertes immédiatement. Sinon, elles ouvrent à la date/heure indiquée.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* ── Récurrence ── */}
           <div className="form-group" style={{ borderTop: '1px solid #e5e7eb', paddingTop: 12, marginTop: 4 }}>

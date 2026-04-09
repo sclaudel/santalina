@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import type { AppConfig, DiveSlot, Palanquee, SlotDiver, SlotDiverRequest, UserSearchResult } from '../types';
+import type { AppConfig, DiveSlot, Palanquee, SlotDiver, SlotDiverRequest, SlotRegistrationRequest, UserSearchResult, WaitlistEntry } from '../types';
 import { slotDiverService } from '../services/slotDiverService';
 import { slotService } from '../services/slotService';
 import { adminService } from '../services/adminService';
@@ -30,7 +30,21 @@ interface Props {
   canEdit: boolean;
   currentUserId?: number;
   currentUserRole?: string;
+  currentUserEmail?: string;
 }
+
+const REQUIRED_LEVELS = ['Aucun','N1','N2','N3','N4','N5','GP','E1','E2','E3','E34','PE40','PE60','PA40','PA20','PA60'] as const;
+const PREPARED_LEVELS = ['Aucun','N1','N2','N3','N4','N5','MF1','MF2','E1','PE12','PE40','PE60','PA40','PA20','PA60',
+  'Plongeur Nitrox','Plongeur Nitrox Confirmé','PTH70','PTH120','PB1','PB2','PV1','PV2','PS1','PS2','PS3'] as const;
+
+const EMPTY_REGISTRATION: SlotRegistrationRequest = {
+  level: REQUIRED_LEVELS[0],
+  numberOfDives: 0,
+  lastDiveDate: '',
+  email: '',
+  preparedLevel: '',
+  registrationComment: '',
+};
 
 const LEVEL_COLORS: Record<string, string> = {
   // Niveaux fédéraux
@@ -92,7 +106,7 @@ function timeOptions(resolutionMinutes: number): string[] {
 
 export function SlotBlock({
   slot, height, onDelete, onRefresh, onOpenPalanquees,
-  canEdit, currentUserId, currentUserRole, maxDivers = 25, config,
+  canEdit, currentUserId, currentUserRole, currentUserEmail, maxDivers = 25, config,
 }: Props) {
   const [showTooltip, setShowTooltip]         = useState(false);
   const [showDiverForm, setShowDiverForm]     = useState(false);
@@ -112,7 +126,7 @@ export function SlotBlock({
   const [editError, setEditError]         = useState('');
   const [palanquees, setPalanquees]       = useState<Palanquee[]>([]);
   const [currentDiverCount, setCurrentDiverCount] = useState(slot.diverCount);
-  // Édition des infos du créneau (titre, notes, type, club, date, horaires, capacité)
+  // Édition des infos du créneau
   const [editingInfo, setEditingInfo]   = useState(false);
   const [infoTitle, setInfoTitle]       = useState(slot.title ?? '');
   const [infoNotes, setInfoNotes]       = useState(slot.notes ?? '');
@@ -122,19 +136,40 @@ export function SlotBlock({
   const [infoSlotDate, setInfoSlotDate]   = useState(slot.slotDate);
   const [infoStartTime, setInfoStartTime] = useState(slot.startTime);
   const [infoEndTime, setInfoEndTime]     = useState(slot.endTime);
+  const [infoRegistrationEnabled, setInfoRegistrationEnabled] = useState(slot.registrationEnabled);
+  // Convertit un instant ISO UTC (ex: "2026-04-09T15:25:00Z") en valeur datetime-local (ex: "2026-04-09T17:25")
+  const instantToLocalInput = (isoUtc: string | null): string => {
+    if (!isoUtc) return '';
+    const d = new Date(isoUtc);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const [infoRegistrationOpensAt, setInfoRegistrationOpensAt] = useState(() => instantToLocalInput(slot.registrationOpensAt));
   const [infoSaving, setInfoSaving]     = useState(false);
   const [infoError, setInfoError]       = useState('');
-  // Valeurs courantes affichées (mises à jour après sauvegarde)
+  // Valeurs courantes affichées
   const [currentTitle, setCurrentTitle]     = useState(slot.title ?? '');
   const [currentNotes, setCurrentNotes]     = useState(slot.notes ?? '');
   const [currentSlotType, setCurrentSlotType] = useState(slot.slotType ?? '');
   const [currentClub, setCurrentClub]       = useState(slot.club ?? '');
+  // État des inscriptions
+  const [registrationForm, setRegistrationForm] = useState<SlotRegistrationRequest>({ ...EMPTY_REGISTRATION, email: currentUserEmail ?? '' });
+  const [registering, setRegistering]         = useState(false);
+  const [registrationError, setRegistrationError] = useState('');
+  const [registrationSuccess, setRegistrationSuccess] = useState('');
+  const [regConfirmCancel, setRegConfirmCancel] = useState(false);
+  const [waitlist, setWaitlist]               = useState<WaitlistEntry[]>([]);
+  const [waitlistLoading, setWaitlistLoading] = useState(false);
+  const [waitlistError, setWaitlistError]     = useState('');
+  const [waitlistActionId, setWaitlistActionId] = useState<number | null>(null);
+  const [showRegForm, setShowRegForm]         = useState(false);
+  const [showWaitlist, setShowWaitlist]       = useState(false);
 
-  // Recherche utilisateur (formulaire ajout)
+  // Recherche utilisateur
   const [searchQuery, setSearchQuery]         = useState('');
   const [searchResults, setSearchResults]     = useState<UserSearchResult[]>([]);
   const [searchLoading, setSearchLoading]     = useState(false);
-  // Recherche utilisateur (formulaire édition)
   const [editSearchQuery, setEditSearchQuery]     = useState('');
   const [editSearchResults, setEditSearchResults] = useState<UserSearchResult[]>([]);
   const [editSearchLoading, setEditSearchLoading] = useState(false);
@@ -149,7 +184,26 @@ export function SlotBlock({
     (currentUserRole === 'DIVE_DIRECTOR' && slot.createdById === currentUserId)
   );
 
-  const usedDivers     = divers.length;
+  // DP affecté = l'entrée isDirector dont l'email correspond à l'utilisateur connecté
+  const directorEntry      = divers.find(d => d.isDirector);
+  const isAssignedDirector = !!currentUserEmail && !!directorEntry?.email &&
+                             directorEntry.email.toLowerCase() === currentUserEmail.toLowerCase();
+
+  // Inscriptions ouvertes si activées ET date d'ouverture passée (ou nulle)
+  const registrationOpen = slot.registrationEnabled && (
+    !slot.registrationOpensAt || new Date(slot.registrationOpensAt) <= new Date()
+  );
+
+  // Ma propre inscription (connecté + non-admin)
+  const myEntry = currentUserEmail && currentUserRole !== 'ADMIN'
+    ? divers.find(d => d.email?.toLowerCase() === currentUserEmail.toLowerCase() && !d.isDirector)
+    : null;
+
+  const canSelfRegister = !!currentUserEmail && currentUserRole !== 'ADMIN' &&
+                          registrationOpen && !myEntry &&
+                          divers.filter(d => d.registrationStatus === 'CONFIRMED' || d.isDirector).length < currentDiverCount;
+
+  const usedDivers     = divers.filter(d => d.isDirector || d.registrationStatus === 'CONFIRMED').length;
   const color          = getCapacityColor(usedDivers, currentDiverCount);
   const isCompact      = height < 60;
   const hasDirector    = divers.some(d => d.isDirector);
@@ -238,6 +292,13 @@ export function SlotBlock({
       ]);
       setDivers(fresh);
       setPalanquees(pals);
+      // Charger la waitlist si on est le DP affecté
+      if (isAssignedDirector) {
+        setWaitlistLoading(true);
+        try { setWaitlist(await slotDiverService.getWaitlist(slot.id)); }
+        catch { /* silencieux */ }
+        finally { setWaitlistLoading(false); }
+      }
     } catch { /* silencieux */ }
     finally { setLoading(false); }
   };
@@ -264,6 +325,8 @@ export function SlotBlock({
     setShowTooltip(false); setShowDiverForm(false);
     setError(''); setEditingDiver(null); setEditError('');
     setEditingInfo(false); setInfoError('');
+    setShowRegForm(false); setShowWaitlist(false);
+    setRegistrationError(''); setRegistrationSuccess('');
   };
 
   const startEditInfo = () => {
@@ -275,6 +338,8 @@ export function SlotBlock({
     setInfoSlotDate(slot.slotDate);
     setInfoStartTime(slot.startTime);
     setInfoEndTime(slot.endTime);
+    setInfoRegistrationEnabled(slot.registrationEnabled);
+    setInfoRegistrationOpensAt(instantToLocalInput(slot.registrationOpensAt));
     setInfoError('');
     setEditingInfo(true);
   };
@@ -301,6 +366,10 @@ export function SlotBlock({
         slotDate: infoSlotDate || undefined,
         startTime: infoStartTime || undefined,
         endTime: infoEndTime || undefined,
+        registrationEnabled: infoRegistrationEnabled,
+        registrationOpensAt: infoRegistrationEnabled && infoRegistrationOpensAt
+          ? new Date(infoRegistrationOpensAt).toISOString()
+          : null,
       });
       if (newCapacity !== currentDiverCount) {
         await slotService.updateDiverCount(slot.id, newCapacity);
@@ -318,7 +387,65 @@ export function SlotBlock({
     } finally { setInfoSaving(false); }
   };
 
+  // ─── Handlers inscription plongeur ───────────────────────────────────────
 
+  const handleRegisterSelf = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!registrationForm.email.trim()) { setRegistrationError('Votre email est obligatoire'); return; }
+    setRegistering(true); setRegistrationError(''); setRegistrationSuccess('');
+    try {
+      const entry = await slotDiverService.registerSelf(slot.id, registrationForm);
+      setRegistrationSuccess('✅ Votre demande a été envoyée. Vous recevrez un email de confirmation.');
+      setShowRegForm(false);
+      // Rafraîchir les divers pour voir son entrée PENDING si applicable
+      const fresh = await slotDiverService.getBySlot(slot.id);
+      setDivers(fresh);
+      onRefresh();
+      // L'entrée PENDING n'apparaît pas dans la liste publique, on garde juste le message
+      void entry;
+    } catch (err: unknown) {
+      const m = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setRegistrationError(m || "Erreur lors de l'inscription");
+    } finally { setRegistering(false); }
+  };
+
+  const handleCancelMyRegistration = async () => {
+    setRegConfirmCancel(false);
+    setRegistrationError(''); setRegistrationSuccess('');
+    try {
+      await slotDiverService.cancelMyRegistration(slot.id);
+      setRegistrationSuccess('✅ Votre inscription a été annulée. Le directeur de plongée a été notifié.');
+      const fresh = await slotDiverService.getBySlot(slot.id);
+      setDivers(fresh);
+      onRefresh();
+    } catch (err: unknown) {
+      const m = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setRegistrationError(m || "Erreur lors de l'annulation");
+    }
+  };
+
+  const handleValidateWaitlist = async (diverId: number) => {
+    setWaitlistActionId(diverId); setWaitlistError('');
+    try {
+      await slotDiverService.validateWaitlistEntry(slot.id, diverId);
+      setWaitlist(prev => prev.filter(w => w.id !== diverId));
+      const fresh = await slotDiverService.getBySlot(slot.id);
+      setDivers(fresh);
+      onRefresh();
+    } catch (err: unknown) {
+      const m = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setWaitlistError(m || 'Erreur lors de la validation');
+    } finally { setWaitlistActionId(null); }
+  };
+
+  const toggleWaitlist = async () => {
+    if (showWaitlist) { setShowWaitlist(false); return; }
+    setShowWaitlist(true);
+    setWaitlistLoading(true); setWaitlistError('');
+    try { setWaitlist(await slotDiverService.getWaitlist(slot.id)); }
+    catch { setWaitlistError('Impossible de charger la file d\'attente'); }
+    finally { setWaitlistLoading(false); }
+  };
 
   const startEdit = (d: SlotDiver) => {
     setEditingDiver(d);
@@ -536,6 +663,28 @@ export function SlotBlock({
             <label>Notes</label>
             <textarea value={infoNotes} onChange={e => setInfoNotes(e.target.value)} rows={2} placeholder="Informations supplémentaires..." />
           </div>
+
+          {/* Paramètres d'inscriptions (visibles si DP affecté ou admin) */}
+          {(canEditThisSlot || isAssignedDirector) && (
+            <>
+              <div className="slot-info-field">
+                <label className="diver-director-checkbox" style={{ fontWeight: 600 }}>
+                  <input type="checkbox" checked={infoRegistrationEnabled}
+                    onChange={e => setInfoRegistrationEnabled(e.target.checked)} />
+                  <span>📋 Inscriptions plongeurs activées</span>
+                </label>
+              </div>
+              {infoRegistrationEnabled && (
+                <div className="slot-info-field">
+                  <label>Ouverture des inscriptions (optionnel)</label>
+                  <input type="datetime-local" value={infoRegistrationOpensAt}
+                    onChange={e => setInfoRegistrationOpensAt(e.target.value)} />
+                  <small style={{ color: '#6b7280' }}>Si vide, les inscriptions sont ouvertes immédiatement</small>
+                </div>
+              )}
+            </>
+          )}
+
           <div className="diver-form-actions" style={{ marginTop: 6 }}>
             <button type="submit" disabled={infoSaving} className="btn-diver-save">{infoSaving ? '...' : '✓ Enregistrer'}</button>
             <button type="button" className="btn-diver-cancel" onClick={() => { setEditingInfo(false); setInfoError(''); }}>Annuler</button>
@@ -545,6 +694,163 @@ export function SlotBlock({
         <>
           {currentNotes && <div className="slot-tooltip-notes">📝 {currentNotes}</div>}
         </>
+      )}
+
+      {/* ─── Bloc inscription plongeur ─────────────────────────────── */}
+      {!editingInfo && (
+        <div className="slot-registration-block">
+
+          {/* Statut des inscriptions */}
+          <div className="slot-reg-status">
+            {slot.registrationEnabled
+              ? registrationOpen
+                ? <span className="reg-open">🟢 Inscriptions ouvertes</span>
+                : <span className="reg-scheduled">🕐 Inscriptions programmées{slot.registrationOpensAt ? ` le ${new Date(slot.registrationOpensAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}` : ''}</span>
+              : <span className="reg-closed">🔴 Inscriptions fermées</span>
+            }
+          </div>
+
+          {/* Messages feedback */}
+          {registrationError   && <div className="diver-form-error"  style={{ marginTop: 6 }}>{registrationError}</div>}
+          {registrationSuccess && <div className="diver-form-success" style={{ marginTop: 6 }}>{registrationSuccess}</div>}
+
+          {/* Modale de confirmation d'annulation */}
+          {regConfirmCancel && (
+            <div className="reg-confirm-cancel">
+              <p>⚠️ Annuler votre participation impacte l'organisation de la sortie. Le directeur de plongée sera notifié.</p>
+              <div className="diver-form-actions">
+                <button className="btn-diver-save btn-danger" onClick={handleCancelMyRegistration}>Confirmer l'annulation</button>
+                <button className="btn-diver-cancel" onClick={() => setRegConfirmCancel(false)}>Retour</button>
+              </div>
+            </div>
+          )}
+
+          {/* Mon inscription en cours */}
+          {myEntry && !regConfirmCancel && (
+            <div className="my-registration-card">
+              <div className="my-reg-label">
+                {myEntry.registrationStatus === 'PENDING'
+                  ? '⏳ En attente de validation'
+                  : '✅ Inscription confirmée'}
+              </div>
+              <button className="btn-cancel-reg" onClick={() => setRegConfirmCancel(true)}>
+                Annuler ma participation
+              </button>
+            </div>
+          )}
+
+          {/* Formulaire d'inscription */}
+          {canSelfRegister && !showRegForm && !myEntry && !registrationSuccess && (
+            <button className="btn-register-self"
+              onClick={() => { setRegistrationForm({ ...EMPTY_REGISTRATION, email: currentUserEmail ?? '' }); setShowRegForm(true); setRegistrationError(''); }}>
+              ✍️ Je m'inscris sur ce créneau
+            </button>
+          )}
+
+          {showRegForm && (
+            <form onSubmit={handleRegisterSelf} className="reg-form">
+              <div className="reg-form-title">📋 Formulaire d'inscription</div>
+              {registrationError && <div className="diver-form-error">{registrationError}</div>}
+
+              <div className="slot-info-field">
+                <label>Votre email *</label>
+                <input type="email" required value={registrationForm.email}
+                  onChange={e => setRegistrationForm(f => ({ ...f, email: e.target.value }))}
+                  placeholder="votre@email.com" />
+                <small style={{ color: '#6b7280' }}>Sera mis à jour dans votre profil si différent</small>
+              </div>
+
+              <div className="slot-info-field">
+                <label>Niveau *</label>
+                <select required value={registrationForm.level}
+                  onChange={e => setRegistrationForm(f => ({ ...f, level: e.target.value }))}>
+                  {REQUIRED_LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
+                </select>
+              </div>
+
+              <div className="slot-info-field">
+                <label>Nombre de plongées *</label>
+                <input type="number" required min={0} value={registrationForm.numberOfDives}
+                  onChange={e => setRegistrationForm(f => ({ ...f, numberOfDives: parseInt(e.target.value, 10) || 0 }))} />
+              </div>
+
+              <div className="slot-info-field">
+                <label>Date de dernière plongée *</label>
+                <input type="date" required value={registrationForm.lastDiveDate}
+                  max={new Date().toISOString().slice(0, 10)}
+                  onChange={e => setRegistrationForm(f => ({ ...f, lastDiveDate: e.target.value }))} />
+              </div>
+
+              <div className="slot-info-field">
+                <label>Niveau préparé (optionnel)</label>
+                <select value={registrationForm.preparedLevel ?? ''}
+                  onChange={e => setRegistrationForm(f => ({ ...f, preparedLevel: e.target.value || undefined }))}>
+                  <option value="">— Aucun —</option>
+                  {PREPARED_LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
+                </select>
+              </div>
+
+              <div className="slot-info-field">
+                <label>Commentaire pour le DP (optionnel)</label>
+                <textarea rows={3} value={registrationForm.registrationComment ?? ''}
+                  placeholder="Ce que vous souhaitez travailler ou faire durant la plongée..."
+                  onChange={e => setRegistrationForm(f => ({ ...f, registrationComment: e.target.value || undefined }))} />
+              </div>
+
+              <div className="diver-form-actions">
+                <button type="submit" disabled={registering} className="btn-diver-save">
+                  {registering ? '...' : "Envoyer ma demande"}
+                </button>
+                <button type="button" className="btn-diver-cancel"
+                  onClick={() => { setShowRegForm(false); setRegistrationError(''); }}>
+                  Annuler
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* File d'attente (DP affecté uniquement) */}
+          {isAssignedDirector && registrationOpen && (
+            <div className="waitlist-section">
+              <button className="btn-waitlist-toggle" onClick={toggleWaitlist}>
+                {showWaitlist ? '▲ Masquer la file d\'attente' : `▼ File d'attente${waitlist.length > 0 ? ` (${waitlist.length})` : ''}`}
+              </button>
+              {showWaitlist && (
+                <div className="waitlist-panel">
+                  {waitlistLoading && <p className="slot-tooltip-empty">Chargement...</p>}
+                  {waitlistError   && <div className="diver-form-error">{waitlistError}</div>}
+                  {!waitlistLoading && waitlist.length === 0 && (
+                    <p className="slot-tooltip-empty">Aucune demande en attente</p>
+                  )}
+                  {!waitlistLoading && waitlist.map(w => (
+                    <div key={w.id} className="waitlist-entry">
+                      <div className="waitlist-entry-name">
+                        <strong>{w.firstName} {w.lastName}</strong>
+                        <span className="diver-level">{w.level}</span>
+                      </div>
+                      {w.email && <div className="waitlist-entry-detail">📧 {w.email}</div>}
+                      <div className="waitlist-entry-detail">🤿 {w.numberOfDives} plongées · dernière : {w.lastDiveDate}</div>
+                      {w.preparedLevel && w.preparedLevel !== 'Aucun' && (
+                        <div className="waitlist-entry-detail">🎯 Niveau préparé : {w.preparedLevel}</div>
+                      )}
+                      {w.registrationComment && (
+                        <div className="waitlist-entry-comment">💬 {w.registrationComment}</div>
+                      )}
+                      <div className="waitlist-entry-date">Inscrit le {new Date(w.addedAt).toLocaleDateString('fr-FR')}</div>
+                      <button
+                        className="btn-validate-entry"
+                        disabled={waitlistActionId === w.id}
+                        onClick={() => handleValidateWaitlist(w.id)}
+                      >
+                        {waitlistActionId === w.id ? '...' : '✓ Valider l\'inscription'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Liste des plongeurs */}

@@ -72,6 +72,7 @@ export function DayView({ date, config, onAdd, onOpenPalanquees }: Props) {
           canEdit={canEdit}
           currentUserId={user?.id}
           currentUserRole={user?.role}
+          currentUserEmail={user?.email}
           onClickTime={canEdit ? (time) => onAdd(date, time) : undefined}
           onOpenPalanquees={onOpenPalanquees}
         />

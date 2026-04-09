@@ -30,6 +30,7 @@ public class UserDto {
     }
 
     public record UpdateProfileRequest(
+            @NotBlank @Email String email,
             @NotBlank @Size(min = 2, max = 100) String firstName,
             @NotBlank @Size(min = 2, max = 100) String lastName,
             @Pattern(regexp = "^(0[1-9][0-9]{8}|\\+33[1-9][0-9]{8})$", message = "Numéro de téléphone français invalide (ex: 0612345678 ou +33612345678)")

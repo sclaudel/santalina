@@ -174,15 +174,17 @@ public class SlotService {
      */
     private DiveSlot persistSlot(SlotRequest request, LocalDate date, User currentUser) {
         DiveSlot slot = new DiveSlot();
-        slot.slotDate   = date;
-        slot.startTime  = request.startTime();
-        slot.endTime    = request.endTime();
-        slot.diverCount = request.diverCount();
-        slot.title      = request.title();
-        slot.notes      = request.notes();
-        slot.slotType   = request.slotType();
-        slot.club       = request.club();
-        slot.createdBy  = currentUser;
+        slot.slotDate              = date;
+        slot.startTime             = request.startTime();
+        slot.endTime               = request.endTime();
+        slot.diverCount            = request.diverCount();
+        slot.title                 = request.title();
+        slot.notes                 = request.notes();
+        slot.slotType              = request.slotType();
+        slot.club                  = request.club();
+        slot.registrationEnabled   = Boolean.TRUE.equals(request.registrationEnabled());
+        slot.registrationOpensAt   = request.registrationOpensAt();
+        slot.createdBy             = currentUser;
         slot.persist();
         return slot;
     }
@@ -226,9 +228,26 @@ public class SlotService {
         DiveSlot slot = DiveSlot.findById(id);
         if (slot == null) throw new NotFoundException("Créneau non trouvé");
 
-        if (currentUser.role == UserRole.DIVE_DIRECTOR &&
-                (slot.createdBy == null || !slot.createdBy.id.equals(currentUser.id))) {
-            throw new ForbiddenException("Vous ne pouvez modifier que vos propres créneaux");
+        // Détermine si seules les options d'inscription changent
+        boolean onlyRegistrationFields = request.title() == null && request.notes() == null
+                && request.slotType() == null && request.club() == null
+                && request.slotDate() == null && request.startTime() == null && request.endTime() == null
+                && (request.registrationEnabled() != null || request.registrationOpensAt() != null);
+
+        if (currentUser.role == UserRole.DIVE_DIRECTOR) {
+            if (!onlyRegistrationFields) {
+                // Modification générale : réservée au créateur
+                if (slot.createdBy == null || !slot.createdBy.id.equals(currentUser.id)) {
+                    throw new ForbiddenException("Vous ne pouvez modifier que vos propres créneaux");
+                }
+            } else {
+                // Gestion des inscriptions : réservée au DP assigné
+                SlotDiver director = SlotDiver.findDirector(slot.id);
+                if (director == null || director.email == null
+                        || !director.email.equalsIgnoreCase(currentUser.email)) {
+                    throw new ForbiddenException("Seul le directeur de plongée affecté peut gérer les inscriptions");
+                }
+            }
         }
 
         boolean dateOrTimeChanged = request.slotDate() != null
@@ -250,12 +269,24 @@ public class SlotService {
             slot.endTime   = newEnd;
         }
 
-        slot.title    = request.title();
-        slot.notes    = request.notes();
-        slot.slotType = request.slotType();
-        slot.club     = request.club();
-        slot.persist();
+        if (request.title() != null)    slot.title    = request.title();
+        if (request.notes() != null)    slot.notes    = request.notes();
+        if (request.slotType() != null) slot.slotType = request.slotType();
+        if (request.club() != null)     slot.club     = request.club();
 
+        if (request.registrationEnabled() != null) {
+            boolean enabling = request.registrationEnabled();
+            if (enabling && !SlotDiver.hasDirector(id)) {
+                throw new BadRequestException(
+                    "Impossible d'activer les inscriptions : aucun directeur de plongée n'est affecté au créneau");
+            }
+            slot.registrationEnabled = enabling;
+        }
+        if (request.registrationOpensAt() != null) {
+            slot.registrationOpensAt = request.registrationOpensAt();
+        }
+
+        slot.persist();
         return SlotResponse.from(slot);
     }
 

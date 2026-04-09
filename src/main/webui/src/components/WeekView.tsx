@@ -103,6 +103,7 @@ export function WeekView({ weekStart, config, onSelectDay, onAdd, onOpenPalanque
                 canEdit={canEdit}
                 currentUserId={user?.id}
                 currentUserRole={user?.role}
+                currentUserEmail={user?.email}
                 startHour={startHour}
                 endHour={endHour}
                 onClickTime={canEdit ? (time) => onAdd(d, time) : undefined}

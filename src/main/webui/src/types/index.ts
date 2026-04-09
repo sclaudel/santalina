@@ -52,6 +52,8 @@ export interface UserSearchResult {
   licenseNumber?: string;
 }
 
+export type RegistrationStatus = 'PENDING' | 'CONFIRMED';
+
 export interface SlotDiver {
   id: number;
   firstName: string;
@@ -62,6 +64,37 @@ export interface SlotDiver {
   isDirector: boolean;
   aptitudes?: string;
   licenseNumber?: string;
+  // Champs inscription plongeur
+  registrationStatus?: RegistrationStatus;
+  numberOfDives?: number;
+  lastDiveDate?: string;      // YYYY-MM-DD
+  preparedLevel?: string;
+  registrationComment?: string;
+  addedAt?: string;
+}
+
+/** Requête d'auto-inscription sur un créneau */
+export interface SlotRegistrationRequest {
+  level: string;
+  numberOfDives: number;
+  lastDiveDate: string;       // YYYY-MM-DD
+  email: string;
+  preparedLevel?: string;
+  registrationComment?: string;
+}
+
+/** Entrée de la file d'attente (visible uniquement par le DP affecté) */
+export interface WaitlistEntry {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  level: string;
+  numberOfDives: number;
+  lastDiveDate: string;       // YYYY-MM-DD
+  preparedLevel?: string;
+  registrationComment?: string;
+  addedAt: string;
 }
 
 export interface SlotDiverRequest {
@@ -85,6 +118,8 @@ export interface DiveSlot {
   notes: string | null;
   slotType: string | null;
   club: string | null;
+  registrationEnabled: boolean;
+  registrationOpensAt: string | null;   // ISO datetime
   createdById: number;
   createdByName: string;
   divers: SlotDiver[];
@@ -99,6 +134,9 @@ export interface SlotRequest {
   notes?: string;
   slotType?: string;
   club?: string;
+  // Inscriptions
+  registrationEnabled?: boolean;
+  registrationOpensAt?: string;        // ISO datetime
   // Récurrence
   recurring?: boolean;
   recurringDays?: number[];   // 1=Lun … 7=Dim (ISO)

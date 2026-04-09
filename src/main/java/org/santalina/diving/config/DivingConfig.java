@@ -3,6 +3,7 @@ package org.santalina.diving.config;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
+import java.util.Optional;
 
 @ConfigMapping(prefix = "app.diving")
 public interface DivingConfig {
@@ -46,4 +47,11 @@ public interface DivingConfig {
     @WithName("base-url")
     @WithDefault("http://localhost:8085")
     String baseUrl();
+
+    @WithName("registration-mail.simulation-enabled")
+    @WithDefault("false")
+    boolean registrationMailSimulationEnabled();
+
+    @WithName("registration-mail.simulation-to")
+    Optional<String> registrationMailSimulationTo();
 }

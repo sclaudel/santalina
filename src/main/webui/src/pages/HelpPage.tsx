@@ -174,6 +174,51 @@ export function HelpPage() {
       ),
     },
 
+    // ── GÉRER LES INSCRIPTIONS PLONGEURS ─────────────────────────────────────
+    {
+      id: 'gestion-inscriptions',
+      icon: '🗂️',
+      title: 'Activer et gérer les inscriptions plongeurs',
+      roles: ['ADMIN', 'DIVE_DIRECTOR'],
+      content: (
+        <>
+          <p>En tant que <strong>directeur de plongée affecté</strong> à un créneau, vous contrôlez l'ouverture des inscriptions et validez les demandes des plongeurs.</p>
+
+          <h4>Activer les inscriptions</h4>
+          <ol>
+            <li><strong>À la création d'un créneau</strong> : cochez <strong>📋 Activer les inscriptions plongeurs</strong> en bas du formulaire de création.</li>
+            <li><strong>Sur un créneau existant</strong> : ouvrez le panneau de détails → cliquez sur <strong>✏️</strong> → activez <strong>Inscriptions plongeurs activées</strong> → enregistrez.</li>
+            <li>Optionnellement, définissez une <strong>date et heure d'ouverture</strong> : les inscriptions resteront fermées jusqu'à cette date, même si elles sont activées.</li>
+          </ol>
+          <div className="help-tip">💡 Les inscriptions ne peuvent être activées que si un directeur de plongée est affecté au créneau.</div>
+
+          <h4>Lire le statut des inscriptions</h4>
+          <p>Dans le panneau de détails, un indicateur est toujours visible :</p>
+          <ul>
+            <li>🟢 <strong>Inscriptions ouvertes</strong> — les plongeurs peuvent s'inscrire.</li>
+            <li>🕐 <strong>Inscriptions programmées le …</strong> — ouverture à la date indiquée.</li>
+            <li>🔴 <strong>Inscriptions fermées</strong> — le DP n'a pas encore activé les inscriptions.</li>
+          </ul>
+
+          <h4>Consulter la file d'attente</h4>
+          <ol>
+            <li>Ouvrez le panneau de détails du créneau.</li>
+            <li>Cliquez sur <strong>▼ File d'attente</strong> (bouton visible uniquement pour le DP affecté).</li>
+            <li>Les demandes sont triées par date d'inscription (premiers inscrits en haut). Pour chacune : nom, niveau, nombre de plongées, date de dernière plongée, commentaire éventuel.</li>
+          </ol>
+          <div className="help-warning">⚠️ La file d'attente est confidentielle : seul le DP affecté peut la consulter. Les autres plongeurs ne peuvent pas voir les demandes en attente.</div>
+
+          <h4>Valider une inscription</h4>
+          <ol>
+            <li>Dans la file d'attente, cliquez sur <strong>✓ Valider l'inscription</strong> à côté du plongeur souhaité.</li>
+            <li>Le plongeur passe en statut <strong>Confirmé</strong> et apparaît dans la liste officielle du créneau.</li>
+            <li>Un <strong>email de confirmation</strong> est automatiquement envoyé au plongeur.</li>
+          </ol>
+          <div className="help-tip">💡 Seules les inscriptions <strong>CONFIRMÉES</strong> comptent dans la capacité du créneau. Les demandes en attente ne bloquent pas les places.</div>
+        </>
+      ),
+    },
+
     // ── SUPPRIMER UN PLONGEUR ────────────────────────────────────────────────
     {
       id: 'supprimer-plongeur',
@@ -261,6 +306,65 @@ export function HelpPage() {
       ),
     },
 
+    // ── S'INSCRIRE SUR UN CRÉNEAU ─────────────────────────────────────────────
+    {
+      id: 'inscription-creneau',
+      icon: '📋',
+      title: 'S\'inscrire sur un créneau',
+      roles: ['DIVER', 'DIVE_DIRECTOR'],
+      content: (
+        <>
+          <p>Lorsqu'un directeur de plongée a ouvert les inscriptions sur un créneau, tout plongeur connecté peut soumettre une demande directement depuis le calendrier.</p>
+
+          <h4>Vérifier si les inscriptions sont ouvertes</h4>
+          <p>Dans le panneau de détails d'un créneau, un indicateur de statut est toujours affiché :</p>
+          <ul>
+            <li>🟢 <strong>Inscriptions ouvertes</strong> — vous pouvez vous inscrire immédiatement.</li>
+            <li>🕐 <strong>Inscriptions programmées le …</strong> — les inscriptions ouvriront à la date indiquée ; revenez à ce moment.</li>
+            <li>🔴 <strong>Inscriptions fermées</strong> — le DP n'a pas activé les inscriptions sur ce créneau.</li>
+          </ul>
+
+          <h4>Soumettre une demande d'inscription</h4>
+          <ol>
+            <li>Cliquez sur le créneau pour ouvrir le panneau de détails.</li>
+            <li>Si les inscriptions sont ouvertes et qu'une place est disponible, le bouton <strong>✍️ Je m'inscris sur ce créneau</strong> s'affiche. Cliquez dessus.</li>
+            <li>Remplissez le formulaire :
+              <ul>
+                <li><strong>Votre email</strong> (obligatoire) — prérempli depuis votre profil, modifiable. Toute modification sera répercutée sur votre profil.</li>
+                <li><strong>Votre niveau</strong> (obligatoire) — sélectionnez parmi la liste (N1, N2, N3, N4, N5, GP, E1…).</li>
+                <li><strong>Nombre de plongées effectuées</strong> (obligatoire).</li>
+                <li><strong>Date de dernière plongée</strong> (obligatoire).</li>
+                <li><strong>Niveau préparé</strong> (optionnel) — si vous préparez un brevet.</li>
+                <li><strong>Commentaire pour le DP</strong> (optionnel) — ce que vous souhaitez travailler ou faire durant la plongée.</li>
+              </ul>
+            </li>
+            <li>Cliquez sur <strong>Envoyer ma demande</strong>.</li>
+          </ol>
+          <p>Votre inscription est immédiatement en statut <strong>⏳ En attente de validation</strong>. Vous recevrez :</p>
+          <ul>
+            <li>Un <strong>email de confirmation de réception</strong> dès la soumission.</li>
+            <li>Un <strong>email de confirmation définitive</strong> lorsque le DP validera votre inscription.</li>
+          </ul>
+
+          <h4>Suivre le statut de votre inscription</h4>
+          <p>Ouvrez le panneau de détails du créneau : votre bloc d'inscription affiche :</p>
+          <ul>
+            <li><strong>⏳ En attente de validation</strong> — votre demande a été reçue, le DP n'a pas encore statué.</li>
+            <li><strong>✅ Inscription confirmée</strong> — le DP a validé votre participation.</li>
+          </ul>
+
+          <h4>Annuler votre participation</h4>
+          <ol>
+            <li>Ouvrez le panneau de détails du créneau.</li>
+            <li>Dans votre bloc d'inscription, cliquez sur <strong>Annuler ma participation</strong>.</li>
+            <li>Une <strong>fenêtre de confirmation</strong> apparaît, rappelant l'impact sur l'organisation. Cliquez sur <strong>Confirmer l'annulation</strong>.</li>
+          </ol>
+          <p>Le directeur de plongée reçoit automatiquement un email l'informant de votre annulation.</p>
+          <div className="help-warning">⚠️ L'annulation est immédiate et libère votre place. Si vous souhaitez rejoindre à nouveau le créneau, vous devrez soumettre une nouvelle demande d'inscription.</div>
+        </>
+      ),
+    },
+
     // ── CONNEXION / INSCRIPTION ───────────────────────────────────────────────
     {
       id: 'connexion',
@@ -303,7 +407,7 @@ export function HelpPage() {
           <p>La page <strong>Mon profil</strong> vous permet de consulter et modifier vos informations personnelles.</p>
           <ul>
             <li><strong>Prénom</strong> et <strong>Nom</strong> — affichés dans le menu et les listes de plongeurs.</li>
-            <li><strong>Email</strong> — identifiant de connexion.</li>
+            <li><strong>Email</strong> — identifiant de connexion, modifiable depuis cette page. Il est également mis à jour automatiquement si vous saisissez un email différent lors d'une inscription à un créneau.</li>
             <li><strong>Téléphone</strong> — utilisé pour contacter le directeur de plongée.</li>
             <li><strong>N° de licence fédérale</strong> — champ <em>optionnel</em>. S'il est renseigné, il sera automatiquement repris lorsque vous êtes sélectionné comme directeur de plongée sur un créneau, et apparaîtra dans la fiche de sécurité Excel.</li>
             <li><strong>Mot de passe</strong> — modifiable depuis cette page (champ optionnel, laissez vide pour ne pas le changer).</li>
@@ -524,6 +628,36 @@ export function HelpPage() {
           { type: 'h4' as const, text: 'Modifier le niveau ou les aptitudes' },
           { type: 'ul' as const, items: ['Double-cliquez sur le niveau affiché pour le modifier.', 'Double-cliquez sur la zone aptitudes pour sélectionner : PE12–PE60, PA12–PA60, E1–E4, GP.', 'Les aptitudes apparaissent en colonne D de l\'export Excel.'] },
           { type: 'tip' as const, text: 'Les modifications de niveau et d\'aptitudes sont enregistrées immédiatement sur le serveur.' },
+        ],
+      },
+      {
+        icon: '🗂️', title: 'Activer et gérer les inscriptions plongeurs',
+        items: [
+          { type: 'paragraph' as const, text: 'En tant que directeur de plongée affecté, vous contrôlez l\'ouverture des inscriptions et validez les demandes.' },
+          { type: 'h4' as const, text: 'Activer les inscriptions' },
+          { type: 'ol' as const, items: ['À la création d\'un créneau : cochez Activer les inscriptions plongeurs en bas du formulaire.', 'Sur un créneau existant : ouvrez les détails → ✏️ → activez Inscriptions plongeurs activées → enregistrez.', 'Optionnellement, définissez une date et heure d\'ouverture.'] },
+          { type: 'tip' as const, text: 'Les inscriptions ne peuvent être activées que si un directeur de plongée est affecté au créneau.' },
+          { type: 'h4' as const, text: 'Consulter la file d\'attente' },
+          { type: 'ol' as const, items: ['Ouvrez le panneau de détails du créneau.', 'Cliquez sur ▼ File d\'attente (visible uniquement pour le DP affecté).', 'Les demandes sont triées par date d\'inscription.'] },
+          { type: 'h4' as const, text: 'Valider une inscription' },
+          { type: 'ol' as const, items: ['Cliquez sur ✓ Valider l\'inscription à côté du plongeur.', 'Le plongeur passe en statut Confirmé et apparaît dans la liste officielle.', 'Un email de confirmation est automatiquement envoyé.'] },
+          { type: 'tip' as const, text: 'Seules les inscriptions CONFIRMÉES comptent dans la capacité du créneau. Les demandes en attente ne bloquent pas les places.' },
+        ],
+      },
+    ] : []),
+    ...(role === 'DIVER' || role === 'DIVE_DIRECTOR' ? [
+      {
+        icon: '📋', title: 'S\'inscrire sur un créneau',
+        items: [
+          { type: 'paragraph' as const, text: 'Lorsqu\'un directeur de plongée a ouvert les inscriptions, tout plongeur connecté peut soumettre une demande depuis le calendrier.' },
+          { type: 'h4' as const, text: 'Statut des inscriptions' },
+          { type: 'ul' as const, items: ['🟢 Inscriptions ouvertes — vous pouvez vous inscrire immédiatement.', '🕐 Inscriptions programmées le … — ouverture à la date indiquée.', '🔴 Inscriptions fermées — le DP n\'a pas activé les inscriptions.'] },
+          { type: 'h4' as const, text: 'Soumettre une demande' },
+          { type: 'ol' as const, items: ['Cliquez sur le créneau pour ouvrir le panneau de détails.', 'Cliquez sur ✍️ Je m\'inscris sur ce créneau.', 'Remplissez le formulaire : email (prérempli, modifiable), niveau, nombre de plongées, date de dernière plongée, niveau préparé (optionnel), commentaire DP (optionnel).', 'Cliquez sur Envoyer ma demande.'] },
+          { type: 'paragraph' as const, text: 'Votre inscription est en statut ⏳ En attente de validation. Email de confirmation envoyé dès la soumission, puis email lors de la validation par le DP.' },
+          { type: 'h4' as const, text: 'Annuler votre participation' },
+          { type: 'ol' as const, items: ['Ouvrez le panneau de détails du créneau.', 'Cliquez sur Annuler ma participation.', 'Confirmez dans la fenêtre de confirmation.'] },
+          { type: 'warning' as const, text: 'L\'annulation libère votre place immédiatement. Le DP reçoit un email d\'annulation. Vous devrez resoumettre une nouvelle demande pour rejoindre le créneau.' },
         ],
       },
     ] : []),

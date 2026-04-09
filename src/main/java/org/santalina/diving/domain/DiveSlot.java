@@ -2,6 +2,7 @@ package org.santalina.diving.domain;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -38,6 +39,12 @@ public class DiveSlot extends PanacheEntityBase {
 
     @Column
     public String club;
+
+    @Column(name = "registration_enabled", nullable = false)
+    public boolean registrationEnabled = false;
+
+    @Column(name = "registration_opens_at")
+    public Instant registrationOpensAt;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "created_by", nullable = true)

@@ -4,6 +4,7 @@ import { authService } from '../services/authService';
 
 export function ProfilePage() {
   const { user } = useAuth();
+  const [email, setEmail]             = useState(user?.email || '');
   const [firstName, setFirstName] = useState(user?.firstName || '');
   const [lastName, setLastName]   = useState(user?.lastName  || '');
   const [phone, setPhone]         = useState(user?.phone || '');
@@ -17,12 +18,14 @@ export function ProfilePage() {
   // Charge le profil complet depuis l'API pour avoir phone & licenseNumber à jour
   useEffect(() => {
     authService.getProfile().then(profile => {
+      setEmail(profile.email || '');
       setFirstName(profile.firstName || '');
       setLastName(profile.lastName   || '');
       setPhone(profile.phone || '');
       setLicenseNumber(profile.licenseNumber || '');
     }).catch(() => {
       // Repli sur les données du contexte si l'API échoue
+      setEmail(user?.email || '');
       setFirstName(user?.firstName || '');
       setLastName(user?.lastName   || '');
       setPhone(user?.phone || '');
@@ -41,10 +44,10 @@ export function ProfilePage() {
     e.preventDefault();
     setMsg(''); setError(''); setLoading(true);
     try {
-      const updated = await authService.updateProfile(firstName, lastName, phone || undefined, licenseNumber || undefined);
+      const updated = await authService.updateProfile(email, firstName, lastName, phone || undefined, licenseNumber || undefined);
       setMsg('Profil mis à jour avec succès !');
       if (user) {
-        const stored = { ...user, ...updated };
+        const stored = { ...user, ...updated, email: updated.email || email };
         localStorage.setItem('user', JSON.stringify(stored));
         window.location.reload();
       }
@@ -94,6 +97,10 @@ export function ProfilePage() {
         <div className="profile-section">
           <h3>✏️ Modifier le profil</h3>
           <form onSubmit={handleUpdateProfile} className="form">
+            <div className="form-group">
+              <label>Email</label>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="votre@email.com" />
+            </div>
             <div className="form-row">
               <div className="form-group" style={{ flex: 1 }}>
                 <label>Prénom</label>

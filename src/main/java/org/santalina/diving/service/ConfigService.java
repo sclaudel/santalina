@@ -107,6 +107,16 @@ public class ConfigService {
         return getIntValue(KEY_MAX_RECURRING_MONTHS, 4);
     }
 
+    /** Vrai si les mails d'inscription doivent être redirigés vers une adresse de simulation */
+    public boolean isRegistrationSimulationEnabled() {
+        return divingConfig.registrationMailSimulationEnabled();
+    }
+
+    /** Adresse cible en mode simulation (tous les mails d'inscription y sont envoyés) */
+    public String getRegistrationSimulationTo() {
+        return divingConfig.registrationMailSimulationTo().orElse("");
+    }
+
     public ConfigResponse getConfig() {
         return new ConfigResponse(
                 getMaxDivers(), getSlotMinHours(), getSlotMaxHours(),
