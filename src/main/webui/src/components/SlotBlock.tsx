@@ -966,11 +966,6 @@ export function SlotBlock({
               >
                 S’inscrire
               </button>
-            ) : myWaitingEntry === null && !isRegNowOpen ? (
-              // Inscriptions fermées
-              <div className="slot-tooltip-empty" style={{ textAlign: 'center', padding: '8px 0' }}>
-                🔒 Inscriptions non encore ouvertes
-              </div>
             ) : null}
           </div>
         );
