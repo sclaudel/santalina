@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import type { DiveSlot } from '../types';
 import { DIVER_LEVELS, DP_LEVELS, PREPARED_LEVELS } from '../types';
@@ -24,6 +24,8 @@ export function SelfRegistrationModal({ slot, onClose, onSuccess }: Props) {
   const [preparedLevel, setPreparedLevel] = useState('Aucun');
   const [comment, setComment]           = useState('');
   const [medicalCertDate, setMedicalCertDate] = useState('');
+  const [medicalCertDateText, setMedicalCertDateText] = useState('');
+  const hiddenDateRef = useRef<HTMLInputElement>(null);
   const [licenseConfirmed, setLicenseConfirmed] = useState(false);
   const [loading, setLoading]           = useState(false);
   const [error, setError]               = useState<string | null>(null);
@@ -37,6 +39,17 @@ export function SelfRegistrationModal({ slot, onClose, onSuccess }: Props) {
   });
 
   const emailChanged = email.trim().toLowerCase() !== originalEmail.toLowerCase();
+
+  function isoToDisplay(iso: string) {
+    if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return '';
+    const [y, m, d] = iso.split('-');
+    return `${d}/${m}/${y}`;
+  }
+
+  function displayToIso(text: string) {
+    const match = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    return match ? `${match[3]}-${match[2]}-${match[1]}` : '';
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -175,31 +188,62 @@ export function SelfRegistrationModal({ slot, onClose, onSuccess }: Props) {
           </div>
 
           <div className="form-group" style={{ marginTop: 12 }}>
-            <label>Date de début de mon certificat médical <span style={{ color: '#ef4444' }}>*</span></label>
-            <input
-              type="date"
-              value={medicalCertDate}
-              onChange={e => setMedicalCertDate(e.target.value)}
-              max={today}
-              required
-            />
-            <p style={{ fontSize: 12, color: '#6b7280', margin: '4px 0 0' }}>
-              J'ai un certificat médical en cours de validité. Sa date de début est le {medicalCertDate ? new Date(medicalCertDate).toLocaleDateString('fr-FR') : '[champ date]'}.
-            </p>
+            <label style={{ display: 'block', marginBottom: 6 }}>
+              Date de mon certificat médical{' '}
+              <span style={{ color: '#ef4444' }}>*</span>
+            </label>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input
+                type="text"
+                value={medicalCertDateText}
+                onChange={e => {
+                  let raw = e.target.value.replace(/[^\d/]/g, '');
+                  const digits = raw.replace(/\//g, '');
+                  if (digits.length <= 2) raw = digits;
+                  else if (digits.length <= 4) raw = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+                  else raw = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)}`;
+                  setMedicalCertDateText(raw);
+                  setMedicalCertDate(displayToIso(raw));
+                }}
+                placeholder="JJ/MM/AAAA"
+                maxLength={10}
+                style={{ flex: 1, boxSizing: 'border-box' }}
+              />
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                <button
+                  type="button"
+                  title="Choisir une date"
+                  style={{ height: '100%', padding: '0 10px', cursor: 'pointer', border: '1px solid #d1d5db', borderRadius: 4, background: '#f9fafb', fontSize: 16 }}
+                >📅</button>
+                <input
+                  ref={hiddenDateRef}
+                  type="date"
+                  tabIndex={-1}
+                  max={today}
+                  value={medicalCertDate}
+                  onChange={e => {
+                    const iso = e.target.value;
+                    setMedicalCertDate(iso);
+                    setMedicalCertDateText(isoToDisplay(iso));
+                  }}
+                  style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }}
+                />
+              </div>
+            </div>
           </div>
 
           <div className="form-group" style={{ marginTop: 12 }}>
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', fontWeight: 'normal' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 'normal' }}>
+              <span>
+                Je confirme la validité de ma licence
+                <span style={{ color: '#ef4444' }}> *</span>
+              </span>
               <input
                 type="checkbox"
                 checked={licenseConfirmed}
                 onChange={e => setLicenseConfirmed(e.target.checked)}
-                style={{ marginTop: 3, flexShrink: 0 }}
+                style={{ flexShrink: 0, width: 20, height: 20, accentColor: '#1e40af' }}
               />
-              <span>
-                Je confirme avoir vérifié sur le site de la FFESSM la validité de ma licence : <strong>OUI</strong>
-                <span style={{ color: '#ef4444' }}> *</span>
-              </span>
             </label>
           </div>
 

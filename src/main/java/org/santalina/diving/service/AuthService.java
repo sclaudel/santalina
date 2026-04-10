@@ -100,7 +100,7 @@ public class AuthService {
         LOG.infof("Compte activé : %s", user.email);
         String token = jwtUtil.generateToken(user);
         return new LoginResponse(token, user.email, user.firstName, user.lastName,
-                user.primaryRole(), user.id, user.roles);
+                user.primaryRole(), user.id, user.roles, user.phone);
     }
 
     @Transactional
@@ -125,7 +125,7 @@ public class AuthService {
         LOG.infof("Connexion réussie pour : %s", user.email);
         String token = jwtUtil.generateToken(user);
         return new LoginResponse(token, user.email, user.firstName, user.lastName,
-                user.primaryRole(), user.id, user.roles);
+                user.primaryRole(), user.id, user.roles, user.phone);
     }
 
     @Transactional

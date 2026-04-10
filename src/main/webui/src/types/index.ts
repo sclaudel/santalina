@@ -28,6 +28,7 @@ export interface LoginResponse {
   role: UserRole;
   userId: number;
   roles?: UserRole[];
+  phone?: string;
 }
 
 export interface CreateUserRequest {

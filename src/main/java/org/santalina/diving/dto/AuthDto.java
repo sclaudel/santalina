@@ -38,7 +38,8 @@ public class AuthDto {
             String lastName,
             UserRole role,
             Long userId,
-            java.util.Set<UserRole> roles
+            java.util.Set<UserRole> roles,
+            String phone
     ) {}
 
     public record PasswordResetRequest(

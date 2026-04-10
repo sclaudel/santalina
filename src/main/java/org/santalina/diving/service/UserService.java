@@ -61,7 +61,7 @@ public class UserService {
         LOG.infof("Email mis à jour : %s → %s", currentEmail, newEmail);
         String token = jwtUtil.generateToken(user);
         return new LoginResponse(token, user.email, user.firstName, user.lastName,
-                user.primaryRole(), user.id, user.roles);
+                user.primaryRole(), user.id, user.roles, user.phone);
     }
 
     public List<UserResponse> getAllUsers() {
