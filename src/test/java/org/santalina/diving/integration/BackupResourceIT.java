@@ -222,8 +222,10 @@ class BackupResourceIT {
                             "numberOfDives": 10,
                             "lastDiveDate": null,
                             "preparedLevel": null,
-                            "comment": null,
-                            "registeredAt": "2099-01-01T00:00:00"
+                            "comment": "Test commentaire",
+                            "registeredAt": "2099-01-01T00:00:00",
+                            "medicalCertDate": "2099-01-01",
+                            "licenseConfirmed": true
                         }
                     ]
                 }

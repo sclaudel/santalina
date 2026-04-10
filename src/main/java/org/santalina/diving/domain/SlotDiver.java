@@ -2,6 +2,7 @@ package org.santalina.diving.domain;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -40,6 +41,12 @@ public class SlotDiver extends PanacheEntityBase {
 
     @Column(name = "license_number")
     public String licenseNumber;
+
+    @Column(name = "medical_cert_date")
+    public LocalDate medicalCertDate;
+
+    @Column(columnDefinition = "TEXT")
+    public String comment;
 
     @Column(name = "added_at", nullable = false)
     public LocalDateTime addedAt = LocalDateTime.now();

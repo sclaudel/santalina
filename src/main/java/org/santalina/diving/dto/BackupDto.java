@@ -71,7 +71,9 @@ public class BackupDto {
             String aptitudes,
             String licenseNumber,
             Long palanqueeId,
-            int palanqueePosition
+            int palanqueePosition,
+            LocalDate medicalCertDate,
+            String comment
     ) {}
 
     public record PalanqueeEntry(

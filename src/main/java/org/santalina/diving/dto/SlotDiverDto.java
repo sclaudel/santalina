@@ -4,6 +4,7 @@ import org.santalina.diving.domain.SlotDiver;
 import org.santalina.diving.domain.User;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import java.time.LocalDate;
 
 public class SlotDiverDto {
 
@@ -28,7 +29,9 @@ public class SlotDiverDto {
             boolean isDirector,
             String aptitudes,
             String licenseNumber,
-            Long userId
+            Long userId,
+            LocalDate medicalCertDate,
+            String comment
     ) {
         public static SlotDiverResponse from(SlotDiver d) {
             String licenseNumber = d.licenseNumber;
@@ -41,7 +44,8 @@ public class SlotDiverDto {
                 }
             }
             return new SlotDiverResponse(d.id, d.firstName, d.lastName, d.level,
-                    d.email, d.phone, d.isDirector, d.aptitudes, licenseNumber, userId);
+                    d.email, d.phone, d.isDirector, d.aptitudes, licenseNumber, userId,
+                    d.medicalCertDate, d.comment);
         }
     }
 }

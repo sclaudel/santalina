@@ -74,6 +74,8 @@ class WaitingListResourceIT {
         entry.level         = "N2";
         entry.numberOfDives = 30;
         entry.lastDiveDate  = LocalDate.of(2025, 1, 15);
+        entry.medicalCertDate = LocalDate.of(2025, 3, 1);
+        entry.comment       = "Je veux travailler la remontée lente";
         entry.persist();
         return entry;
     }
@@ -312,7 +314,9 @@ class WaitingListResourceIT {
                 .then()
                 .statusCode(200)
                 .body("firstName", equalTo("Alice"))
-                .body("isDirector", equalTo(false));
+                .body("isDirector", equalTo(false))
+                .body("medicalCertDate", equalTo("2025-03-01"))
+                .body("comment", equalTo("Je veux travailler la remontée lente"));
         } finally {
             cleanup(slot.id);
         }

@@ -211,6 +211,8 @@ public class BackupService {
                 diver.isDirector    = d.isDirector();
                 diver.aptitudes     = d.aptitudes();
                 diver.licenseNumber = d.licenseNumber();
+                diver.medicalCertDate = d.medicalCertDate();
+                diver.comment       = d.comment();
                 diver.addedAt       = LocalDateTime.now();
                 diver.persist();
                 diverCount++;
@@ -329,7 +331,8 @@ public class BackupService {
         return new DiverEntry(d.id, d.slot != null ? d.slot.id : null,
                 d.firstName, d.lastName, d.level, d.email, d.phone,
                 d.isDirector, d.aptitudes, d.licenseNumber,
-                d.palanquee != null ? d.palanquee.id : null, d.palanqueePosition);
+                d.palanquee != null ? d.palanquee.id : null, d.palanqueePosition,
+                d.medicalCertDate, d.comment);
     }
 
     private PalanqueeEntry toPalanqueeEntry(Palanquee p) {

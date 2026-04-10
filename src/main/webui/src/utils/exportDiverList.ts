@@ -14,7 +14,7 @@ export function exportDiverListCsv(slot: DiveSlot, divers: SlotDiver[]): void {
   const filename = `${slot.slotDate ?? 'creneau'}-${slot.startTime?.replace(':', '-') ?? ''}-liste-plongeurs.csv`;
 
   // En-tête CSV
-  const lines: string[] = ['\uFEFF' + 'Nom;Prénom;Niveau;Email;Directeur de plongée'];
+  const lines: string[] = ['\uFEFF' + 'Nom;Prénom;Niveau;Email;Directeur de plongée;Date certificat médical;Commentaire'];
 
   // Tri : DP en premier, puis alphabétique
   const sorted = [...divers].sort(
@@ -28,6 +28,8 @@ export function exportDiverListCsv(slot: DiveSlot, divers: SlotDiver[]): void {
       d.level ?? '',
       d.email ?? '',
       d.isDirector ? 'Oui' : '',
+      d.medicalCertDate ? fmtDate(d.medicalCertDate) : '',
+      d.comment ?? '',
     ].map(f => `"${f.replace(/"/g, '""')}"`);
     lines.push(fields.join(';'));
   }

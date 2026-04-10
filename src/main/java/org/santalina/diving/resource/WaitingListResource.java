@@ -204,6 +204,8 @@ public class WaitingListResource {
         diver.email         = entry.email;
         diver.isDirector    = false;
         diver.aptitudes     = null;  // preparedLevel est informatif uniquement, pas pré-rempli dans les aptitudes
+        diver.medicalCertDate = entry.medicalCertDate;
+        diver.comment        = entry.comment;
         diver.persist();
 
         // Planifier l'envoi du mail de validation avec le délai de grâce (15 min)

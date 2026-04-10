@@ -70,6 +70,8 @@ export interface SlotDiver {
   aptitudes?: string;
   licenseNumber?: string;
   userId?: number;
+  medicalCertDate?: string;
+  comment?: string;
 }
 
 export interface SlotDiverRequest {

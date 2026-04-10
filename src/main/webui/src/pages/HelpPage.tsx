@@ -226,6 +226,24 @@ export function HelpPage() {
             <li>Si des palanquées sont organisées, chaque palanquée est présentée dans un tableau séparé, sinon tous les plongeurs apparaissent dans un tableau unique.</li>
           </ul>
           <div className="help-tip">💡 Pour que la licence du DP apparaisse dans l'export, elle doit être saisie dans son profil utilisateur ou directement dans le formulaire DP sur le créneau.</div>
+
+          <h4>Exporter la liste en CSV</h4>
+          <p>Un export CSV de la liste des plongeurs est également disponible depuis le panneau de détails du créneau.</p>
+          <ol>
+            <li>Cliquez sur le créneau pour ouvrir le panneau de détails.</li>
+            <li>Cliquez sur <strong>📥 Télécharger liste CSV</strong>.</li>
+            <li>Le fichier <code>.csv</code> est téléchargé automatiquement (encodage UTF-8, séparateur <code>;</code>).</li>
+          </ol>
+          <h4>Contenu du CSV</h4>
+          <ul>
+            <li><strong>Nom</strong> — nom de famille en majuscules.</li>
+            <li><strong>Prénom</strong> — prénom du plongeur.</li>
+            <li><strong>Niveau</strong> — niveau de certification.</li>
+            <li><strong>Email</strong> — adresse e-mail si renseignée.</li>
+            <li><strong>Directeur de plongée</strong> — « Oui » si le plongeur est le directeur du créneau.</li>
+            <li><strong>Date certificat médical</strong> — date fournie lors de l'inscription libre (vide si le plongeur a été ajouté manuellement par un DP).</li>
+            <li><strong>Commentaire</strong> — commentaire laissé par le plongeur lors de l'inscription libre (vide si ajout manuel).</li>
+          </ul>
         </>
       ),
     },
@@ -351,6 +369,7 @@ export function HelpPage() {
               Cliquez sur <strong>✓ Valider</strong> pour accepter la demande :
               le plongeur est transféré dans la liste des inscrits et reçoit un e-mail de confirmation après un délai de 15 minutes
               (pour laisser le temps au DP de réorganiser les palanquées avant que le plongeur soit notifié).
+              La <strong>date du certificat médical</strong> et le <strong>commentaire</strong> sont conservés et apparaîtront dans l'export CSV.
             </li>
             <li>
               Cliquez sur <strong>✕</strong> pour refuser / supprimer la demande ; 
@@ -715,6 +734,8 @@ export function HelpPage() {
           { type: 'ol' as const, items: ['Cliquez sur le créneau pour ouvrir le panneau de détails.', 'Cliquez sur Exporter fiche de sécurité (Excel).', 'Le fichier .xlsx est téléchargé automatiquement.'] },
           { type: 'h4' as const, text: 'Contenu de la fiche' },
           { type: 'ul' as const, items: ['Cellule B4 — Date, club et infos DP : NOM Prénom - Niveau - N°Licence.', 'Colonnes A–C — Nom, prénom et niveau de chaque plongeur.', 'Colonne D — Aptitudes du plongeur (PE20, PA40, GP…) si renseignées dans l\'organisation des palanquées.', 'Si des palanquées sont organisées, chaque palanquée est dans un tableau séparé.'] },
+          { type: 'h4' as const, text: 'Export CSV' },
+          { type: 'paragraph' as const, text: 'Un export CSV est également disponible depuis le panneau de détails (bouton Télécharger liste CSV). Il contient : Nom, Prénom, Niveau, Email, Directeur de plongée, Date certificat médical, Commentaire.' },
           { type: 'tip' as const, text: 'Pour que la licence du DP apparaisse, elle doit être saisie dans son profil ou dans le formulaire DP sur le créneau.' },
         ],
       },
