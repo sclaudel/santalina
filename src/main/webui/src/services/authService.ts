@@ -51,6 +51,7 @@ export const authService = {
     notifOnMovedToWaitlist: boolean;
     notifOnDpRegistration: boolean;
     notifOnCreatorRegistration: boolean;
+    notifOnSafetyReminder: boolean;
   }): Promise<User> {
     const res = await api.put<User>('/users/me/notifications', prefs);
     return res.data;

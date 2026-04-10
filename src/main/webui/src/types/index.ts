@@ -18,6 +18,7 @@ export interface User {
   notifOnMovedToWaitlist?: boolean;
   notifOnDpRegistration?: boolean;
   notifOnCreatorRegistration?: boolean;
+  notifOnSafetyReminder?: boolean;
 }
 
 export interface LoginResponse {
@@ -146,6 +147,9 @@ export interface AppConfig {
   notifCancelledEnabled: boolean;
   notifMovedToWlEnabled: boolean;
   notifDpNewRegEnabled: boolean;
+  notifSafetyReminderEnabled: boolean;
+  safetyReminderDelayDays: number;
+  safetyReminderEmailBody: string;
 }
 
 // Logs

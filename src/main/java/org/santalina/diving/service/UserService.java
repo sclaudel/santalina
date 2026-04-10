@@ -172,6 +172,6 @@ public class UserService {
         user.notifOnRegistration    = request.notifOnRegistration();
         user.notifOnApproved        = request.notifOnApproved();
         user.notifOnCancelled       = request.notifOnCancelled();
-        user.notifOnMovedToWaitlist = request.notifOnMovedToWaitlist();        user.notifOnDpRegistration  = request.notifOnDpRegistration();        user.notifOnCreatorRegistration = request.notifOnCreatorRegistration();        user.persist();
+        user.notifOnMovedToWaitlist = request.notifOnMovedToWaitlist();        user.notifOnDpRegistration  = request.notifOnDpRegistration();        user.notifOnCreatorRegistration = request.notifOnCreatorRegistration();        user.notifOnSafetyReminder = request.notifOnSafetyReminder();        user.persist();
         return UserResponse.from(user);
     }}

@@ -94,6 +94,10 @@ public class User extends PanacheEntityBase {
     @Column(name = "notif_on_creator_registration", nullable = false)
     public boolean notifOnCreatorRegistration = false;
 
+    /** Recevoir le rappel de fiche de sécurité (en tant que DP assigné sur un créneau) */
+    @Column(name = "notif_on_safety_reminder", nullable = false)
+    public boolean notifOnSafetyReminder = true;
+
     // ---- helpers ----
 
     /** Retourne le nom complet (prénom + nom). */

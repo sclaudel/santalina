@@ -286,6 +286,12 @@ export function HelpPage() {
             <li>Cliquez sur <strong>Temps ▾</strong> pour choisir la durée maximale : de 10' à 240' par pas de 10 minutes.</li>
             <li>Ces valeurs sont exportées dans la fiche de sécurité Excel, dans les cellules <strong>Profondeur max</strong> et <strong>Temps max</strong> de chaque groupe de plongeurs.</li>
           </ul>
+          <h4>Remettre un plongeur en liste d'attente</h4>
+          <ul>
+            <li>Lorsque les <strong>inscriptions sont ouvertes</strong> sur le créneau, un bouton <strong>Remettre en liste d'attente</strong> apparaît en bas de chaque fiche plongeur (hors directeur de plongée assigné).</li>
+            <li>Cliquez sur ce bouton pour annuler la place du plongeur et le replacer en liste d'attente : une confirmation est demandée avant l'action.</li>
+            <li>Ce bouton est <strong>masqué automatiquement</strong> lorsque les inscriptions sont fermées ou pas encore ouvertes sur le créneau.</li>
+          </ul>
           <div className="help-tip">💡 Les modifications de niveau, aptitudes, profondeur et temps sont enregistrées immédiatement sur le serveur.</div>
         </>
       ),
@@ -383,11 +389,11 @@ export function HelpPage() {
           <h4>Remettre un plongeur en liste d'attente</h4>
           <p>
             Depuis la vue <strong>Organisation des palanquées</strong>, chaque post-it de plongeur (hors directeur de plongée)
-            affiche un bouton <strong>⏪ L.A.</strong>.
+            affiche un bouton <strong>Remettre en liste d'attente</strong>.
             Ce bouton est accessible au DP du créneau et aux administrateurs.
           </p>
           <ol>
-            <li>Cliquez sur <strong>⏪ Liste d'attente</strong> sur le post-it du plongeur à remettre en liste d'attente.</li>
+            <li>Cliquez sur <strong>Remettre en liste d'attente</strong> sur le post-it du plongeur concerné.</li>
             <li>Confirmez l'action dans la fenêtre de confirmation.</li>
             <li>Le plongeur est retiré de sa palanquée et replacé en liste d'attente.</li>
             <li>Il reçoit un e-mail de notification après un délai de 15 minutes.</li>
@@ -610,6 +616,7 @@ export function HelpPage() {
             <li><strong>❌ Inscription annulée/supprimée</strong> — envoyée au plongeur si son inscription est annulée par un DP ou un admin.</li>
             <li><strong>⏳ Remis en liste d'attente</strong> — envoyée au plongeur si un DP le remet en liste d'attente depuis la vue palanquées (délai de 15 min).</li>
             <li><strong>📋 Nouvelles inscriptions sur un créneau (→ DP / créateur)</strong> — envoyée au directeur de plongée assigné et au créateur du créneau quand un plongeur s'inscrit librement en liste d'attente, ou est ajouté directement.</li>
+            <li><strong>📋 Rappel fiche de sécurité</strong> — envoyé au directeur de plongée assigné X jours après la sortie pour lui rappeler de transmettre la fiche de sécurité remplie. Désactivée par défaut. Le délai (en jours) et le contenu du mail sont configurables. Ce rappel n'est envoyé qu'une seule fois par créneau.</li>
           </ul>
         </>
       ),
@@ -633,6 +640,7 @@ export function HelpPage() {
             <li><strong>⏳ Remis en liste d'attente</strong> — reçue si vous êtes remis en liste d'attente.</li>
             <li><strong>📋 Nouvelles inscriptions (en tant que DP assigné)</strong> — reçue quand un plongeur s'inscrit sur votre créneau et que vous êtes le directeur de plongée désigné. <em>Activée par défaut.</em></li>
             <li><strong>📋 Nouvelles inscriptions (en tant que créateur)</strong> — reçue quand un plongeur s'inscrit sur un créneau que vous avez créé. <em>Désactivée par défaut.</em></li>
+            <li><strong>📋 Rappel fiche de sécurité (en tant que DP assigné)</strong> — reçu quelques jours après la sortie pour vous rappeler de transmettre la fiche de sécurité remplie. <em>Activée par défaut (si la fonctionnalité est activée globalement par l'administrateur).</em></li>
           </ul>
           <p>
             <strong>Note :</strong> si la notification est désactivée globalement par l'administrateur,

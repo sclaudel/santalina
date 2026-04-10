@@ -19,6 +19,7 @@ export function ProfilePage() {
   const [notifOnMovedToWaitlist, setNotifOnMovedToWaitlist] = useState(user?.notifOnMovedToWaitlist ?? true);
   const [notifOnDpRegistration, setNotifOnDpRegistration] = useState(user?.notifOnDpRegistration ?? true);
   const [notifOnCreatorRegistration, setNotifOnCreatorRegistration] = useState(user?.notifOnCreatorRegistration ?? false);
+  const [notifOnSafetyReminder, setNotifOnSafetyReminder] = useState(user?.notifOnSafetyReminder ?? true);
   const [notifLoading, setNotifLoading] = useState(false);
 
   // Charge le profil complet depuis l'API pour avoir phone & licenseNumber à jour
@@ -34,6 +35,7 @@ export function ProfilePage() {
       setNotifOnMovedToWaitlist(profile.notifOnMovedToWaitlist ?? true);
       setNotifOnDpRegistration(profile.notifOnDpRegistration ?? true);
       setNotifOnCreatorRegistration(profile.notifOnCreatorRegistration ?? false);
+      setNotifOnSafetyReminder(profile.notifOnSafetyReminder ?? true);
     }).catch(() => {
       // Repli sur les données du contexte si l'API échoue
       setFirstName(user?.firstName || '');
@@ -86,7 +88,7 @@ export function ProfilePage() {
   const handleUpdateNotifPrefs = async () => {
     setMsg(''); setError(''); setNotifLoading(true);
     try {
-      await authService.updateNotifPrefs({ notifOnRegistration, notifOnApproved, notifOnCancelled, notifOnMovedToWaitlist, notifOnDpRegistration, notifOnCreatorRegistration });
+      await authService.updateNotifPrefs({ notifOnRegistration, notifOnApproved, notifOnCancelled, notifOnMovedToWaitlist, notifOnDpRegistration, notifOnCreatorRegistration, notifOnSafetyReminder });
       setMsg('Préférences de notification enregistrées.');
     } catch {
       setError('Erreur lors de l\'enregistrement des préférences.');
@@ -184,6 +186,7 @@ export function ProfilePage() {
               { label: '⏳ Remis en liste d\'attente', value: notifOnMovedToWaitlist, setter: setNotifOnMovedToWaitlist },
               { label: '📋 Nouvelles inscriptions sur mes créneaux (en tant que DP assigné)', value: notifOnDpRegistration, setter: setNotifOnDpRegistration },
               { label: '📋 Nouvelles inscriptions sur mes créneaux (en tant que créateur)', value: notifOnCreatorRegistration, setter: setNotifOnCreatorRegistration },
+              { label: '📋 Rappel fiche de sécurité après la sortie (reçu en tant que DP assigné)', value: notifOnSafetyReminder, setter: setNotifOnSafetyReminder },
             ] as { label: string; value: boolean; setter: (v: boolean) => void }[]).map(({ label, value, setter }) => (
               <label key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
                 <input type="checkbox" checked={value} onChange={e => setter(e.target.checked)} />

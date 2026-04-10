@@ -55,6 +55,9 @@ export function AdminPage() {
   const [notifCancelled, setNotifCancelled]           = useState(true);
   const [notifMovedToWl, setNotifMovedToWl]           = useState(true);
   const [notifDpNewReg, setNotifDpNewReg]             = useState(true);
+  const [notifSafetyReminder, setNotifSafetyReminder] = useState(false);
+  const [safetyReminderDelayDays, setSafetyReminderDelayDays] = useState(3);
+  const [safetyReminderEmailBody, setSafetyReminderEmailBody] = useState('');
   const [notifSettingsLoading, setNotifSettingsLoading] = useState(false);
 
   // Recherche et pagination utilisateurs
@@ -102,6 +105,9 @@ export function AdminPage() {
       setNotifCancelled(c.notifCancelledEnabled ?? true);
       setNotifMovedToWl(c.notifMovedToWlEnabled ?? true);
       setNotifDpNewReg(c.notifDpNewRegEnabled ?? true);
+      setNotifSafetyReminder(c.notifSafetyReminderEnabled ?? false);
+      setSafetyReminderDelayDays(c.safetyReminderDelayDays ?? 3);
+      setSafetyReminderEmailBody(c.safetyReminderEmailBody ?? '');
     } catch {
       setError('Erreur lors du chargement des données');
     }
@@ -289,6 +295,9 @@ export function AdminPage() {
         notifCancelledEnabled: notifCancelled,
         notifMovedToWlEnabled: notifMovedToWl,
         notifDpNewRegEnabled: notifDpNewReg,
+        notifSafetyReminderEnabled: notifSafetyReminder,
+        safetyReminderDelayDays: safetyReminderDelayDays,
+        safetyReminderEmailBody: safetyReminderEmailBody,
       });
       setConfig(updated);
       setMsg('Paramètres de notifications enregistrés.');
@@ -606,6 +615,7 @@ export function AdminPage() {
             { label: '❌ Inscription annulée/supprimée (→ plongeur)', value: notifCancelled, setter: setNotifCancelled },
             { label: '⏳ Remis en liste d\'attente (→ plongeur, délai 15 min)', value: notifMovedToWl, setter: setNotifMovedToWl },
             { label: '📋 Nouvelles inscriptions sur un créneau (→ directeur de plongée / créateur)', value: notifDpNewReg, setter: setNotifDpNewReg },
+            { label: '📋 Rappel fiche de sécurité après la sortie (→ directeur de plongée)', value: notifSafetyReminder, setter: setNotifSafetyReminder },
           ] as { label: string; value: boolean; setter: (v: boolean) => void }[]).map(({ label, value, setter }) => (
             <label key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
               <input type="checkbox" checked={value} onChange={e => setter(e.target.checked)} />
@@ -614,6 +624,37 @@ export function AdminPage() {
             </label>
           ))}
         </div>
+        {/* Configuration du rappel fiche de sécurité */}
+        {notifSafetyReminder && (
+          <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 8, padding: 16, marginBottom: 20 }}>
+            <h4 style={{ margin: '0 0 12px', color: '#92400e', fontSize: 14 }}>⚙️ Configuration du rappel fiche de sécurité</h4>
+            <div className="form-group" style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 13 }}>Délai après la sortie (en jours)</label>
+              <input
+                type="number"
+                min={1}
+                max={30}
+                value={safetyReminderDelayDays}
+                onChange={e => setSafetyReminderDelayDays(Number(e.target.value))}
+                style={{ width: 80 }}
+              />
+            </div>
+            <div className="form-group">
+              <label style={{ fontSize: 13 }}>
+                Contenu du mail
+                <span style={{ fontWeight: 400, color: '#6b7280', marginLeft: 6 }}>
+                  (variables disponibles&nbsp;: <code>{'{siteName}'}</code>, <code>{'{slotDate}'}</code>, <code>{'{slotLabel}'}</code>)
+                </span>
+              </label>
+              <textarea
+                value={safetyReminderEmailBody}
+                onChange={e => setSafetyReminderEmailBody(e.target.value)}
+                rows={5}
+                style={{ width: '100%', fontFamily: 'monospace', fontSize: 13, resize: 'vertical' }}
+              />
+            </div>
+          </div>
+        )}
         <button className="btn btn-primary" onClick={handleUpdateNotifSettings} disabled={notifSettingsLoading}>
           {notifSettingsLoading ? '...' : '💾 Enregistrer les paramètres'}
         </button>

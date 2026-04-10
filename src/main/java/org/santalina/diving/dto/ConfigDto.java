@@ -29,7 +29,10 @@ public class ConfigDto {
             boolean notifApprovedEnabled,
             boolean notifCancelledEnabled,
             boolean notifMovedToWlEnabled,
-            boolean notifDpNewRegEnabled
+            boolean notifDpNewRegEnabled,
+            boolean notifSafetyReminderEnabled,
+            int safetyReminderDelayDays,
+            String safetyReminderEmailBody
     ) {}
 
     public record UpdateMaxRecurringMonthsRequest(
@@ -70,6 +73,9 @@ public class ConfigDto {
             @NotNull Boolean notifApprovedEnabled,
             @NotNull Boolean notifCancelledEnabled,
             @NotNull Boolean notifMovedToWlEnabled,
-            @NotNull Boolean notifDpNewRegEnabled
+            @NotNull Boolean notifDpNewRegEnabled,
+            @NotNull Boolean notifSafetyReminderEnabled,
+            @NotNull @Min(1) @jakarta.validation.constraints.Max(30) Integer safetyReminderDelayDays,
+            String safetyReminderEmailBody
     ) {}
 }

@@ -106,7 +106,7 @@ class UserResourceIT {
                 .body("""
                       {"notifOnRegistration":true,"notifOnApproved":true,
                        "notifOnCancelled":true,"notifOnMovedToWaitlist":true,"notifOnDpRegistration":true,
-                       "notifOnCreatorRegistration":false}
+                       "notifOnCreatorRegistration":false,"notifOnSafetyReminder":true}
                       """)
                 .when().put("/api/users/me/notifications")
                 .then()
@@ -124,7 +124,7 @@ class UserResourceIT {
                     .body("""
                           {"notifOnRegistration":false,"notifOnApproved":true,
                            "notifOnCancelled":false,"notifOnMovedToWaitlist":true,"notifOnDpRegistration":true,
-                           "notifOnCreatorRegistration":false}
+                           "notifOnCreatorRegistration":false,"notifOnSafetyReminder":true}
                           """)
                     .when().put("/api/users/me/notifications")
                     .then()

@@ -131,7 +131,7 @@ function DiverCard({ diver, onDragStart, onDragEnter, isDragging, onLevelChange,
           {movingToWlId === diver.id ? (
             <span className="palanquee-postit-wl-btn__spinner">⏳</span>
           ) : (
-            <>⏪&nbsp;Liste d'attente</>
+            <>Remettre en liste d'attente</>
           )}
         </button>
       )}
@@ -234,6 +234,16 @@ function DropZone({
       </div>
     </div>
   );
+}
+
+// ── helpers ──────────────────────────────────────────────────────────────────
+
+/** Retourne true si les inscriptions sont actuellement actives sur le créneau,
+ *  en reproduisant la logique backend (registrationOpen + registrationOpensAt). */
+function isRegistrationCurrentlyActive(slot: DiveSlot | null): boolean {
+  if (!slot || !slot.registrationOpen) return false;
+  if (!slot.registrationOpensAt) return true;
+  return new Date() >= new Date(slot.registrationOpensAt);
 }
 
 // ── PalanqueePage ─────────────────────────────────────────────────────────────
@@ -837,7 +847,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
           onAptitudesChange={handleAptitudesChange}
           onTapDiver={isMobile ? handleMobilePick : undefined}
           mobilePickedId={isMobile ? mobilePickedId : undefined}
-          onMoveToWaitingList={handleMoveToWaitingList}
+          onMoveToWaitingList={isRegistrationCurrentlyActive(slot) ? handleMoveToWaitingList : undefined}
           movingToWlId={movingToWlId}
         />
       </div>
@@ -946,7 +956,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                       onAptitudesChange={handleAptitudesChange}
                       onTapDiver={handleMobilePick}
                       mobilePickedId={mobilePickedId}
-                      onMoveToWaitingList={handleMoveToWaitingList}
+                      onMoveToWaitingList={isRegistrationCurrentlyActive(slot) ? handleMoveToWaitingList : undefined}
                       movingToWlId={movingToWlId}
                     />
                   </div>
@@ -1028,7 +1038,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                 palanqueeIndex={idx + 1}
                 onLevelChange={handleLevelChange}
                 onAptitudesChange={handleAptitudesChange}
-                onMoveToWaitingList={handleMoveToWaitingList}
+                onMoveToWaitingList={isRegistrationCurrentlyActive(slot) ? handleMoveToWaitingList : undefined}
                 movingToWlId={movingToWlId}
               />
             </div>

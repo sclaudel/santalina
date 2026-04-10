@@ -118,7 +118,10 @@ public class ConfigResource {
                 request.notifApprovedEnabled(),
                 request.notifCancelledEnabled(),
                 request.notifMovedToWlEnabled(),
-                request.notifDpNewRegEnabled()
+                request.notifDpNewRegEnabled(),
+                request.notifSafetyReminderEnabled(),
+                request.safetyReminderDelayDays(),
+                request.safetyReminderEmailBody()
         );
     }
 }

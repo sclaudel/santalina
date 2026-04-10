@@ -1,5 +1,6 @@
 package org.santalina.diving.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -42,7 +43,8 @@ public class BackupDto {
             boolean notifOnCancelled,
             boolean notifOnMovedToWaitlist,
             boolean notifOnDpRegistration,
-            boolean notifOnCreatorRegistration
+            boolean notifOnCreatorRegistration,
+            boolean notifOnSafetyReminder
     ) {}
 
     public record SlotEntry(
@@ -56,7 +58,9 @@ public class BackupDto {
             String slotType,
             String club,
             Long createdById,
-            LocalDateTime createdAt
+            LocalDateTime createdAt,
+            boolean registrationOpen,
+            @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") LocalDateTime registrationOpensAt
     ) {}
 
     public record DiverEntry(

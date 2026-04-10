@@ -206,7 +206,9 @@ class BackupResourceIT {
                             "slotType": null,
                             "club": null,
                             "createdById": null,
-                            "createdAt": "2099-01-01T00:00:00"
+                            "createdAt": "2099-01-01T00:00:00",
+                            "registrationOpen": false,
+                            "registrationOpensAt": null
                         }
                     ],
                     "divers": [],

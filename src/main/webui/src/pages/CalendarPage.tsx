@@ -40,6 +40,7 @@ export function CalendarPage({ onNavigate, returnContext, onReturnConsumed }: {
     notificationBookingEmail: '', maxRecurringMonths: 4,
     notifRegistrationEnabled: true, notifApprovedEnabled: true,
     notifCancelledEnabled: true, notifMovedToWlEnabled: true, notifDpNewRegEnabled: true,
+    notifSafetyReminderEnabled: false, safetyReminderDelayDays: 3, safetyReminderEmailBody: '',
   });
   // Date pour laquelle on ouvre le formulaire (null = fermé)
   const [formDate, setFormDate]           = useState<string | null>(null);

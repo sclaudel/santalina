@@ -54,6 +54,10 @@ public class DiveSlot extends PanacheEntityBase {
     @Column(name = "registration_opens_at")
     public LocalDateTime registrationOpensAt;
 
+    /** Date/heure à laquelle le rappel fiche de sécurité a été envoyé au DP (null = pas encore envoyé). */
+    @Column(name = "reminder_sent_at")
+    public LocalDateTime reminderSentAt;
+
     @Column(name = "created_at", nullable = false)
     public LocalDateTime createdAt = LocalDateTime.now();
 

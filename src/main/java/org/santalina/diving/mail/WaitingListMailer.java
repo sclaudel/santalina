@@ -251,6 +251,46 @@ public class WaitingListMailer {
     // Helpers priv\u00e9s
     // =========================================================================
 
+    // =========================================================================
+    // Mail au DP : rappel fiche de sécurité après la sortie
+    // =========================================================================
+
+    public void sendSafetySheetReminder(String dpEmail, String firstName, String lastName, DiveSlot slot) {
+        if (dpEmail == null || dpEmail.isBlank()) return;
+
+        String siteName  = configService.getSiteName();
+        String slotLabel = slotLabel(slot);
+        String subject   = "[" + siteName + "] Rappel fiche de s\u00e9curit\u00e9 \u2014 " + slotLabel;
+
+        String bodyTemplate = configService.getSafetyReminderEmailBody();
+        String bodyText = bodyTemplate
+                .replace("{siteName}", siteName)
+                .replace("{slotDate}", slot.slotDate.toString())
+                .replace("{slotLabel}", slotLabel);
+
+        String body = "<html><body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;\">"
+            + "<h2 style=\"color:#d97706;\">\uD83D\uDCCB Rappel fiche de s\u00e9curit\u00e9</h2>"
+            + "<p>Bonjour <strong>" + firstName + " " + lastName + "</strong>,</p>"
+            + "<div style=\"margin:16px 0;\">" + bodyText.replace("\n", "<br>") + "</div>"
+            + "<table style=\"border-collapse:collapse;width:100%;margin:16px 0;\">"
+            + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Cr\u00e9neau :</td><td style=\"padding:4px 8px;\"><strong>" + slotLabel + "</strong></td></tr>"
+            + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Date :</td><td style=\"padding:4px 8px;\">" + slot.slotDate + "</td></tr>"
+            + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Horaire :</td><td style=\"padding:4px 8px;\">" + slot.startTime + " \u2013 " + slot.endTime + "</td></tr>"
+            + "</table>"
+            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, connectez-vous et modifiez vos pr\u00e9f\u00e9rences dans votre <strong>Profil</strong> \u2192 <em>Notifications par e-mail</em>.</p>"
+            + "<hr style=\"border:1px solid #e5e7eb;margin-top:30px;\"/>"
+            + "<p style=\"color:#6b7280;font-size:12px;\">Syst\u00e8me de r\u00e9servation \u2014 " + siteName + "</p>"
+            + "</body></html>";
+
+        // V\u00e9rification de la pr\u00e9f\u00e9rence utilisateur (le global est v\u00e9rifi\u00e9 par l'appelant)
+        User user = User.findByEmail(dpEmail);
+        if (user != null && !user.notifOnSafetyReminder) {
+            LOG.infof("[NOTIF D\u00c9SACTIV\u00c9E][pr\u00e9f\u00e9rence][safety_reminder] Destinataire: %s | Sujet: %s", dpEmail, subject);
+            return;
+        }
+        sendSingle(dpEmail, subject, body);
+    }
+
     private boolean shouldSend(boolean globalEnabled, String notifType,
                                 String recipientEmail, String subject, String body) {
         if (!globalEnabled) {

@@ -94,7 +94,8 @@ class ConfigResourceIT {
                 .body("""
                       {"notifRegistrationEnabled":true,"notifApprovedEnabled":true,
                        "notifCancelledEnabled":true,"notifMovedToWlEnabled":true,
-                       "notifDpNewRegEnabled":true}
+                       "notifDpNewRegEnabled":true,"notifSafetyReminderEnabled":false,
+                       "safetyReminderDelayDays":3,"safetyReminderEmailBody":"test"}
                       """)
                 .when().put("/api/config/notification-settings")
                 .then()
@@ -109,7 +110,8 @@ class ConfigResourceIT {
                 .body("""
                       {"notifRegistrationEnabled":false,"notifApprovedEnabled":false,
                        "notifCancelledEnabled":false,"notifMovedToWlEnabled":false,
-                       "notifDpNewRegEnabled":false}
+                       "notifDpNewRegEnabled":false,"notifSafetyReminderEnabled":false,
+                       "safetyReminderDelayDays":3,"safetyReminderEmailBody":"test"}
                       """)
                 .when().put("/api/config/notification-settings")
                 .then()
@@ -124,13 +126,17 @@ class ConfigResourceIT {
                 .body("""
                       {"notifRegistrationEnabled":false,"notifApprovedEnabled":true,
                        "notifCancelledEnabled":true,"notifMovedToWlEnabled":false,
-                       "notifDpNewRegEnabled":true}
+                       "notifDpNewRegEnabled":true,"notifSafetyReminderEnabled":true,
+                       "safetyReminderDelayDays":5,"safetyReminderEmailBody":"Rappel test {slotDate}"}
                       """)
                 .when().put("/api/config/notification-settings")
                 .then()
                 .statusCode(200)
                 .body("notifRegistrationEnabled", equalTo(false))
                 .body("notifApprovedEnabled", equalTo(true))
-                .body("notifMovedToWlEnabled", equalTo(false));
+                .body("notifMovedToWlEnabled", equalTo(false))
+                .body("notifSafetyReminderEnabled", equalTo(true))
+                .body("safetyReminderDelayDays", equalTo(5))
+                .body("safetyReminderEmailBody", containsString("Rappel test"));
     }
 }

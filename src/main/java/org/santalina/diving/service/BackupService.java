@@ -131,6 +131,7 @@ public class BackupService {
                 user.notifOnMovedToWaitlist = u.notifOnMovedToWaitlist();
                 user.notifOnDpRegistration  = u.notifOnDpRegistration();
                 user.notifOnCreatorRegistration = u.notifOnCreatorRegistration();
+                user.notifOnSafetyReminder  = u.notifOnSafetyReminder();
                 user.createdAt      = LocalDateTime.now();
                 user.updatedAt      = LocalDateTime.now();
                 // Rôles
@@ -155,16 +156,18 @@ public class BackupService {
         if (backup.slots() != null) {
             for (SlotEntry s : backup.slots()) {
                 DiveSlot slot = new DiveSlot();
-                slot.slotDate  = s.slotDate();
-                slot.startTime = s.startTime();
-                slot.endTime   = s.endTime();
-                slot.diverCount = s.diverCount();
-                slot.title     = s.title();
-                slot.notes     = s.notes();
-                slot.slotType  = s.slotType();
-                slot.club      = s.club();
-                slot.createdAt = s.createdAt() != null ? s.createdAt() : LocalDateTime.now();
-                slot.updatedAt = LocalDateTime.now();
+                slot.slotDate           = s.slotDate();
+                slot.startTime          = s.startTime();
+                slot.endTime            = s.endTime();
+                slot.diverCount         = s.diverCount();
+                slot.title              = s.title();
+                slot.notes              = s.notes();
+                slot.slotType           = s.slotType();
+                slot.club               = s.club();
+                slot.registrationOpen   = s.registrationOpen();
+                slot.registrationOpensAt = s.registrationOpensAt();
+                slot.createdAt          = s.createdAt() != null ? s.createdAt() : LocalDateTime.now();
+                slot.updatedAt          = LocalDateTime.now();
                 // Lier au créateur si possible
                 if (s.createdById() != null) {
                     User creator = User.find("email",
@@ -318,13 +321,15 @@ public class BackupService {
                 u.firstName, u.lastName, u.phone, u.licenseNumber,
                 u.activated, u.consentGiven, u.consentDate, roles,
                 u.notifOnRegistration, u.notifOnApproved, u.notifOnCancelled,
-                u.notifOnMovedToWaitlist, u.notifOnDpRegistration, u.notifOnCreatorRegistration);
+                u.notifOnMovedToWaitlist, u.notifOnDpRegistration, u.notifOnCreatorRegistration,
+                u.notifOnSafetyReminder);
     }
 
     private SlotEntry toSlotEntry(DiveSlot s) {
         return new SlotEntry(s.id, s.slotDate, s.startTime, s.endTime,
                 s.diverCount, s.title, s.notes, s.slotType, s.club,
-                s.createdBy != null ? s.createdBy.id : null, s.createdAt);
+                s.createdBy != null ? s.createdBy.id : null, s.createdAt,
+                s.registrationOpen, s.registrationOpensAt);
     }
 
     private DiverEntry toDiverEntry(SlotDiver d) {

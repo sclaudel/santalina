@@ -39,6 +39,15 @@ public class ConfigService {
     private static final String KEY_NOTIF_MOVED_TO_WL     = "notif.moved_to_waitlist.enabled";
     private static final String KEY_NOTIF_DP_NEW_REG      = "notif.dp.new_registration.enabled";
 
+    // -- Rappel fiche de sécurité --
+    private static final String KEY_NOTIF_SAFETY_REMINDER      = "notif.safety_reminder.enabled";
+    private static final String KEY_SAFETY_REMINDER_DELAY_DAYS = "notif.safety_reminder.delay_days";
+    private static final String KEY_SAFETY_REMINDER_EMAIL_BODY = "notif.safety_reminder.email_body";
+
+    private static final String DEFAULT_SAFETY_REMINDER_BODY =
+        "Ce rappel vous est envoyé car vous êtes le directeur de plongée du créneau du {slotDate} sur le site {siteName}.\n\n" +
+        "Pensez à transmettre la fiche de sécurité remplie à votre club si ce n'est pas encore fait.";
+
     private static final String DEFAULT_SLOT_TYPES =
         "Club - Plongée|Club - Apnée|Club - Nage avec Palme|CODEP - Plongée|CODEP - Apnée|CODEP - Nage avec Palme|Externe - SDIS - Gendarmerie";
     private static final String DEFAULT_CLUBS  = "";
@@ -130,6 +139,15 @@ public class ConfigService {
     public boolean isNotifDpNewRegEnabled() {
         return Boolean.parseBoolean(getStringValue(KEY_NOTIF_DP_NEW_REG, "true"));
     }
+    public boolean isNotifSafetyReminderEnabled() {
+        return Boolean.parseBoolean(getStringValue(KEY_NOTIF_SAFETY_REMINDER, "false"));
+    }
+    public int getSafetyReminderDelayDays() {
+        return getIntValue(KEY_SAFETY_REMINDER_DELAY_DAYS, 3);
+    }
+    public String getSafetyReminderEmailBody() {
+        return getStringValue(KEY_SAFETY_REMINDER_EMAIL_BODY, DEFAULT_SAFETY_REMINDER_BODY);
+    }
 
     public ConfigResponse getConfig() {
         return new ConfigResponse(
@@ -145,7 +163,10 @@ public class ConfigService {
                 isNotifApprovedEnabled(),
                 isNotifCancelledEnabled(),
                 isNotifMovedToWlEnabled(),
-                isNotifDpNewRegEnabled()
+                isNotifDpNewRegEnabled(),
+                isNotifSafetyReminderEnabled(),
+                getSafetyReminderDelayDays(),
+                getSafetyReminderEmailBody()
         );
     }
 
@@ -220,12 +241,16 @@ public class ConfigService {
     @Transactional
     public ConfigResponse updateNotifSettings(
             boolean registration, boolean approved, boolean cancelled,
-            boolean movedToWl, boolean dpNewReg) {
+            boolean movedToWl, boolean dpNewReg,
+            boolean safetyReminder, int safetyReminderDelayDays, String safetyReminderEmailBody) {
         forceUpsert(KEY_NOTIF_REGISTRATION, String.valueOf(registration));
         forceUpsert(KEY_NOTIF_APPROVED,     String.valueOf(approved));
         forceUpsert(KEY_NOTIF_CANCELLED,    String.valueOf(cancelled));
         forceUpsert(KEY_NOTIF_MOVED_TO_WL,  String.valueOf(movedToWl));
         forceUpsert(KEY_NOTIF_DP_NEW_REG,   String.valueOf(dpNewReg));
+        forceUpsert(KEY_NOTIF_SAFETY_REMINDER,      String.valueOf(safetyReminder));
+        forceUpsert(KEY_SAFETY_REMINDER_DELAY_DAYS, String.valueOf(safetyReminderDelayDays));
+        forceUpsert(KEY_SAFETY_REMINDER_EMAIL_BODY, safetyReminderEmailBody != null ? safetyReminderEmailBody.trim() : DEFAULT_SAFETY_REMINDER_BODY);
         return getConfig();
     }
 
@@ -265,6 +290,9 @@ public class ConfigService {
         upsertIfMissing(KEY_NOTIF_CANCELLED,    "true");
         upsertIfMissing(KEY_NOTIF_MOVED_TO_WL,  "true");
         upsertIfMissing(KEY_NOTIF_DP_NEW_REG,   "true");
+        upsertIfMissing(KEY_NOTIF_SAFETY_REMINDER,      "false");
+        upsertIfMissing(KEY_SAFETY_REMINDER_DELAY_DAYS, "3");
+        upsertIfMissing(KEY_SAFETY_REMINDER_EMAIL_BODY, DEFAULT_SAFETY_REMINDER_BODY);
     }
 
     // ---- Helpers privés ----

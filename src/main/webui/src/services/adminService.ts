@@ -102,6 +102,9 @@ export const adminService = {
     notifCancelledEnabled: boolean;
     notifMovedToWlEnabled: boolean;
     notifDpNewRegEnabled: boolean;
+    notifSafetyReminderEnabled: boolean;
+    safetyReminderDelayDays: number;
+    safetyReminderEmailBody: string;
   }): Promise<AppConfig> {
     const res = await api.put<AppConfig>('/config/notification-settings', settings);
     return res.data;
