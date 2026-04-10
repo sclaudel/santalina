@@ -165,4 +165,13 @@ public class UserService {
         if (clean.startsWith("0")) return "+33" + clean.substring(1);
         return clean;
     }
-}
+    @Transactional
+    public UserResponse updateNotifPrefs(String email, UpdateNotifPrefsRequest request) {
+        User user = User.findByEmail(email);
+        if (user == null) throw new NotFoundException("Utilisateur non trouv\u00e9");
+        user.notifOnRegistration    = request.notifOnRegistration();
+        user.notifOnApproved        = request.notifOnApproved();
+        user.notifOnCancelled       = request.notifOnCancelled();
+        user.notifOnMovedToWaitlist = request.notifOnMovedToWaitlist();        user.notifOnDpRegistration  = request.notifOnDpRegistration();        user.persist();
+        return UserResponse.from(user);
+    }}

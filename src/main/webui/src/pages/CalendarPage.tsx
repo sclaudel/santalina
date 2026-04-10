@@ -38,6 +38,8 @@ export function CalendarPage({ onNavigate, returnContext, onReturnConsumed }: {
     bookingOpenHour: -1, bookingCloseHour: -1,
     exclusiveSlotTypes: [], defaultSlotHours: 2,
     notificationBookingEmail: '', maxRecurringMonths: 4,
+    notifRegistrationEnabled: true, notifApprovedEnabled: true,
+    notifCancelledEnabled: true, notifMovedToWlEnabled: true, notifDpNewRegEnabled: true,
   });
   // Date pour laquelle on ouvre le formulaire (null = fermé)
   const [formDate, setFormDate]           = useState<string | null>(null);

@@ -32,6 +32,13 @@ public class ConfigService {
     private static final String KEY_NOTIFICATION_BOOKING_EMAIL = "notification.booking.email";
     private static final String KEY_MAX_RECURRING_MONTHS       = "max.recurring.months";
 
+    // -- Activation globale des notifications par type --
+    private static final String KEY_NOTIF_REGISTRATION    = "notif.registration.enabled";
+    private static final String KEY_NOTIF_APPROVED        = "notif.approved.enabled";
+    private static final String KEY_NOTIF_CANCELLED       = "notif.cancelled.enabled";
+    private static final String KEY_NOTIF_MOVED_TO_WL     = "notif.moved_to_waitlist.enabled";
+    private static final String KEY_NOTIF_DP_NEW_REG      = "notif.dp.new_registration.enabled";
+
     private static final String DEFAULT_SLOT_TYPES =
         "Club - Plongée|Club - Apnée|Club - Nage avec Palme|CODEP - Plongée|CODEP - Apnée|CODEP - Nage avec Palme|Externe - SDIS - Gendarmerie";
     private static final String DEFAULT_CLUBS  = "";
@@ -107,6 +114,23 @@ public class ConfigService {
         return getIntValue(KEY_MAX_RECURRING_MONTHS, 4);
     }
 
+    // -- Getters notifications globales --
+    public boolean isNotifRegistrationEnabled() {
+        return Boolean.parseBoolean(getStringValue(KEY_NOTIF_REGISTRATION, "true"));
+    }
+    public boolean isNotifApprovedEnabled() {
+        return Boolean.parseBoolean(getStringValue(KEY_NOTIF_APPROVED, "true"));
+    }
+    public boolean isNotifCancelledEnabled() {
+        return Boolean.parseBoolean(getStringValue(KEY_NOTIF_CANCELLED, "true"));
+    }
+    public boolean isNotifMovedToWlEnabled() {
+        return Boolean.parseBoolean(getStringValue(KEY_NOTIF_MOVED_TO_WL, "true"));
+    }
+    public boolean isNotifDpNewRegEnabled() {
+        return Boolean.parseBoolean(getStringValue(KEY_NOTIF_DP_NEW_REG, "true"));
+    }
+
     public ConfigResponse getConfig() {
         return new ConfigResponse(
                 getMaxDivers(), getSlotMinHours(), getSlotMaxHours(),
@@ -116,7 +140,12 @@ public class ConfigService {
                 getBookingOpenHour(), getBookingCloseHour(),
                 getExclusiveSlotTypes(), getDefaultSlotHours(),
                 getNotificationBookingEmail(),
-                getMaxRecurringMonths()
+                getMaxRecurringMonths(),
+                isNotifRegistrationEnabled(),
+                isNotifApprovedEnabled(),
+                isNotifCancelledEnabled(),
+                isNotifMovedToWlEnabled(),
+                isNotifDpNewRegEnabled()
         );
     }
 
@@ -188,6 +217,18 @@ public class ConfigService {
         return getConfig();
     }
 
+    @Transactional
+    public ConfigResponse updateNotifSettings(
+            boolean registration, boolean approved, boolean cancelled,
+            boolean movedToWl, boolean dpNewReg) {
+        forceUpsert(KEY_NOTIF_REGISTRATION, String.valueOf(registration));
+        forceUpsert(KEY_NOTIF_APPROVED,     String.valueOf(approved));
+        forceUpsert(KEY_NOTIF_CANCELLED,    String.valueOf(cancelled));
+        forceUpsert(KEY_NOTIF_MOVED_TO_WL,  String.valueOf(movedToWl));
+        forceUpsert(KEY_NOTIF_DP_NEW_REG,   String.valueOf(dpNewReg));
+        return getConfig();
+    }
+
     // ---- Init au démarrage ----
 
     @Transactional
@@ -219,6 +260,11 @@ public class ConfigService {
         upsertIfMissing(KEY_DEFAULT_SLOT_HOURS,   "2");
         upsertIfMissing(KEY_NOTIFICATION_BOOKING_EMAIL, "");
         upsertIfMissing(KEY_MAX_RECURRING_MONTHS, "4");
+        upsertIfMissing(KEY_NOTIF_REGISTRATION, "true");
+        upsertIfMissing(KEY_NOTIF_APPROVED,     "true");
+        upsertIfMissing(KEY_NOTIF_CANCELLED,    "true");
+        upsertIfMissing(KEY_NOTIF_MOVED_TO_WL,  "true");
+        upsertIfMissing(KEY_NOTIF_DP_NEW_REG,   "true");
     }
 
     // ---- Helpers privés ----

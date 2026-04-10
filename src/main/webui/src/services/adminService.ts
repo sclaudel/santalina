@@ -96,6 +96,17 @@ export const adminService = {
     return res.data;
   },
 
+  async updateNotifSettings(settings: {
+    notifRegistrationEnabled: boolean;
+    notifApprovedEnabled: boolean;
+    notifCancelledEnabled: boolean;
+    notifMovedToWlEnabled: boolean;
+    notifDpNewRegEnabled: boolean;
+  }): Promise<AppConfig> {
+    const res = await api.put<AppConfig>('/config/notification-settings', settings);
+    return res.data;
+  },
+
   // ---- Logs ----
 
   async getLogs(): Promise<LogInfo[]> {

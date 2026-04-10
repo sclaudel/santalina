@@ -16,7 +16,8 @@ public class BackupDto {
             List<UserEntry> users,
             List<SlotEntry> slots,        // null si type="config-users"
             List<DiverEntry> divers,      // null si type="config-users"
-            List<PalanqueeEntry> palanquees // null si type="config-users"
+            List<PalanqueeEntry> palanquees, // null si type="config-users"
+            List<WaitingListBackupEntry> waitingListEntries // null si type="config-users"
     ) {}
 
     public record ConfigEntry(
@@ -35,7 +36,12 @@ public class BackupDto {
             boolean activated,
             boolean consentGiven,
             LocalDateTime consentDate,
-            List<String> roles
+            List<String> roles,
+            boolean notifOnRegistration,
+            boolean notifOnApproved,
+            boolean notifOnCancelled,
+            boolean notifOnMovedToWaitlist,
+            boolean notifOnDpRegistration
     ) {}
 
     public record SlotEntry(
@@ -74,6 +80,20 @@ public class BackupDto {
             int position,
             String depth,
             String duration
+    ) {}
+
+    public record WaitingListBackupEntry(
+            Long id,
+            Long slotId,
+            String firstName,
+            String lastName,
+            String email,
+            String level,
+            Integer numberOfDives,
+            LocalDate lastDiveDate,
+            String preparedLevel,
+            String comment,
+            LocalDateTime registeredAt
     ) {}
 
     /** Réponse d'un import */

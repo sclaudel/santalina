@@ -44,6 +44,17 @@ export const authService = {
     return res.data;
   },
 
+  async updateNotifPrefs(prefs: {
+    notifOnRegistration: boolean;
+    notifOnApproved: boolean;
+    notifOnCancelled: boolean;
+    notifOnMovedToWaitlist: boolean;
+    notifOnDpRegistration: boolean;
+  }): Promise<User> {
+    const res = await api.put<User>('/users/me/notifications', prefs);
+    return res.data;
+  },
+
   async updateEmail(email: string): Promise<LoginResponse> {
     const res = await api.patch<LoginResponse>('/users/me/email', { email });
     // Mettre à jour le token et l'utilisateur stockés

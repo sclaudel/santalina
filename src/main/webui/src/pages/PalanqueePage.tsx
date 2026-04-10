@@ -40,13 +40,15 @@ interface DiverCardProps {
   onAptitudesChange: (diverId: number, newAptitudes: string) => void;
   onTap?: (id: number) => void;
   isPicked?: boolean;
+  onMoveToWaitingList?: (diverId: number) => void;
+  movingToWlId?: number | null;
 }
 
 const APTITUDES_OPTIONS = ['PE12','PE20','PE40','PE60','PA12','PA20','PA40','PA60','E1','E2','E3','E4','GP'];
 const DEPTH_OPTIONS = ['6m', '12m', '20m', '30m', '40m', '50m', '60m'];
 const DURATION_OPTIONS = Array.from({ length: 24 }, (_, i) => `${(i + 1) * 10}'`);
 
-function DiverCard({ diver, onDragStart, onDragEnter, isDragging, onLevelChange, onAptitudesChange, onTap, isPicked }: DiverCardProps) {
+function DiverCard({ diver, onDragStart, onDragEnter, isDragging, onLevelChange, onAptitudesChange, onTap, isPicked, onMoveToWaitingList, movingToWlId }: DiverCardProps) {
   const [editingLevel, setEditingLevel] = useState(false);
   const [editingAptitudes, setEditingAptitudes] = useState(false);
   const color = getLevelColor(diver.level);
@@ -118,6 +120,21 @@ function DiverCard({ diver, onDragStart, onDragEnter, isDragging, onLevelChange,
           {diver.aptitudes ? diver.aptitudes : <span className="palanquee-postit-aptitudes--empty">aptitudes</span>}
         </div>
       )}
+      {onMoveToWaitingList && !diver.isDirector && (
+        <button
+          className="palanquee-postit-wl-btn"
+          title="Remettre ce plongeur en liste d'attente (annule sa place confirmée)"
+          disabled={movingToWlId === diver.id}
+          onClick={e => { e.stopPropagation(); onMoveToWaitingList(diver.id); }}
+          onMouseDown={e => e.stopPropagation()}
+        >
+          {movingToWlId === diver.id ? (
+            <span className="palanquee-postit-wl-btn__spinner">⏳</span>
+          ) : (
+            <>⏪&nbsp;Liste d'attente</>
+          )}
+        </button>
+      )}
     </div>
   );
 }
@@ -141,6 +158,8 @@ interface DropZoneProps {
   onAptitudesChange: (diverId: number, newAptitudes: string) => void;
   onTapDiver?: (id: number) => void;   // mobile: tap to pick
   mobilePickedId?: number | null;      // mobile: highlight picked diver
+  onMoveToWaitingList?: (diverId: number) => void;
+  movingToWlId?: number | null;
 }
 
 function DropZone({
@@ -148,6 +167,7 @@ function DropZone({
   onDragEnterCard, onDragEnterEnd, insertBeforeId,
   label, labelIcon, isUnassigned = false, isPool = false, palanqueeIndex,
   onLevelChange, onAptitudesChange, onTapDiver, mobilePickedId,
+  onMoveToWaitingList, movingToWlId,
 }: DropZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -200,6 +220,8 @@ function DropZone({
               onAptitudesChange={onAptitudesChange}
               onTap={onTapDiver}
               isPicked={mobilePickedId === d.id}
+              onMoveToWaitingList={onMoveToWaitingList}
+              movingToWlId={movingToWlId}
             />
           </>
         ))}
@@ -233,6 +255,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
   const [approvingId, setApprovingId]     = useState<number | null>(null);
   const [cancelingId, setCancelingId]     = useState<number | null>(null);
   const [wlError, setWlError]             = useState('');
+  const [movingToWlId, setMovingToWlId]   = useState<number | null>(null);
 
   // renaming state: palanqueeId → draft name
   const [renamingId, setRenamingId]     = useState<number | null>(null);
@@ -600,6 +623,21 @@ export function PalanqueePage({ slotId, onBack }: Props) {
     }
   }, [slotId]);
 
+  const handleMoveToWaitingList = useCallback(async (diverId: number) => {
+    if (!window.confirm('Remettre ce plongeur en liste d’attente ?')) return;
+    setMovingToWlId(diverId);
+    setWlError('');
+    try {
+      await slotDiverService.moveToWaitingList(slotId, diverId);
+      await loadAll();
+    } catch (err: unknown) {
+      const m = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setWlError(m || 'Erreur lors du transfert en liste d’attente');
+    } finally {
+      setMovingToWlId(null);
+    }
+  }, [slotId, loadAll]);
+
   // ── export liste plongeurs CSV ───────────────────────────────────────────
   const handleExportDiverList = () => {
     if (!slot) return;
@@ -799,6 +837,8 @@ export function PalanqueePage({ slotId, onBack }: Props) {
           onAptitudesChange={handleAptitudesChange}
           onTapDiver={isMobile ? handleMobilePick : undefined}
           mobilePickedId={isMobile ? mobilePickedId : undefined}
+          onMoveToWaitingList={handleMoveToWaitingList}
+          movingToWlId={movingToWlId}
         />
       </div>
 
@@ -906,6 +946,8 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                       onAptitudesChange={handleAptitudesChange}
                       onTapDiver={handleMobilePick}
                       mobilePickedId={mobilePickedId}
+                      onMoveToWaitingList={handleMoveToWaitingList}
+                      movingToWlId={movingToWlId}
                     />
                   </div>
                 );
@@ -986,6 +1028,8 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                 palanqueeIndex={idx + 1}
                 onLevelChange={handleLevelChange}
                 onAptitudesChange={handleAptitudesChange}
+                onMoveToWaitingList={handleMoveToWaitingList}
+                movingToWlId={movingToWlId}
               />
             </div>
           ))}

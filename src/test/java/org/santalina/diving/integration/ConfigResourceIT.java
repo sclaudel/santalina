@@ -84,4 +84,53 @@ class ConfigResourceIT {
                 .then()
                 .statusCode(200);
     }
+
+    /* ── Notification settings ── */
+
+    @Test
+    void updateNotifSettings_shouldReturn401_withoutAuthentication() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                      {"notifRegistrationEnabled":true,"notifApprovedEnabled":true,
+                       "notifCancelledEnabled":true,"notifMovedToWlEnabled":true,
+                       "notifDpNewRegEnabled":true}
+                      """)
+                .when().put("/api/config/notification-settings")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    @TestSecurity(user = "diver@test.com", roles = {"DIVER"})
+    void updateNotifSettings_shouldReturn403_whenDiver() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                      {"notifRegistrationEnabled":false,"notifApprovedEnabled":false,
+                       "notifCancelledEnabled":false,"notifMovedToWlEnabled":false,
+                       "notifDpNewRegEnabled":false}
+                      """)
+                .when().put("/api/config/notification-settings")
+                .then()
+                .statusCode(403);
+    }
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void updateNotifSettings_shouldReturn200_whenAdmin() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                      {"notifRegistrationEnabled":false,"notifApprovedEnabled":true,
+                       "notifCancelledEnabled":true,"notifMovedToWlEnabled":false,
+                       "notifDpNewRegEnabled":true}
+                      """)
+                .when().put("/api/config/notification-settings")
+                .then()
+                .statusCode(200)
+                .body("notifRegistrationEnabled", equalTo(false))
+                .body("notifApprovedEnabled", equalTo(true))
+                .body("notifMovedToWlEnabled", equalTo(false));
+    }
 }

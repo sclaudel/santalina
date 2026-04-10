@@ -17,4 +17,8 @@ export const slotDiverService = {
   /** Auto-désinscription du plongeur connecté. */
   cancelMe: (slotId: number): Promise<void> =>
     api.delete(`/slots/${slotId}/divers/me`).then(r => r.data),
+
+  /** Remet un plongeur confirmé dans la liste d'attente (DP / ADMIN). */
+  moveToWaitingList: (slotId: number, diverId: number): Promise<void> =>
+    api.post(`/slots/${slotId}/divers/${diverId}/move-to-waiting-list`).then(r => r.data),
 };

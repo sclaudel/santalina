@@ -72,6 +72,24 @@ public class User extends PanacheEntityBase {
     @Column(name = "updated_at", nullable = false)
     public LocalDateTime updatedAt = LocalDateTime.now();
 
+    // ---- Préférences de notifications e-mail ----
+
+    @Column(name = "notif_on_registration", nullable = false)
+    public boolean notifOnRegistration = true;
+
+    @Column(name = "notif_on_approved", nullable = false)
+    public boolean notifOnApproved = true;
+
+    @Column(name = "notif_on_cancelled", nullable = false)
+    public boolean notifOnCancelled = true;
+
+    @Column(name = "notif_on_moved_to_waitlist", nullable = false)
+    public boolean notifOnMovedToWaitlist = true;
+
+    /** Recevoir les notifications d'inscription sur mes créneaux (en tant que DP/créateur) */
+    @Column(name = "notif_on_dp_registration", nullable = false)
+    public boolean notifOnDpRegistration = true;
+
     // ---- helpers ----
 
     /** Retourne le nom complet (prénom + nom). */

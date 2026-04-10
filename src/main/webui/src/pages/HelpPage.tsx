@@ -331,15 +331,30 @@ export function HelpPage() {
             </li>
             <li>
               Cliquez sur <strong>✓ Valider</strong> pour accepter la demande :
-              le plongeur est transféré dans la liste des inscrits et reçoit un e-mail de confirmation.
+              le plongeur est transféré dans la liste des inscrits et reçoit un e-mail de confirmation après un délai de 15 minutes
+              (pour laisser le temps au DP de réorganiser les palanquées avant que le plongeur soit notifié).
             </li>
             <li>
-              Cliquez sur <strong>✕</strong> pour refuser / supprimer la demande sans notification.
+              Cliquez sur <strong>✕</strong> pour refuser / supprimer la demande ; 
+              le plongeur ayant un compte reçoit un e-mail d'annulation.
             </li>
           </ol>
           <div className="help-tip">
             💡 Les plongeurs validés apparaissent dans le pool <strong>Non assignés</strong> de la page d'organisation des palanquées.
           </div>
+
+          <h4>Remettre un plongeur en liste d'attente</h4>
+          <p>
+            Depuis la vue <strong>Organisation des palanquées</strong>, chaque post-it de plongeur (hors directeur de plongée)
+            affiche un bouton <strong>⏪ L.A.</strong>.
+            Ce bouton est accessible au DP du créneau et aux administrateurs.
+          </p>
+          <ol>
+            <li>Cliquez sur <strong>⏪ Liste d'attente</strong> sur le post-it du plongeur à remettre en liste d'attente.</li>
+            <li>Confirmez l'action dans la fenêtre de confirmation.</li>
+            <li>Le plongeur est retiré de sa palanquée et replacé en liste d'attente.</li>
+            <li>Il reçoit un e-mail de notification après un délai de 15 minutes.</li>
+          </ol>
         </>
       ),
     },
@@ -506,6 +521,47 @@ export function HelpPage() {
               <strong>Inscription libre</strong> — si désactivé, seul un administrateur peut créer des comptes. Le bouton "S'inscrire" est masqué.
             </li>
           </ul>
+
+          <h4>Notifications par e-mail (admin)</h4>
+          <p>
+            La section <strong>🔔 Notifications par e-mail</strong> de l'administration permet d'activer ou de
+            désactiver chaque type de notification pour l'ensemble des utilisateurs.
+            Lorsqu'une notification est désactivée globalement, son contenu complet (destinataire, sujet, corps) est
+            tracé dans les <strong>logs du serveur</strong> (niveau INFO) pour faciliter le débogage.
+          </p>
+          <ul>
+            <li><strong>📩 Confirmation inscription en liste d'attente</strong> — envoyée au plongeur quand il s'inscrit en liste d'attente.</li>
+            <li><strong>✅ Inscription validée</strong> — envoyée au plongeur après validation par le DP (délai de 15 min).</li>
+            <li><strong>❌ Inscription annulée/supprimée</strong> — envoyée au plongeur si son inscription est annulée par un DP ou un admin.</li>
+            <li><strong>⏳ Remis en liste d'attente</strong> — envoyée au plongeur si un DP le remet en liste d'attente depuis la vue palanquées (délai de 15 min).</li>
+            <li><strong>📋 Nouvelles inscriptions sur un créneau (→ DP / créateur)</strong> — envoyée au directeur de plongée assigné et au créateur du créneau quand un plongeur s'inscrit librement en liste d'attente, ou est ajouté directement.</li>
+          </ul>
+        </>
+      ),
+    },
+    {
+      id: 'notifications-profil',
+      icon: '🔔',
+      title: '🔔 Mes préférences de notification',
+      roles: ['DIVER', 'DIVE_DIRECTOR', 'ADMIN'],
+      content: (
+        <>
+          <p>
+            Dans votre <strong>profil</strong> (menu utilisateur → Profil), la section
+            <strong> 🔔 Notifications par e-mail</strong> vous permet de désactiver les types de
+            notifications que vous ne souhaitez pas recevoir, indépendamment des paramètres globaux.
+          </p>
+          <ul>
+            <li><strong>📩 Confirmation d'inscription</strong> — reçue quand vous vous inscrivez en liste d'attente.</li>
+            <li><strong>✅ Inscription validée</strong> — reçue quand le DP valide votre inscription.</li>
+            <li><strong>❌ Inscription annulée</strong> — reçue si votre inscription est annulée par un DP ou admin.</li>
+            <li><strong>⏳ Remis en liste d'attente</strong> — reçue si vous êtes remis en liste d'attente.</li>
+            <li><strong>📋 Nouvelles inscriptions sur mes créneaux</strong> — reçue (en tant que directeur de plongée ou créateur) quand un plongeur rejoint votre créneau.</li>
+          </ul>
+          <p>
+            <strong>Note :</strong> si la notification est désactivée globalement par l'administrateur,
+            elle ne sera pas envoyée même si vous l'avez activée dans votre profil.
+          </p>
         </>
       ),
     },

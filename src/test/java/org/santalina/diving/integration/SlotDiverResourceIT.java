@@ -130,7 +130,7 @@ class SlotDiverResourceIT {
                       """)
                 .when().post("/api/slots/" + slot.id + "/divers")
                 .then()
-                .statusCode(200)
+                .statusCode(201)
                 .body("firstName", equalTo("Jean-Paul"))
                 .body("lastName", equalTo("DUPONT"));
         } finally {
@@ -154,7 +154,7 @@ class SlotDiverResourceIT {
                       """)
                 .when().post("/api/slots/" + slot.id + "/divers")
                 .then()
-                .statusCode(200)
+                .statusCode(201)
                 .body("email", equalTo("alice.test@example.com"));
         } finally {
             cleanup(slot.id);
@@ -259,5 +259,62 @@ class SlotDiverResourceIT {
         } finally {
             cleanup(slot.id);
         }
+    }
+
+    // ── POST /{diverId}/move-to-waiting-list ─────────────────────────────────
+
+    @Test
+    @TestSecurity(user = "dp_wl_move@test.com", roles = {"DIVE_DIRECTOR"})
+    void moveToWaitingList_shouldReturn200_andCreateWlEntry() {
+        DiveSlot slot = createSlotWithDp("dp_wl_move@test.com");
+        SlotDiver diver = addDiver(slot.id, "plongeur_wl_" + System.nanoTime() + "@test.com");
+        try {
+            given()
+                .contentType(ContentType.JSON)
+                .when().post("/api/slots/" + slot.id + "/divers/" + diver.id + "/move-to-waiting-list")
+                .then()
+                .statusCode(200)
+                .body("email", equalTo(diver.email))
+                .body("firstName", equalTo(diver.firstName));
+        } finally {
+            cleanupWlByEmail(diver.email);
+            cleanup(slot.id);
+        }
+    }
+
+    @Test
+    @TestSecurity(user = "diver_forbidden@test.com", roles = {"DIVER"})
+    void moveToWaitingList_shouldReturn403_forDiver() {
+        DiveSlot slot = createSlotWithDp("dp_wl_forbid_" + System.nanoTime() + "@test.com");
+        SlotDiver diver = addDiver(slot.id, "target_wl_" + System.nanoTime() + "@test.com");
+        try {
+            given()
+                .contentType(ContentType.JSON)
+                .when().post("/api/slots/" + slot.id + "/divers/" + diver.id + "/move-to-waiting-list")
+                .then()
+                .statusCode(403);
+        } finally {
+            cleanup(slot.id);
+        }
+    }
+
+    @Test
+    void moveToWaitingList_shouldReturn401_withoutAuthentication() {
+        DiveSlot slot = createSlotWithDp("dp_wl_401_" + System.nanoTime() + "@test.com");
+        SlotDiver diver = addDiver(slot.id, "target_wl_401_" + System.nanoTime() + "@test.com");
+        try {
+            given()
+                .contentType(ContentType.JSON)
+                .when().post("/api/slots/" + slot.id + "/divers/" + diver.id + "/move-to-waiting-list")
+                .then()
+                .statusCode(401);
+        } finally {
+            cleanup(slot.id);
+        }
+    }
+
+    @Transactional
+    void cleanupWlByEmail(String email) {
+        org.santalina.diving.domain.WaitingListEntry.delete("email", email);
     }
 }

@@ -12,6 +12,11 @@ export interface User {
   licenseNumber?: string;
   role: UserRole;
   roles: UserRole[];
+  notifOnRegistration?: boolean;
+  notifOnApproved?: boolean;
+  notifOnCancelled?: boolean;
+  notifOnMovedToWaitlist?: boolean;
+  notifOnDpRegistration?: boolean;
 }
 
 export interface LoginResponse {
@@ -132,6 +137,11 @@ export interface AppConfig {
   defaultSlotHours: number;
   notificationBookingEmail: string;
   maxRecurringMonths: number;
+  notifRegistrationEnabled: boolean;
+  notifApprovedEnabled: boolean;
+  notifCancelledEnabled: boolean;
+  notifMovedToWlEnabled: boolean;
+  notifDpNewRegEnabled: boolean;
 }
 
 // Logs

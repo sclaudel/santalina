@@ -17,14 +17,24 @@ public class UserDto {
             String phone,
             String licenseNumber,
             UserRole role,
-            Set<UserRole> roles
+            Set<UserRole> roles,
+            boolean notifOnRegistration,
+            boolean notifOnApproved,
+            boolean notifOnCancelled,
+            boolean notifOnMovedToWaitlist,
+            boolean notifOnDpRegistration
     ) {
         public static UserResponse from(User user) {
             return new UserResponse(
                     user.id, user.email, user.firstName, user.lastName,
                     user.fullName(), user.phone, user.licenseNumber,
                     user.primaryRole(),
-                    user.roles != null ? user.roles : Set.of(user.role)
+                    user.roles != null ? user.roles : Set.of(user.role),
+                    user.notifOnRegistration,
+                    user.notifOnApproved,
+                    user.notifOnCancelled,
+                    user.notifOnMovedToWaitlist,
+                    user.notifOnDpRegistration
             );
         }
     }
@@ -43,9 +53,18 @@ public class UserDto {
             @NotBlank @Email String email
     ) {}
 
-    /** Remplace UpdateRoleRequest — supporte maintenant plusieurs rôles */
+    /** Réplace UpdateRoleRequest — supporte maintenant plusieurs rôles */
     public record UpdateRolesRequest(
             @NotNull @Size(min = 1) Set<UserRole> roles
+    ) {}
+
+    /** Mise à jour des préférences de notifications e-mail de l'utilisateur connecté. */
+    public record UpdateNotifPrefsRequest(
+            @NotNull Boolean notifOnRegistration,
+            @NotNull Boolean notifOnApproved,
+            @NotNull Boolean notifOnCancelled,
+            @NotNull Boolean notifOnMovedToWaitlist,
+            @NotNull Boolean notifOnDpRegistration
     ) {}
 
     public record CreateUserRequest(

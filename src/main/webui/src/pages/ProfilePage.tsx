@@ -13,6 +13,12 @@ export function ProfilePage() {
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [notifOnRegistration, setNotifOnRegistration] = useState(user?.notifOnRegistration ?? true);
+  const [notifOnApproved, setNotifOnApproved] = useState(user?.notifOnApproved ?? true);
+  const [notifOnCancelled, setNotifOnCancelled] = useState(user?.notifOnCancelled ?? true);
+  const [notifOnMovedToWaitlist, setNotifOnMovedToWaitlist] = useState(user?.notifOnMovedToWaitlist ?? true);
+  const [notifOnDpRegistration, setNotifOnDpRegistration] = useState(user?.notifOnDpRegistration ?? true);
+  const [notifLoading, setNotifLoading] = useState(false);
 
   // Charge le profil complet depuis l'API pour avoir phone & licenseNumber à jour
   useEffect(() => {
@@ -21,6 +27,11 @@ export function ProfilePage() {
       setLastName(profile.lastName   || '');
       setPhone(profile.phone || '');
       setLicenseNumber(profile.licenseNumber || '');
+      setNotifOnRegistration(profile.notifOnRegistration ?? true);
+      setNotifOnApproved(profile.notifOnApproved ?? true);
+      setNotifOnCancelled(profile.notifOnCancelled ?? true);
+      setNotifOnMovedToWaitlist(profile.notifOnMovedToWaitlist ?? true);
+      setNotifOnDpRegistration(profile.notifOnDpRegistration ?? true);
     }).catch(() => {
       // Repli sur les données du contexte si l'API échoue
       setFirstName(user?.firstName || '');
@@ -67,6 +78,18 @@ export function ProfilePage() {
       setError(m || 'Erreur lors du changement de mot de passe');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdateNotifPrefs = async () => {
+    setMsg(''); setError(''); setNotifLoading(true);
+    try {
+      await authService.updateNotifPrefs({ notifOnRegistration, notifOnApproved, notifOnCancelled, notifOnMovedToWaitlist, notifOnDpRegistration });
+      setMsg('Préférences de notification enregistrées.');
+    } catch {
+      setError('Erreur lors de l\'enregistrement des préférences.');
+    } finally {
+      setNotifLoading(false);
     }
   };
 
@@ -144,6 +167,30 @@ export function ProfilePage() {
               {loading ? 'Modification...' : 'Changer le mot de passe'}
             </button>
           </form>
+        </div>
+
+        <div className="profile-section">
+          <h3>🔔 Notifications par e-mail</h3>
+          <p style={{ color: '#6b7280', fontSize: 13, marginBottom: 16 }}>
+            Désactivez les types de notifications que vous ne souhaitez pas recevoir.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
+            {([
+              { label: '📩 Confirmation d\'inscription en liste d\'attente', value: notifOnRegistration, setter: setNotifOnRegistration },
+              { label: '✅ Inscription validée par le directeur de plongée', value: notifOnApproved, setter: setNotifOnApproved },
+              { label: '❌ Inscription annulée ou supprimée', value: notifOnCancelled, setter: setNotifOnCancelled },
+              { label: '⏳ Remis en liste d\'attente', value: notifOnMovedToWaitlist, setter: setNotifOnMovedToWaitlist },
+              { label: '📋 Nouvelles inscriptions sur mes créneaux (en tant que DP / créateur)', value: notifOnDpRegistration, setter: setNotifOnDpRegistration },
+            ] as { label: string; value: boolean; setter: (v: boolean) => void }[]).map(({ label, value, setter }) => (
+              <label key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                <input type="checkbox" checked={value} onChange={e => setter(e.target.checked)} />
+                <span>{label}</span>
+              </label>
+            ))}
+          </div>
+          <button className="btn btn-primary" onClick={handleUpdateNotifPrefs} disabled={notifLoading}>
+            {notifLoading ? '...' : '💾 Enregistrer'}
+          </button>
         </div>
       </div>
     </div>

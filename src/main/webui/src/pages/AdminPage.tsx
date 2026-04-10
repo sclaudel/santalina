@@ -49,6 +49,14 @@ export function AdminPage() {
   const [notificationEmail, setNotificationEmail]       = useState('');
   const [notificationEmailLoading, setNotificationEmailLoading] = useState(false);
 
+  // Paramètres de notification par type
+  const [notifRegistration, setNotifRegistration]     = useState(true);
+  const [notifApproved, setNotifApproved]             = useState(true);
+  const [notifCancelled, setNotifCancelled]           = useState(true);
+  const [notifMovedToWl, setNotifMovedToWl]           = useState(true);
+  const [notifDpNewReg, setNotifDpNewReg]             = useState(true);
+  const [notifSettingsLoading, setNotifSettingsLoading] = useState(false);
+
   // Recherche et pagination utilisateurs
   const [userSearch, setUserSearch]   = useState('');
   const [userPage, setUserPage]       = useState(1);
@@ -89,6 +97,11 @@ export function AdminPage() {
       setBookingOpenHour(c.bookingOpenHour ?? -1);
       setBookingCloseHour(c.bookingCloseHour ?? -1);
       setNotificationEmail(c.notificationBookingEmail ?? '');
+      setNotifRegistration(c.notifRegistrationEnabled ?? true);
+      setNotifApproved(c.notifApprovedEnabled ?? true);
+      setNotifCancelled(c.notifCancelledEnabled ?? true);
+      setNotifMovedToWl(c.notifMovedToWlEnabled ?? true);
+      setNotifDpNewReg(c.notifDpNewRegEnabled ?? true);
     } catch {
       setError('Erreur lors du chargement des données');
     }
@@ -265,6 +278,22 @@ export function AdminPage() {
       setMsg(notificationEmail ? `Email de notification mis à jour : ${notificationEmail}` : 'Notifications désactivées');
     } catch (err: unknown) { setError(getErrorMessage(err)); }
     finally { setNotificationEmailLoading(false); }
+  };
+
+  const handleUpdateNotifSettings = async () => {
+    setMsg(''); setError(''); setNotifSettingsLoading(true);
+    try {
+      const updated = await adminService.updateNotifSettings({
+        notifRegistrationEnabled: notifRegistration,
+        notifApprovedEnabled: notifApproved,
+        notifCancelledEnabled: notifCancelled,
+        notifMovedToWlEnabled: notifMovedToWl,
+        notifDpNewRegEnabled: notifDpNewReg,
+      });
+      setConfig(updated);
+      setMsg('Paramètres de notifications enregistrés.');
+    } catch (err: unknown) { setError(getErrorMessage(err)); }
+    finally { setNotifSettingsLoading(false); }
   };
 
   const toggleCreateRole = (role: UserRole) => {
@@ -563,13 +592,36 @@ export function AdminPage() {
         </div>
       </div>
 
+      {/* ── Notifications par e-mail ── */}
+      <div className="admin-section">
+        <h2>🔔 Notifications par e-mail</h2>
+        <p style={{ color: '#6b7280', fontSize: 13, marginBottom: 16 }}>
+          Activez ou désactivez les notifications par e-mail selon leur type.
+          Lorsqu'une notification est désactivée, son contenu est tracé dans les logs.
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
+          {([
+            { label: '📩 Confirmation d\'inscription en liste d\'attente (→ plongeur)', value: notifRegistration, setter: setNotifRegistration },
+            { label: '✅ Inscription validée (→ plongeur, délai 15 min)', value: notifApproved, setter: setNotifApproved },
+            { label: '❌ Inscription annulée/supprimée (→ plongeur)', value: notifCancelled, setter: setNotifCancelled },
+            { label: '⏳ Remis en liste d\'attente (→ plongeur, délai 15 min)', value: notifMovedToWl, setter: setNotifMovedToWl },
+            { label: '📋 Nouvelles inscriptions sur un créneau (→ directeur de plongée / créateur)', value: notifDpNewReg, setter: setNotifDpNewReg },
+          ] as { label: string; value: boolean; setter: (v: boolean) => void }[]).map(({ label, value, setter }) => (
+            <label key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+              <input type="checkbox" checked={value} onChange={e => setter(e.target.checked)} />
+              <span>{label}</span>
+              <span className={`badge ${value ? 'badge-success' : 'badge-muted'}`}>{value ? 'Activé' : 'Désactivé'}</span>
+            </label>
+          ))}
+        </div>
+        <button className="btn btn-primary" onClick={handleUpdateNotifSettings} disabled={notifSettingsLoading}>
+          {notifSettingsLoading ? '...' : '💾 Enregistrer les paramètres'}
+        </button>
+      </div>
+
       {/* ── Créneaux récurrents ── */}
       <div className="admin-section">
         <h2>🔁 Créneaux récurrents</h2>
-        <p style={{ color: '#6b7280', fontSize: 13, marginBottom: 16 }}>
-          Lors de la création d'un créneau, il est possible de le répéter sur plusieurs semaines.
-          Ce paramètre définit la durée maximale autorisée pour une récurrence.
-        </p>
         {config && (
           <div className="config-item" style={{ marginBottom: 16 }}>
             <span>Durée max actuelle</span>

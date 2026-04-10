@@ -3,6 +3,7 @@ package org.santalina.diving.resource;
 import org.santalina.diving.dto.UserDto.*;
 import org.santalina.diving.dto.AuthDto.LoginResponse;
 import org.santalina.diving.service.UserService;
+import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -25,6 +26,9 @@ public class UserResource {
 
     @Inject
     JsonWebToken jwt;
+
+    @Inject
+    SecurityIdentity identity;
 
     @GET
     @Path("/me")
@@ -87,5 +91,12 @@ public class UserResource {
     @RolesAllowed("ADMIN")
     public UserResponse updateUserAsAdmin(@PathParam("id") Long id, @Valid UpdateUserAdminRequest request) {
         return userService.updateUserAsAdmin(id, request);
+    }
+
+    @PUT
+    @Path("/me/notifications")
+    @RolesAllowed({"DIVER", "DIVE_DIRECTOR", "ADMIN"})
+    public UserResponse updateMyNotifPrefs(@Valid UpdateNotifPrefsRequest request) {
+        return userService.updateNotifPrefs(identity.getPrincipal().getName(), request);
     }
 }

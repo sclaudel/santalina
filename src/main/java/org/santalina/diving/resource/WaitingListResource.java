@@ -8,6 +8,7 @@ import org.santalina.diving.dto.SlotDiverDto.SlotDiverRequest;
 import org.santalina.diving.dto.WaitingListDto.WaitingListRequest;
 import org.santalina.diving.dto.WaitingListDto.WaitingListResponse;
 import org.santalina.diving.mail.WaitingListMailer;
+import org.santalina.diving.service.DelayedNotificationService;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -16,11 +17,12 @@ import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.eclipse.microprofile.jwt.JsonWebToken;
+import io.quarkus.security.identity.SecurityIdentity;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.santalina.diving.security.NameUtil;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -39,10 +41,13 @@ import java.util.List;
 public class WaitingListResource {
 
     @Inject
-    JsonWebToken jwt;
+    SecurityIdentity identity;
 
     @Inject
     WaitingListMailer mailer;
+
+    @Inject
+    DelayedNotificationService delayedNotif;
 
     // -------------------------------------------------------------------------
     // Inscription (plongeur authentifié)
@@ -102,6 +107,11 @@ public class WaitingListResource {
 
         mailer.sendWaitingListConfirmation(entry, slot);
 
+        // Notifier le DP et le créateur de la nouvelle inscription
+        for (String ownerEmail : resolveOwnerEmails(slot)) {
+            mailer.sendNewRegistrationToDP(entry, slot, ownerEmail);
+        }
+
         return Response.status(201).entity(WaitingListResponse.from(entry)).build();
     }
 
@@ -117,7 +127,7 @@ public class WaitingListResource {
         DiveSlot slot = DiveSlot.findById(slotId);
         if (slot == null) throw new NotFoundException("Créneau non trouvé");
 
-        String callerEmail = jwt.getName();
+        String callerEmail = identity.getPrincipal().getName();
         WaitingListEntry entry = WaitingListEntry.findBySlotAndEmail(slotId, callerEmail);
         if (entry == null) {
             return Response.status(404).build();
@@ -181,8 +191,8 @@ public class WaitingListResource {
         diver.aptitudes     = null;  // preparedLevel est informatif uniquement, pas pré-rempli dans les aptitudes
         diver.persist();
 
-        // Envoyer le mail de validation avant suppression
-        mailer.sendRegistrationApproved(entry, slot);
+        // Planifier l'envoi du mail de validation avec le délai de grâce (15 min)
+        delayedNotif.scheduleApprovedMail(slotId, entry.email, entry.firstName, entry.lastName);
 
         // Supprimer de la liste d'attente
         entry.delete();
@@ -208,7 +218,7 @@ public class WaitingListResource {
             throw new NotFoundException("Entrée non trouvée dans la liste d'attente");
         }
 
-        String callerEmail = jwt.getName();
+        String callerEmail = identity.getPrincipal().getName();
         String role        = getRole();
 
         boolean isAdmin = "ADMIN".equals(role);
@@ -221,11 +231,17 @@ public class WaitingListResource {
             throw new ForbiddenException("Vous n'êtes pas autorisé(e) à annuler cette inscription");
         }
 
-        // Envoyer mail au DP si c'est le plongeur qui annule
+        // Envoyer mail au DP et au créateur si c'est le plongeur qui annule
         if (isDiver && !isAdmin && !isSlotOwner) {
-            String dpEmail = resolveDpEmail(slot);
-            if (dpEmail != null) {
-                mailer.sendCancellationToDP(entry, slot, dpEmail);
+            for (String ownerEmail : resolveOwnerEmails(slot)) {
+                mailer.sendCancellationToDP(entry, slot, ownerEmail);
+            }
+        }
+
+        // Envoyer mail au plongeur si c'est le DP ou l'admin qui annule
+        if ((isAdmin || isSlotOwner) && !isDiver) {
+            if (entry.email != null && !entry.email.isBlank()) {
+                mailer.sendCancellationToDiver(entry.email, entry.firstName, entry.lastName, slot);
             }
         }
 
@@ -242,7 +258,7 @@ public class WaitingListResource {
         String role = getRole();
         if ("ADMIN".equals(role)) return;
         if ("DIVE_DIRECTOR".equals(role)) {
-            User current = User.findByEmail(jwt.getName());
+            User current = User.findByEmail(identity.getPrincipal().getName());
             if (current != null) {
                 boolean isCreator = slot.createdBy != null && slot.createdBy.id.equals(current.id);
                 boolean isAssignedDP = SlotDiver.isAssignedDirectorByEmail(slot.id, current.email);
@@ -254,17 +270,22 @@ public class WaitingListResource {
 
     /** Retourne le rôle du JWT. */
     private String getRole() {
-        var groups = jwt.getGroups();
-        return (groups != null && !groups.isEmpty()) ? groups.iterator().next() : "";
+        var roles = identity.getRoles();
+        return (roles != null && !roles.isEmpty()) ? roles.iterator().next() : "";
     }
 
-    /** Cherche l'e-mail du DP : d'abord dans slot_divers(isDirector), sinon createdBy. */
-    private String resolveDpEmail(DiveSlot slot) {
-        SlotDiver dp = SlotDiver.<SlotDiver>find(
-                "slot.id = ?1 and isDirector = true", slot.id).firstResult();
-        if (dp != null && dp.email != null && !dp.email.isBlank()) return dp.email;
-        if (slot.createdBy != null) return slot.createdBy.email;
-        return null;
+    /** Retourne les e-mails uniques du DP assigné et du créateur du créneau. */
+    private List<String> resolveOwnerEmails(DiveSlot slot) {
+        List<String> emails = new ArrayList<>();
+        SlotDiver dp = SlotDiver.<SlotDiver>find("slot.id = ?1 and isDirector = true", slot.id).firstResult();
+        if (dp != null && dp.email != null && !dp.email.isBlank()) {
+            emails.add(dp.email.toLowerCase());
+        }
+        if (slot.createdBy != null && slot.createdBy.email != null && !slot.createdBy.email.isBlank()) {
+            String creatorEmail = slot.createdBy.email.toLowerCase();
+            if (!emails.contains(creatorEmail)) emails.add(creatorEmail);
+        }
+        return emails;
     }
 
     /** Vérifie si un email est déjà présent dans slot_divers pour ce créneau. */
