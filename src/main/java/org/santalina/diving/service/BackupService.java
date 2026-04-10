@@ -302,7 +302,7 @@ public class BackupService {
         return new ImportResult(true,
                 String.format("Import réussi : %d config, %d utilisateurs, %d créneaux, %d plongeurs, %d palanquées, %d liste d'attente",
                         configCount, userCount, slotCount, diverCount, palanqueeCount, waitingListCount),
-                configCount, userCount, slotCount, diverCount, palanqueeCount);
+                configCount, userCount, slotCount, diverCount, palanqueeCount, waitingListCount);
     }
 
     // ---- Mappeurs ----

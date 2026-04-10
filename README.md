@@ -14,13 +14,14 @@ Application de réservation de créneaux de plongée en lac, développée avec *
 - 🛡️ **RGPD** : consentement explicite collecté à l'inscription
 - 👥 **3 rôles** (cumulables) :
   - `ADMIN` 🔑 : configuration, tous les créneaux, gestion des utilisateurs
-  - `DIVE_DIRECTOR` 🤿 : création et suppression de ses propres créneaux, gestion des plongeurs sur ses créneaux et ceux où il est assigné comme DP
+  - `DIVE_DIRECTOR` 🤿 : création et suppression de ses propres créneaux, gestion des plongeurs sur ses créneaux et ceux où il est assigné comme DP, auto-assignation comme DP sur tout créneau sans directeur
   - `DIVER` 🏊 : consultation + inscription libre sur les créneaux ouverts
 - ⏰ **Créneaux** : 1h min, 10h max, résolution 15 min, chevauchements affichés côte à côte
 - 🤿 **Plongeurs** : ajout/modification/suppression (nom, prénom capitalisé, niveau) sur chaque créneau
 - 🎯 **Capacité configurable** : max 25 plongeurs simultanés (modifiable par l'admin)
 - 📋 **Liste d'attente** : inscription libre pour les plongeurs (DIVER/DIVE_DIRECTOR non créateur), validation/refus par le DP responsable, badge de notification
-- 🔓 **Inscriptions libres** : le DP peut ouvrir les inscriptions avec une date d'ouverture optionnelle — les plongeurs s'inscrivent eux-mêmes et peuvent annuler leur inscription (avertissement si < 48 h avant la sortie)
+- 🔓 **Inscriptions libres** : le DP assigné (ou le créateur du créneau) peut ouvrir les inscriptions avec une date d'ouverture optionnelle — les plongeurs s'inscrivent eux-mêmes et peuvent annuler leur inscription (avertissement si < 48 h avant la sortie)
+- 🤿 **Auto-assignation DP** : un directeur de plongée peut se désigner lui-même comme DP sur n'importe quel créneau sans directeur, depuis le panneau de détails du calendrier, sans passer par le formulaire d'ajout
 - 🗂️ **Organisation des palanquées** : drag-and-drop, gestion des aptitudes/profondeurs, export Excel fiche de sécurité, export CSV liste des plongeurs avec emails
 - 🔒 **Normalisation des données** : prénoms capitalisés (composés inclus), emails en minuscules — à la saisie et à l'import backup
 - 🐳 **Docker-ready** : Dockerfile multi-stage + docker-compose

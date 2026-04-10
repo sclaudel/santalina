@@ -169,6 +169,18 @@ export function HelpPage() {
             <li>Cochez <strong>Directeur de plongée</strong> et renseignez les coordonnées.</li>
             <li>Cliquez sur <strong>Enregistrer</strong>.</li>
           </ol>
+          <h4>S'auto-assigner comme directeur (depuis le calendrier)</h4>
+          <p>
+            Si un créneau n'a pas encore de directeur de plongée, tout directeur de plongée peut
+            s'y désigner directement depuis le panneau de détails du créneau.
+          </p>
+          <ol>
+            <li>Ouvrez le créneau (il doit être <strong>sans directeur</strong> actuellement).</li>
+            <li>Cliquez sur le bouton <strong>🤿 M'assigner comme DP sur ce créneau</strong>.</li>
+            <li>Vos informations de profil (prénom, nom, email, téléphone, n° de licence) sont utilisées automatiquement.</li>
+            <li>Une fois assigné, vous pouvez <strong>configurer les inscriptions libres</strong> et gérer les plongeurs du créneau.</li>
+          </ol>
+          <div className="help-tip">💡 Ce bouton n'est visible que si le créneau n'a pas encore de DP. Il apparaît indépendamment de l'état des inscriptions libres. Votre <strong>numéro de téléphone</strong> est repris directement depuis <strong>Mon profil</strong> — assurez-vous qu'il est bien renseigné avant de vous assigner.</div>
           <div className="help-tip">💡 Les coordonnées du directeur (email, téléphone, N° de licence) sont exportées dans la fiche de sécurité Excel. La licence s'affiche sur la même ligne que le nom et le niveau : ex. <code>DUPONT Jean - MF2 - 12345678A</code>.</div>
         </>
       ),
@@ -318,6 +330,7 @@ export function HelpPage() {
             </li>
             <li>Cliquez sur <strong>✓ Enregistrer</strong>.</li>
           </ol>
+          <div className="help-tip">💡 Le bouton « Configurer les inscriptions libres » n'est visible que pour le <strong>directeur de plongée assigné</strong> sur le créneau ou son <strong>créateur</strong>. Si vous n'êtes pas encore assigné comme DP, utilisez d'abord le bouton 🤿 M'assigner comme DP.</div>
 
           <h4>Gérer la liste d'attente</h4>
           <p>
@@ -355,6 +368,44 @@ export function HelpPage() {
             <li>Le plongeur est retiré de sa palanquée et replacé en liste d'attente.</li>
             <li>Il reçoit un e-mail de notification après un délai de 15 minutes.</li>
           </ol>
+        </>
+      ),
+    },
+
+    // ── SAUVEGARDE & RESTAURATION (ADMIN) ───────────────────────────────────
+    {
+      id: 'sauvegarde',
+      icon: '💾',
+      title: 'Sauvegarde et restauration',
+      roles: ['ADMIN'],
+      content: (
+        <>
+          <p>La section <strong>💾 Sauvegarde</strong> est accessible via le menu utilisateur → <strong>⚙️ Administration → onglet Sauvegarde</strong>.</p>
+
+          <h4>Exporter une sauvegarde complète</h4>
+          <p>Exporte l'intégralité des données : configuration, utilisateurs, créneaux, plongeurs, palanquées et listes d'attente.</p>
+          <ol>
+            <li>Cliquez sur <strong>💾 Exporter une sauvegarde complète</strong>.</li>
+            <li>Un fichier <code>.json</code> est téléchargé automatiquement (<code>santalina-full-AAAA-MM-JJ.json</code>).</li>
+          </ol>
+          <div className="help-tip">💡 À utiliser avant une mise à jour importante ou pour migrer l'application vers un nouveau serveur.</div>
+
+          <h4>Exporter configuration + utilisateurs</h4>
+          <p>Exporte uniquement la configuration de l'application et les comptes utilisateurs (sans créneaux, plongeurs ni listes d'attente).</p>
+          <ol>
+            <li>Cliquez sur <strong>📋 Exporter configuration + utilisateurs</strong>.</li>
+            <li>Un fichier <code>santalina-config-users-AAAA-MM-JJ.json</code> est téléchargé.</li>
+          </ol>
+          <div className="help-tip">💡 Pratique pour réinitialiser les données plongée tout en conservant les comptes et la configuration du site.</div>
+
+          <h4>Importer une sauvegarde</h4>
+          <p>Restaure une sauvegarde précédemment exportée.</p>
+          <ol>
+            <li>Cliquez sur <strong>📂 Choisir un fichier</strong> et sélectionnez le fichier <code>.json</code>.</li>
+            <li>Cliquez sur <strong>⬆️ Importer</strong>.</li>
+            <li>Un résumé indique le nombre d'éléments restaurés (config, utilisateurs, créneaux, plongeurs, palanquées, listes d'attente).</li>
+          </ol>
+          <div className="help-warning">⚠️ L'import est irréversible : toutes les données existantes sont supprimées avant la restauration. Effectuez une sauvegarde complète juste avant si nécessaire.</div>
         </>
       ),
     },
@@ -632,6 +683,15 @@ export function HelpPage() {
           { type: 'ol' as const, items: ['Dans le formulaire d\'ajout, cochez 🎖 Directeur de plongée sur ce créneau.', 'Renseignez son email et son téléphone (obligatoires).', 'Renseignez optionnellement son N° de licence (prérempli automatiquement si le DP est sélectionné depuis la recherche d\'utilisateurs).', 'Cliquez sur Ajouter.'] },
           { type: 'h4' as const, text: 'Sur un plongeur déjà inscrit' },
           { type: 'ol' as const, items: ['Dans la liste des plongeurs, cliquez sur l\'icône ✏️ à côté du nom.', 'Cochez Directeur de plongée et renseignez les coordonnées.', 'Cliquez sur Enregistrer.'] },
+          { type: 'h4' as const, text: 'S\'auto-assigner comme directeur (depuis le calendrier)' },
+          { type: 'paragraph' as const, text: 'Si un créneau n\'a pas encore de directeur, tout directeur de plongée peut s\'y désigner directement depuis le panneau de détails.' },
+          { type: 'ol' as const, items: [
+            'Ouvrez le créneau (il doit être sans directeur actuellement).',
+            'Cliquez sur le bouton 🤿 M\'assigner comme DP sur ce créneau.',
+            'Vos informations de profil (prénom, nom, email, téléphone, N° de licence) sont utilisées automatiquement.',
+            'Une fois assigné, vous pouvez configurer les inscriptions libres et gérer les plongeurs.',
+          ] },
+          { type: 'tip' as const, text: 'Votre numéro de téléphone est repris directement depuis Mon profil. Assurez-vous qu\'il est renseigné avant de vous assigner comme DP.' },
           { type: 'tip' as const, text: 'Les coordonnées du directeur (email, téléphone, N° licence) sont exportées dans la fiche de sécurité. La licence apparaît sur la ligne DP : NOM Prénom - Niveau - 12345678A.' },
         ],
       },
@@ -720,6 +780,21 @@ export function HelpPage() {
           { type: 'ul' as const, items: ['Types de plongée — ex : Exploration, Formation, Apnée.', 'Clubs — liste des clubs participants.'] },
           { type: 'h4' as const, text: 'Accès & inscriptions' },
           { type: 'ul' as const, items: ['Accès public au calendrier — si désactivé, les visiteurs non connectés voient une page de connexion.', 'Inscription libre — si désactivé, seul un administrateur peut créer des comptes.'] },
+        ],
+      },
+      {
+        icon: '💾', title: 'Sauvegarde et restauration',
+        items: [
+          { type: 'paragraph' as const, text: 'Section accessible dans Administration → onglet Sauvegarde.' },
+          { type: 'h4' as const, text: 'Exporter une sauvegarde complète' },
+          { type: 'paragraph' as const, text: 'Exporte tout : configuration, utilisateurs, créneaux, plongeurs, palanquées et listes d\'attente.' },
+          { type: 'ol' as const, items: ['Cliquez sur Exporter une sauvegarde complète.', 'Le fichier santalina-full-AAAA-MM-JJ.json est téléchargé.'] },
+          { type: 'h4' as const, text: 'Exporter configuration + utilisateurs' },
+          { type: 'paragraph' as const, text: 'Exporte la configuration et les comptes utilisateurs uniquement (sans créneaux ni listes d\'attente).' },
+          { type: 'ol' as const, items: ['Cliquez sur Exporter configuration + utilisateurs.', 'Le fichier santalina-config-users-AAAA-MM-JJ.json est téléchargé.'] },
+          { type: 'h4' as const, text: 'Importer une sauvegarde' },
+          { type: 'ol' as const, items: ['Cliquez sur Choisir un fichier et sélectionnez le fichier .json.', 'Cliquez sur Importer.', 'Un résumé indique le nombre d\'éléments restaurés.'] },
+          { type: 'warning' as const, text: 'L\'import est irréversible : toutes les données existantes sont supprimées avant la restauration.' },
         ],
       },
     ] : []),

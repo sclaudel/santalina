@@ -162,6 +162,7 @@ export interface ImportResult {
   slotsRestored: number;
   diversRestored: number;
   palanqueesRestored: number;
+  waitingListRestored: number;
 }
 
 export interface PeriodStat {

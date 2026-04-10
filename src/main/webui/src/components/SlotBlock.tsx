@@ -6,6 +6,7 @@ import { slotService } from '../services/slotService';
 import { adminService } from '../services/adminService';
 import { palanqueeService } from '../services/palanqueeService';
 import { waitingListService } from '../services/waitingListService';
+import { useAuth } from '../context/AuthContext';
 import { getSlotTypeStyle } from '../utils/slotTypeColors';
 import { SelfRegistrationModal } from './SelfRegistrationModal';
 
@@ -96,6 +97,7 @@ export function SlotBlock({
   slot, height, onDelete, onRefresh, onOpenPalanquees,
   canEdit, currentUserId, currentUserRole, maxDivers = 25, config,
 }: Props) {
+  const { user: currentUser } = useAuth();
   const [showTooltip, setShowTooltip]         = useState(false);
   const [showDiverForm, setShowDiverForm]     = useState(false);
   const [tooltipStyle, setTooltipStyle]       = useState<React.CSSProperties>({});
@@ -150,6 +152,10 @@ export function SlotBlock({
   // Auto-désinscription depuis la liste des inscrits
   const [cancelingMyDiverEntry, setCancelingMyDiverEntry] = useState(false);
   const [cancelMyDiverError, setCancelMyDiverError] = useState('');
+
+  // Auto-assignation comme directeur de plongée
+  const [selfAssigning, setSelfAssigning]       = useState(false);
+  const [selfAssignError, setSelfAssignError]   = useState('');
 
   // Paramètres d'inscription (DIVE_DIRECTOR / ADMIN)
   const [regOpen, setRegOpen]           = useState(slot.registrationOpen);
@@ -471,6 +477,33 @@ export function SlotBlock({
     if (!slot.registrationOpensAt) return true;
     return new Date() >= new Date(slot.registrationOpensAt);
   })();
+
+  const handleSelfAssignDP = async () => {
+    if (!currentUser) { setSelfAssignError("Utilisateur non connecté"); return; }
+    const phone = currentUser.phone ?? '';
+    if (!phone.trim()) {
+      setSelfAssignError("Votre profil ne contient pas de numéro de téléphone. Veuillez le renseigner dans Mon profil avant de vous assigner comme DP.");
+      return;
+    }
+    setSelfAssigning(true); setSelfAssignError('');
+    try {
+      const d = await slotDiverService.add(slot.id, {
+        firstName:     currentUser.firstName,
+        lastName:      currentUser.lastName,
+        level:         'Directeur de plongée',
+        email:         currentUser.email,
+        phone,
+        isDirector:    true,
+        aptitudes:     '',
+        licenseNumber: currentUser.licenseNumber ?? '',
+      });
+      setDivers(prev => [d, ...prev]);
+      onRefresh();
+    } catch (err: unknown) {
+      const m = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setSelfAssignError(m || "Erreur lors de l'assignation");
+    } finally { setSelfAssigning(false); }
+  };
 
   // ---- Hover tooltip (desktop uniquement, lecture seule) ----
   const hoverTooltipContent = (showHoverTooltip && !showTooltip) ? createPortal(
@@ -942,6 +975,20 @@ export function SlotBlock({
           </div>
         );
       })()}
+
+      {/* ── Auto-assignation DP (DIVE_DIRECTOR non encore assigné, créneau sans directeur) ── */}
+      {!hasDirector && currentUserRole === 'DIVE_DIRECTOR' && !canEditThisSlot && (
+        <div className="slot-selfassign-dp">
+          <button
+            className="btn btn-primary slot-selfassign-btn"
+            onClick={handleSelfAssignDP}
+            disabled={selfAssigning}
+          >
+            {selfAssigning ? '⏳ Assignation…' : '🤿 M\'assigner comme DP sur ce créneau'}
+          </button>
+          {selfAssignError && <div className="diver-form-error">{selfAssignError}</div>}
+        </div>
+      )}
 
       {/* ── Gestion inscriptions libres (DP / ADMIN) ── */}
       {canEditThisSlot && (

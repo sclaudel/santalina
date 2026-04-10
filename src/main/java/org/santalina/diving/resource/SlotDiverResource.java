@@ -67,7 +67,12 @@ public class SlotDiverResource {
             User currentUser = User.findByEmail(identity.getPrincipal().getName());
             boolean isCreator = currentUser != null && slot.createdBy != null && slot.createdBy.id.equals(currentUser.id);
             boolean isAssignedDP = currentUser != null && SlotDiver.isAssignedDirectorByEmail(slotId, currentUser.email);
-            if (!isCreator && !isAssignedDP) {
+            // Autoriser l'auto-assignation : un DP peut se désigner lui-même comme directeur
+            boolean isSelfAssigning = request.isDirector()
+                    && request.email() != null
+                    && currentUser != null
+                    && request.email().equalsIgnoreCase(currentUser.email);
+            if (!isCreator && !isAssignedDP && !isSelfAssigning) {
                 throw new ForbiddenException("Vous ne pouvez modifier que vos propres créneaux");
             }
         }

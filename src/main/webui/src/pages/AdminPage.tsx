@@ -781,7 +781,8 @@ export function AdminPage() {
               {importResult.success && (
                 <span style={{ marginLeft: 8, opacity: 0.8 }}>
                   ({importResult.configRestored} config, {importResult.usersRestored} utilisateurs,
-                  {importResult.slotsRestored} créneaux, {importResult.diversRestored} plongeurs, {importResult.palanqueesRestored} palanquées)
+                  {importResult.slotsRestored} créneaux, {importResult.diversRestored} plongeurs,
+                  {importResult.palanqueesRestored} palanquées, {importResult.waitingListRestored} liste d'attente)
                 </span>
               )}
             </div>

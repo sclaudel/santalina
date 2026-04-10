@@ -104,7 +104,8 @@ public class BackupDto {
             int usersRestored,
             int slotsRestored,
             int diversRestored,
-            int palanqueesRestored
+            int palanqueesRestored,
+            int waitingListRestored
     ) {}
 }
 

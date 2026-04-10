@@ -1984,3 +1984,27 @@ body {
   .palanquee-board { display: none; } /* remplacé par la vue mobile */
   .palanquee-column { flex: none; width: 100%; min-width: unset; }
 }
+
+/* ── Bouton auto-assignation DP ── */
+.slot-selfassign-dp {
+  margin: 8px 0 4px;
+  padding: 10px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+}
+.slot-selfassign-btn {
+  width: 100%;
+  font-size: 13px;
+  padding: 8px 12px;
+}
+.slot-selfassign-phone-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.slot-selfassign-phone-label {
+  font-size: 12px;
+  color: #374151;
+  margin: 0 0 2px;
+}

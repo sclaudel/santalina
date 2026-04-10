@@ -317,4 +317,102 @@ class SlotDiverResourceIT {
     void cleanupWlByEmail(String email) {
         org.santalina.diving.domain.WaitingListEntry.delete("email", email);
     }
+
+    // ── fixtures pour les tests d'auto-assignation ────────────────────────────
+
+    /** Crée un créneau sans directeur assigné, créé par un autre utilisateur. */
+    @Transactional
+    DiveSlot createEmptySlotByOther(String creatorEmail) {
+        User creator = new User();
+        creator.email        = creatorEmail;
+        creator.firstName    = "Other";
+        creator.lastName     = "CREATOR";
+        creator.passwordHash = "x";
+        creator.activated    = true;
+        creator.role         = UserRole.DIVE_DIRECTOR;
+        creator.roles        = java.util.Set.of(UserRole.DIVE_DIRECTOR);
+        creator.persist();
+
+        DiveSlot slot = new DiveSlot();
+        slot.slotDate   = LocalDate.of(2099, 11, 1);
+        slot.startTime  = LocalTime.of(9, 0);
+        slot.endTime    = LocalTime.of(12, 0);
+        slot.diverCount = 10;
+        slot.createdBy  = creator;
+        slot.persist();
+        return slot;
+    }
+
+    /** Crée un utilisateur DIVE_DIRECTOR sans le lier à un créneau. */
+    @Transactional
+    void createDpUser(String email) {
+        User u = new User();
+        u.email        = email;
+        u.firstName    = "Dp";
+        u.lastName     = "SELFASSIGN";
+        u.passwordHash = "x";
+        u.activated    = true;
+        u.role         = UserRole.DIVE_DIRECTOR;
+        u.roles        = java.util.Set.of(UserRole.DIVE_DIRECTOR);
+        u.persist();
+    }
+
+    @Transactional
+    void deleteUserByEmail(String email) {
+        User u = User.findByEmail(email);
+        if (u != null) u.delete();
+    }
+
+    // ── Auto-assignation DP ──────────────────────────────────────────────────
+
+    /**
+     * Un DIVE_DIRECTOR peut s'auto-assigner comme directeur sur un créneau
+     * qui n'a pas encore de DP, même s'il n'en est pas le créateur.
+     */
+    @Test
+    @TestSecurity(user = "dp_selfassign@test.com", roles = {"DIVE_DIRECTOR"})
+    void addDiver_shouldAllow_selfAssignAsDirector_onSlotWithNoDP() {
+        createDpUser("dp_selfassign@test.com");
+        DiveSlot slot = createEmptySlotByOther("dp_sa_other_" + System.nanoTime() + "@test.com");
+        try {
+            given()
+                .contentType(ContentType.JSON)
+                .body("""
+                      {"firstName":"Bob","lastName":"SELFASSIGN",
+                       "level":"MF2","isDirector":true,
+                       "email":"dp_selfassign@test.com","phone":"0600000001"}
+                      """)
+                .when().post("/api/slots/" + slot.id + "/divers")
+                .then()
+                .statusCode(201)
+                .body("isDirector", equalTo(true))
+                .body("email", equalTo("dp_selfassign@test.com"));
+        } finally {
+            cleanup(slot.id);
+            deleteUserByEmail("dp_selfassign@test.com");
+        }
+    }
+
+    /**
+     * Un DIVE_DIRECTOR qui n'est ni créateur ni DP assigné sur un créneau
+     * ne peut pas y ajouter un plongeur (403).
+     */
+    @Test
+    @TestSecurity(user = "dp_notowner@test.com", roles = {"DIVE_DIRECTOR"})
+    void addDiver_shouldReturn403_forDirectorWhoIsNotCreatorOrAssignedDP() {
+        DiveSlot slot = createSlotWithDp("dp_owner_" + System.nanoTime() + "@test.com");
+        try {
+            given()
+                .contentType(ContentType.JSON)
+                .body("""
+                      {"firstName":"Charlie","lastName":"LEGRAND",
+                       "level":"N2","isDirector":false}
+                      """)
+                .when().post("/api/slots/" + slot.id + "/divers")
+                .then()
+                .statusCode(403);
+        } finally {
+            cleanup(slot.id);
+        }
+    }
 }

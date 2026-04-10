@@ -169,6 +169,9 @@ public class WaitingListMailer {
             + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Cr\u00e9neau :</td><td style=\"padding:4px 8px;\"><strong>" + slotLabel + "</strong></td></tr>"
             + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Date :</td><td style=\"padding:4px 8px;\">" + slot.slotDate + "</td></tr>"
             + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Horaire :</td><td style=\"padding:4px 8px;\">" + slot.startTime + " \u2013 " + slot.endTime + "</td></tr>"
+            + (entry.comment != null && !entry.comment.isBlank()
+                ? "<tr><td style=\"padding:4px 8px;color:#6b7280;vertical-align:top;\">Commentaire :</td><td style=\"padding:4px 8px;\">" + entry.comment + "</td></tr>"
+                : "")
             + "</table>"
             + "<p style=\"color:#6b7280;font-size:13px;\">Connectez-vous pour valider ou refuser cette demande depuis la gestion du cr\u00e9neau.</p>"
             + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, connectez-vous et modifiez vos pr\u00e9f\u00e9rences dans votre <strong>Profil</strong> \u2192 <em>Notifications par e-mail</em>.</p>"
