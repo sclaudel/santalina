@@ -158,6 +158,24 @@ public class SlotDiverResource {
         return SlotDiverResponse.from(diver);
     }
 
+    // DELETE /api/slots/{slotId}/divers/me — auto-désinscription (tout rôle authentifié)
+    @DELETE
+    @Path("/me")
+    @Transactional
+    @RolesAllowed({"ADMIN", "DIVE_DIRECTOR", "DIVER"})
+    public Response cancelMyRegistration(@PathParam("slotId") Long slotId) {
+        String callerEmail = jwt.getName();
+        SlotDiver diver = SlotDiver.findBySlotAndEmail(slotId, callerEmail);
+        if (diver == null) {
+            throw new NotFoundException("Vous n'êtes pas inscrit sur ce créneau");
+        }
+        if (diver.isDirector) {
+            throw new BadRequestException("Le directeur de plongée assigné au créneau ne peut pas se désinscrire via cette voie");
+        }
+        diver.delete();
+        return Response.noContent().build();
+    }
+
     // DELETE /api/slots/{slotId}/divers/{diverId} — ADMIN ou DIVE_DIRECTOR
     @DELETE
     @Path("/{diverId}")

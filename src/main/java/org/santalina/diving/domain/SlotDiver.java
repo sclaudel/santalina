@@ -87,4 +87,10 @@ public class SlotDiver extends PanacheEntityBase {
         if (email == null || email.isBlank()) return false;
         return count("slot.id = ?1 and isDirector = true and lower(email) = lower(?2)", slotId, email) > 0;
     }
+
+    /** Retourne l'entrée d'un email pour un créneau donné (non-directeur). */
+    public static SlotDiver findBySlotAndEmail(Long slotId, String email) {
+        if (email == null || email.isBlank()) return null;
+        return find("slot.id = ?1 and lower(email) = lower(?2)", slotId, email).firstResult();
+    }
 }

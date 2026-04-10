@@ -147,6 +147,9 @@ export function SlotBlock({
   const [myWaitingEntry, setMyWaitingEntry] = useState<import('../types').WaitingListEntry | null | undefined>(undefined);
   const [cancelingMyEntry, setCancelingMyEntry] = useState(false);
   const [cancelMyEntryError, setCancelMyEntryError] = useState('');
+  // Auto-désinscription depuis la liste des inscrits
+  const [cancelingMyDiverEntry, setCancelingMyDiverEntry] = useState(false);
+  const [cancelMyDiverError, setCancelMyDiverError] = useState('');
 
   // Paramètres d'inscription (DIVE_DIRECTOR / ADMIN)
   const [regOpen, setRegOpen]           = useState(slot.registrationOpen);
@@ -433,6 +436,9 @@ export function SlotBlock({
   };
 
   const handleRemoveDiver = async (diverId: number) => {
+    const diver = divers.find(d => d.id === diverId);
+    const name = diver ? `${diver.firstName} ${diver.lastName}` : 'ce plongeur';
+    if (!window.confirm(`Retirer ${name} du cr\u00e9neau\u00a0?`)) return;
     try {
       await slotDiverService.remove(slot.id, diverId);
       setDivers(prev => prev.filter(d => d.id !== diverId));
@@ -836,60 +842,106 @@ export function SlotBlock({
       )}
 
       {/* ── Inscriptions libres (DIVER ou DIVE_DIRECTOR non créateur) ── */}
-      {(currentUserRole === 'DIVER' || (currentUserRole === 'DIVE_DIRECTOR' && !canEditThisSlot)) && (
-        <div style={{ padding: '6px 0 2px' }}>
-          {!hasDirector ? (
-            // Pas encore de directeur sur ce créneau — inscription non disponible
-            <div className="slot-tooltip-empty" style={{ textAlign: 'center', padding: '8px 0' }}>
-              ℹ️ Aucun directeur de plongée assigné à ce créneau
-            </div>
-          ) : myWaitingEntry ? (
-            // Déjà inscrit en liste d'attente
-            <div className="slot-waiting-own-entry">
-              <div className="slot-waiting-own-entry-label">
-                📌 Vous êtes en liste d'attente (à partir du{' '}
-                {new Date(myWaitingEntry.registeredAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })})
+      {(currentUserRole === 'DIVER' || (currentUserRole === 'DIVE_DIRECTOR' && !canEditThisSlot)) && (() => {
+        const myDiverEntry = divers.find(d => d.userId != null && d.userId === currentUserId) ?? null;
+        const slotStart = slot.slotDate && slot.startTime
+          ? new Date(`${slot.slotDate}T${slot.startTime}:00`)
+          : null;
+        const hoursUntil = slotStart ? (slotStart.getTime() - Date.now()) / 3_600_000 : Infinity;
+        const isWithin48h = hoursUntil >= 0 && hoursUntil < 48;
+        return (
+          <div style={{ padding: '6px 0 2px' }}>
+            {!hasDirector ? (
+              // Pas encore de directeur sur ce créneau — inscription non disponible
+              <div className="slot-tooltip-empty" style={{ textAlign: 'center', padding: '8px 0' }}>
+                ℹ️ Aucun directeur de plongée assigné à ce créneau
               </div>
-              {cancelMyEntryError && (
-                <div className="diver-form-error" style={{ marginBottom: 6 }}>{cancelMyEntryError}</div>
-              )}
+            ) : myDiverEntry ? (
+              // Déjà inscrit directement
+              <div className="slot-waiting-own-entry">
+                <div className="slot-waiting-own-entry-label">
+                  ✅ Vous êtes inscrit(e) sur ce créneau
+                </div>
+                {isWithin48h && (
+                  <div className="diver-form-error" style={{ marginBottom: 6 }}>
+                    ⚠️ Attention : la sortie est dans moins de 48h. Votre annulation aura un impact sur l’organisation.
+                  </div>
+                )}
+                {cancelMyDiverError && (
+                  <div className="diver-form-error" style={{ marginBottom: 6 }}>{cancelMyDiverError}</div>
+                )}
+                <button
+                  className="btn-cancel-own-entry"
+                  disabled={cancelingMyDiverEntry}
+                  onClick={async () => {
+                    const warn = isWithin48h
+                      ? '⚠️ La sortie est dans moins de 48h. Votre annulation aura un impact sur l’organisation.\n\nConfirmer l’annulation ?'
+                      : 'Annuler votre inscription sur ce créneau ?';
+                    if (!window.confirm(warn)) return;
+                    setCancelingMyDiverEntry(true);
+                    setCancelMyDiverError('');
+                    try {
+                      await slotDiverService.cancelMe(slot.id);
+                      setDivers(prev => prev.filter(d => d.id !== myDiverEntry.id));
+                      onRefresh();
+                    } catch {
+                      setCancelMyDiverError('Erreur lors de l’annulation. Veuillez réessayer.');
+                    } finally {
+                      setCancelingMyDiverEntry(false);
+                    }
+                  }}
+                >
+                  {cancelingMyDiverEntry ? '…' : '✕ Annuler mon inscription'}
+                </button>
+              </div>
+            ) : myWaitingEntry ? (
+              // Déjà inscrit en liste d’attente
+              <div className="slot-waiting-own-entry">
+                <div className="slot-waiting-own-entry-label">
+                  📌 Vous êtes en liste d’attente (à partir du{' '}
+                  {new Date(myWaitingEntry.registeredAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })})
+                </div>
+                {cancelMyEntryError && (
+                  <div className="diver-form-error" style={{ marginBottom: 6 }}>{cancelMyEntryError}</div>
+                )}
+                <button
+                  className="btn-cancel-own-entry"
+                  disabled={cancelingMyEntry}
+                  onClick={async () => {
+                    if (!window.confirm('Annuler votre inscription en liste d’attente ?')) return;
+                    setCancelingMyEntry(true);
+                    setCancelMyEntryError('');
+                    try {
+                      await waitingListService.cancel(slot.id, myWaitingEntry.id);
+                      setMyWaitingEntry(null);
+                    } catch {
+                      setCancelMyEntryError('Erreur lors de l’annulation. Veuillez réessayer.');
+                    } finally {
+                      setCancelingMyEntry(false);
+                    }
+                  }}
+                >
+                  {cancelingMyEntry ? '…' : '✕ Annuler mon inscription'}
+                </button>
+              </div>
+            ) : myWaitingEntry === null && isRegNowOpen ? (
+              // Pas encore inscrit et inscriptions ouvertes
               <button
-                className="btn-cancel-own-entry"
-                disabled={cancelingMyEntry}
-                onClick={async () => {
-                  if (!window.confirm('Annuler votre inscription en liste d’attente\u00a0?')) return;
-                  setCancelingMyEntry(true);
-                  setCancelMyEntryError('');
-                  try {
-                    await waitingListService.cancel(slot.id, myWaitingEntry.id);
-                    setMyWaitingEntry(null);
-                  } catch {
-                    setCancelMyEntryError('Erreur lors de l’annulation. Veuillez réessayer.');
-                  } finally {
-                    setCancelingMyEntry(false);
-                  }
-                }}
+                className="btn btn-primary"
+                style={{ width: '100%', justifyContent: 'center', padding: '10px 16px', fontSize: 14, fontWeight: 600 }}
+                onClick={() => setShowSelfRegModal(true)}
               >
-                {cancelingMyEntry ? '…' : '✕ Annuler mon inscription'}
+                S’inscrire
               </button>
-            </div>
-          ) : !myWaitingEntry && isRegNowOpen ? (
-            // Pas encore inscrit et inscriptions ouvertes
-            <button
-              className="btn btn-primary"
-              style={{ width: '100%', justifyContent: 'center', padding: '10px 16px', fontSize: 14, fontWeight: 600 }}
-              onClick={() => setShowSelfRegModal(true)}
-            >
-              S'inscrire
-            </button>
-          ) : !myWaitingEntry && !isRegNowOpen ? (
-            // Inscriptions fermées
-            <div className="slot-tooltip-empty" style={{ textAlign: 'center', padding: '8px 0' }}>
-              🔒 Inscriptions non encore ouvertes
-            </div>
-          ) : null /* chargement */ }
-        </div>
-      )}
+            ) : myWaitingEntry === null && !isRegNowOpen ? (
+              // Inscriptions fermées
+              <div className="slot-tooltip-empty" style={{ textAlign: 'center', padding: '8px 0' }}>
+                🔒 Inscriptions non encore ouvertes
+              </div>
+            ) : null}
+          </div>
+        );
+      })()}
 
       {/* ── Gestion inscriptions libres (DP / ADMIN) ── */}
       {canEditThisSlot && (

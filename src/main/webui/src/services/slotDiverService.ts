@@ -13,4 +13,8 @@ export const slotDiverService = {
 
   remove: (slotId: number, diverId: number): Promise<void> =>
     api.delete(`/slots/${slotId}/divers/${diverId}`).then(r => r.data),
+
+  /** Auto-désinscription du plongeur connecté. */
+  cancelMe: (slotId: number): Promise<void> =>
+    api.delete(`/slots/${slotId}/divers/me`).then(r => r.data),
 };

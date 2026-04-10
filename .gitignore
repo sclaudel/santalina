@@ -24,6 +24,10 @@ deploy/.env
 src/main/webui/node_modules/
 src/main/webui/dist/
 
+# Frontend buildé (généré par npm run build → ne pas commiter)
+src/main/resources/META-INF/resources/assets/
+src/main/resources/META-INF/resources/index.html
+
 # Base de données locale H2
 data/
 
