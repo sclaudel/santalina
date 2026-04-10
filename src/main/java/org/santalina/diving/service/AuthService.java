@@ -7,6 +7,7 @@ import org.santalina.diving.dto.AuthDto.*;
 import org.santalina.diving.mail.ActivationMailer;
 import org.santalina.diving.mail.PasswordResetMailer;
 import org.santalina.diving.security.JwtUtil;
+import org.santalina.diving.security.NameUtil;
 import org.santalina.diving.security.PasswordUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -60,8 +61,8 @@ public class AuthService {
         }
         String activationToken = UUID.randomUUID().toString();
         User user = new User();
-        user.email                 = request.email();
-        user.firstName             = request.firstName().trim();
+        user.email                 = request.email().trim().toLowerCase();
+        user.firstName             = NameUtil.capitalize(request.firstName().trim());
         user.lastName              = request.lastName().trim().toUpperCase();
         user.phone                 = request.phone();
         user.consentGiven          = request.consentGiven();
@@ -104,14 +105,15 @@ public class AuthService {
 
     @Transactional
     public LoginResponse login(LoginRequest request) {
-        User user = User.findByEmail(request.email());
+        String normalizedEmail = request.email() != null ? request.email().trim().toLowerCase() : null;
+        User user = User.findByEmail(normalizedEmail);
         if (user == null || user.passwordHash == null
                 || !PasswordUtil.verify(request.password(), user.passwordHash)) {
-            LOG.warnf("Échec de connexion pour : %s", request.email());
+            LOG.warnf("Échec de connexion pour : %s", normalizedEmail);
             throw new NotAuthorizedException("Email ou mot de passe incorrect");
         }
         if (!user.activated) {
-            LOG.warnf("Tentative de connexion d'un compte non activé : %s", request.email());
+            LOG.warnf("Tentative de connexion d'un compte non activé : %s", normalizedEmail);
             throw new BadRequestException("Compte non activé. Vérifiez votre email.");
         }
         // Synchroniser roles depuis role si vide (migration)

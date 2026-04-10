@@ -18,6 +18,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.santalina.diving.security.NameUtil;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -89,7 +90,7 @@ public class WaitingListResource {
 
         WaitingListEntry entry = new WaitingListEntry();
         entry.slot          = slot;
-        entry.firstName     = request.firstName().trim();
+        entry.firstName     = NameUtil.capitalize(request.firstName().trim());
         entry.lastName      = request.lastName().trim().toUpperCase();
         entry.email         = request.email().trim().toLowerCase();
         entry.level         = request.level();

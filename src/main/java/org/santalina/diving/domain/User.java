@@ -94,7 +94,8 @@ public class User extends PanacheEntityBase {
     // ---- Panache finders ----
 
     public static User findByEmail(String email) {
-        return find("email", email).firstResult();
+        if (email == null || email.isBlank()) return null;
+        return find("lower(email) = lower(?1)", email.trim()).firstResult();
     }
 
     public static long countAdmins() {

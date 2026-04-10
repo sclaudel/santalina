@@ -7,6 +7,7 @@ import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
 import org.santalina.diving.domain.*;
 import org.santalina.diving.dto.BackupDto.*;
+import org.santalina.diving.security.NameUtil;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -109,10 +110,10 @@ public class BackupService {
         if (backup.users() != null) {
             for (UserEntry u : backup.users()) {
                 User user = new User();
-                user.email          = u.email();
+                user.email          = u.email() != null ? u.email().trim().toLowerCase() : null;
                 user.passwordHash   = u.passwordHash();
-                user.firstName      = u.firstName();
-                user.lastName       = u.lastName();
+                user.firstName      = NameUtil.capitalize(u.firstName());
+                user.lastName       = u.lastName() != null ? u.lastName().trim().toUpperCase() : null;
                 user.phone          = u.phone();
                 user.licenseNumber  = u.licenseNumber();
                 user.activated      = u.activated();
@@ -190,10 +191,10 @@ public class BackupService {
 
                 SlotDiver diver = new SlotDiver();
                 diver.slot          = linkedSlot;
-                diver.firstName     = d.firstName();
-                diver.lastName      = d.lastName();
+                diver.firstName     = NameUtil.capitalize(d.firstName());
+                diver.lastName      = d.lastName() != null ? d.lastName().trim().toUpperCase() : null;
                 diver.level         = d.level();
-                diver.email         = d.email();
+                diver.email         = d.email() != null ? d.email().trim().toLowerCase() : null;
                 diver.phone         = d.phone();
                 diver.isDirector    = d.isDirector();
                 diver.aptitudes     = d.aptitudes();

@@ -3,6 +3,7 @@ import { slotDiverService } from '../services/slotDiverService';
 import { palanqueeService } from '../services/palanqueeService';
 import { slotService } from '../services/slotService';
 import { waitingListService } from '../services/waitingListService';
+import { exportDiverListCsv } from '../utils/exportDiverList';
 import type { DiveSlot, SlotDiver, Palanquee, WaitingListEntry } from '../types';
 
 // ── constantes ──────────────────────────────────────────────────────────────
@@ -599,6 +600,12 @@ export function PalanqueePage({ slotId, onBack }: Props) {
     }
   }, [slotId]);
 
+  // ── export liste plongeurs CSV ───────────────────────────────────────────
+  const handleExportDiverList = () => {
+    if (!slot) return;
+    exportDiverListCsv(slot, allDivers);
+  };
+
   // ── export Excel ─────────────────────────────────────────────────────────
   const handleExportExcel = async () => {
     if (!slot) return;
@@ -648,6 +655,14 @@ export function PalanqueePage({ slotId, onBack }: Props) {
             disabled={saving}
           >
             + Nouvelle palanquée
+          </button>
+          <button
+            className="palanquee-export-btn"
+            onClick={handleExportDiverList}
+            disabled={allDivers.length === 0}
+            title="Télécharger la liste des plongeurs avec emails (CSV)"
+          >
+            📋 Liste plongeurs
           </button>
           <button
             className="palanquee-export-btn"

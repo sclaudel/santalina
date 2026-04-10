@@ -16,6 +16,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.santalina.diving.security.NameUtil;
 
 import java.util.Comparator;
 import java.util.List;
@@ -89,10 +90,10 @@ public class SlotDiverResource {
 
         SlotDiver diver = new SlotDiver();
         diver.slot          = slot;
-        diver.firstName     = request.firstName().trim();
+        diver.firstName     = NameUtil.capitalize(request.firstName().trim());
         diver.lastName      = request.lastName().trim().toUpperCase();
         diver.level         = request.level();
-        diver.email         = request.email();
+        diver.email         = request.email() != null ? request.email().trim().toLowerCase() : null;
         diver.phone         = request.phone();
         diver.isDirector    = request.isDirector();
         diver.aptitudes     = request.aptitudes();
@@ -145,10 +146,10 @@ public class SlotDiverResource {
             throw new BadRequestException("Un plongeur avec ce nom et prénom est déjà inscrit sur ce créneau");
         }
 
-        diver.firstName     = request.firstName().trim();
+        diver.firstName     = NameUtil.capitalize(request.firstName().trim());
         diver.lastName      = request.lastName().trim().toUpperCase();
         diver.level         = request.level();
-        diver.email         = request.email();
+        diver.email         = request.email() != null ? request.email().trim().toLowerCase() : null;
         diver.phone         = request.phone();
         diver.isDirector    = request.isDirector();
         diver.aptitudes     = request.aptitudes();
