@@ -3,6 +3,7 @@ package org.santalina.diving.resource;
 import org.santalina.diving.domain.User;
 import org.santalina.diving.domain.UserRole;
 import org.santalina.diving.dto.SlotDto.*;
+import org.santalina.diving.dto.WaitingListDto.UpdateRegistrationRequest;
 import org.santalina.diving.service.SlotService;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
@@ -97,5 +98,15 @@ public class SlotResource {
         User currentUser = User.findByEmail(jwt.getName());
         if (currentUser == null) throw new NotAuthorizedException("Utilisateur non trouvé");
         return slotService.updateSlotInfo(id, request, currentUser);
+    }
+
+    @PATCH
+    @Path("/{id}/registration")
+    @RolesAllowed({"ADMIN", "DIVE_DIRECTOR"})
+    public SlotResponse updateRegistration(@PathParam("id") Long id,
+                                           UpdateRegistrationRequest request) {
+        User currentUser = User.findByEmail(jwt.getName());
+        if (currentUser == null) throw new NotAuthorizedException("Utilisateur non trouvé");
+        return slotService.updateRegistration(id, request, currentUser);
     }
 }

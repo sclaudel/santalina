@@ -12,6 +12,13 @@ export interface User {
   licenseNumber?: string;
   role: UserRole;
   roles: UserRole[];
+  notifOnRegistration?: boolean;
+  notifOnApproved?: boolean;
+  notifOnCancelled?: boolean;
+  notifOnMovedToWaitlist?: boolean;
+  notifOnDpRegistration?: boolean;
+  notifOnCreatorRegistration?: boolean;
+  notifOnSafetyReminder?: boolean;
 }
 
 export interface LoginResponse {
@@ -22,6 +29,7 @@ export interface LoginResponse {
   role: UserRole;
   userId: number;
   roles?: UserRole[];
+  phone?: string;
 }
 
 export interface CreateUserRequest {
@@ -62,6 +70,9 @@ export interface SlotDiver {
   isDirector: boolean;
   aptitudes?: string;
   licenseNumber?: string;
+  userId?: number;
+  medicalCertDate?: string;
+  comment?: string;
 }
 
 export interface SlotDiverRequest {
@@ -88,6 +99,9 @@ export interface DiveSlot {
   createdById: number;
   createdByName: string;
   divers: SlotDiver[];
+  registrationOpen: boolean;
+  registrationOpensAt: string | null; // ISO datetime or null
+  waitingListCount?: number;
 }
 
 export interface SlotRequest {
@@ -128,6 +142,14 @@ export interface AppConfig {
   defaultSlotHours: number;
   notificationBookingEmail: string;
   maxRecurringMonths: number;
+  notifRegistrationEnabled: boolean;
+  notifApprovedEnabled: boolean;
+  notifCancelledEnabled: boolean;
+  notifMovedToWlEnabled: boolean;
+  notifDpNewRegEnabled: boolean;
+  notifSafetyReminderEnabled: boolean;
+  safetyReminderDelayDays: number;
+  safetyReminderEmailBody: string;
 }
 
 // Logs
@@ -148,6 +170,7 @@ export interface ImportResult {
   slotsRestored: number;
   diversRestored: number;
   palanqueesRestored: number;
+  waitingListRestored: number;
 }
 
 export interface PeriodStat {
@@ -209,4 +232,50 @@ export interface Palanquee {
   depth?: string;
   duration?: string;
   divers: SlotDiver[];
+}
+
+// ── Liste d'attente ──────────────────────────────────────────────────────────
+
+export const DIVER_LEVELS = ['N1','N2','N3','N4','N5','E2','E3','E4','PE12','PE40','PE60','MF1','MF2'] as const;
+export const DP_LEVELS = ['N5','E3','E4','MF1','MF2'] as const;
+
+export const PREPARED_LEVELS = [
+  'Aucun','N1','N2','N3','N4','N5','MF1','MF2',
+  'E1','E2','E3','E4','PE12','PE40','PE60',
+  'PA20','PA40','PA60','PN','PNC','PB1','PB2','PV1','PV2'
+] as const;
+
+export interface WaitingListEntry {
+  id: number;
+  slotId: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  level: string;
+  numberOfDives?: number;
+  lastDiveDate?: string;     // YYYY-MM-DD
+  preparedLevel?: string;
+  comment?: string;
+  registeredAt: string;     // ISO datetime
+  medicalCertDate?: string;  // YYYY-MM-DD
+  licenseConfirmed?: boolean;
+}
+
+export interface WaitingListRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  emailConfirm: string;
+  level: string;
+  numberOfDives?: number;
+  lastDiveDate?: string;
+  preparedLevel?: string;
+  comment?: string;
+  medicalCertDate: string;   // YYYY-MM-DD
+  licenseConfirmed: boolean;
+}
+
+export interface UpdateRegistrationRequest {
+  registrationOpen: boolean;
+  registrationOpensAt?: string | null; // ISO datetime or null
 }

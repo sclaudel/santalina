@@ -49,6 +49,17 @@ export function AdminPage() {
   const [notificationEmail, setNotificationEmail]       = useState('');
   const [notificationEmailLoading, setNotificationEmailLoading] = useState(false);
 
+  // Paramètres de notification par type
+  const [notifRegistration, setNotifRegistration]     = useState(true);
+  const [notifApproved, setNotifApproved]             = useState(true);
+  const [notifCancelled, setNotifCancelled]           = useState(true);
+  const [notifMovedToWl, setNotifMovedToWl]           = useState(true);
+  const [notifDpNewReg, setNotifDpNewReg]             = useState(true);
+  const [notifSafetyReminder, setNotifSafetyReminder] = useState(false);
+  const [safetyReminderDelayDays, setSafetyReminderDelayDays] = useState(3);
+  const [safetyReminderEmailBody, setSafetyReminderEmailBody] = useState('');
+  const [notifSettingsLoading, setNotifSettingsLoading] = useState(false);
+
   // Recherche et pagination utilisateurs
   const [userSearch, setUserSearch]   = useState('');
   const [userPage, setUserPage]       = useState(1);
@@ -89,6 +100,14 @@ export function AdminPage() {
       setBookingOpenHour(c.bookingOpenHour ?? -1);
       setBookingCloseHour(c.bookingCloseHour ?? -1);
       setNotificationEmail(c.notificationBookingEmail ?? '');
+      setNotifRegistration(c.notifRegistrationEnabled ?? true);
+      setNotifApproved(c.notifApprovedEnabled ?? true);
+      setNotifCancelled(c.notifCancelledEnabled ?? true);
+      setNotifMovedToWl(c.notifMovedToWlEnabled ?? true);
+      setNotifDpNewReg(c.notifDpNewRegEnabled ?? true);
+      setNotifSafetyReminder(c.notifSafetyReminderEnabled ?? false);
+      setSafetyReminderDelayDays(c.safetyReminderDelayDays ?? 3);
+      setSafetyReminderEmailBody(c.safetyReminderEmailBody ?? '');
     } catch {
       setError('Erreur lors du chargement des données');
     }
@@ -265,6 +284,25 @@ export function AdminPage() {
       setMsg(notificationEmail ? `Email de notification mis à jour : ${notificationEmail}` : 'Notifications désactivées');
     } catch (err: unknown) { setError(getErrorMessage(err)); }
     finally { setNotificationEmailLoading(false); }
+  };
+
+  const handleUpdateNotifSettings = async () => {
+    setMsg(''); setError(''); setNotifSettingsLoading(true);
+    try {
+      const updated = await adminService.updateNotifSettings({
+        notifRegistrationEnabled: notifRegistration,
+        notifApprovedEnabled: notifApproved,
+        notifCancelledEnabled: notifCancelled,
+        notifMovedToWlEnabled: notifMovedToWl,
+        notifDpNewRegEnabled: notifDpNewReg,
+        notifSafetyReminderEnabled: notifSafetyReminder,
+        safetyReminderDelayDays: safetyReminderDelayDays,
+        safetyReminderEmailBody: safetyReminderEmailBody,
+      });
+      setConfig(updated);
+      setMsg('Paramètres de notifications enregistrés.');
+    } catch (err: unknown) { setError(getErrorMessage(err)); }
+    finally { setNotifSettingsLoading(false); }
   };
 
   const toggleCreateRole = (role: UserRole) => {
@@ -563,13 +601,68 @@ export function AdminPage() {
         </div>
       </div>
 
+      {/* ── Notifications par e-mail ── */}
+      <div className="admin-section">
+        <h2>🔔 Notifications par e-mail</h2>
+        <p style={{ color: '#6b7280', fontSize: 13, marginBottom: 16 }}>
+          Activez ou désactivez les notifications par e-mail selon leur type.
+          Lorsqu'une notification est désactivée, son contenu est tracé dans les logs.
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
+          {([
+            { label: '📩 Confirmation d\'inscription en liste d\'attente (→ plongeur)', value: notifRegistration, setter: setNotifRegistration },
+            { label: '✅ Inscription validée (→ plongeur, délai 15 min)', value: notifApproved, setter: setNotifApproved },
+            { label: '❌ Inscription annulée/supprimée (→ plongeur)', value: notifCancelled, setter: setNotifCancelled },
+            { label: '⏳ Remis en liste d\'attente (→ plongeur, délai 15 min)', value: notifMovedToWl, setter: setNotifMovedToWl },
+            { label: '📋 Nouvelles inscriptions sur un créneau (→ directeur de plongée / créateur)', value: notifDpNewReg, setter: setNotifDpNewReg },
+            { label: '📋 Rappel fiche de sécurité après la sortie (→ directeur de plongée)', value: notifSafetyReminder, setter: setNotifSafetyReminder },
+          ] as { label: string; value: boolean; setter: (v: boolean) => void }[]).map(({ label, value, setter }) => (
+            <label key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+              <input type="checkbox" checked={value} onChange={e => setter(e.target.checked)} />
+              <span>{label}</span>
+              <span className={`badge ${value ? 'badge-success' : 'badge-muted'}`}>{value ? 'Activé' : 'Désactivé'}</span>
+            </label>
+          ))}
+        </div>
+        {/* Configuration du rappel fiche de sécurité */}
+        {notifSafetyReminder && (
+          <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 8, padding: 16, marginBottom: 20 }}>
+            <h4 style={{ margin: '0 0 12px', color: '#92400e', fontSize: 14 }}>⚙️ Configuration du rappel fiche de sécurité</h4>
+            <div className="form-group" style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 13 }}>Délai après la sortie (en jours)</label>
+              <input
+                type="number"
+                min={1}
+                max={30}
+                value={safetyReminderDelayDays}
+                onChange={e => setSafetyReminderDelayDays(Number(e.target.value))}
+                style={{ width: 80 }}
+              />
+            </div>
+            <div className="form-group">
+              <label style={{ fontSize: 13 }}>
+                Contenu du mail
+                <span style={{ fontWeight: 400, color: '#6b7280', marginLeft: 6 }}>
+                  (variables disponibles&nbsp;: <code>{'{siteName}'}</code>, <code>{'{slotDate}'}</code>, <code>{'{slotLabel}'}</code>)
+                </span>
+              </label>
+              <textarea
+                value={safetyReminderEmailBody}
+                onChange={e => setSafetyReminderEmailBody(e.target.value)}
+                rows={5}
+                style={{ width: '100%', fontFamily: 'monospace', fontSize: 13, resize: 'vertical' }}
+              />
+            </div>
+          </div>
+        )}
+        <button className="btn btn-primary" onClick={handleUpdateNotifSettings} disabled={notifSettingsLoading}>
+          {notifSettingsLoading ? '...' : '💾 Enregistrer les paramètres'}
+        </button>
+      </div>
+
       {/* ── Créneaux récurrents ── */}
       <div className="admin-section">
         <h2>🔁 Créneaux récurrents</h2>
-        <p style={{ color: '#6b7280', fontSize: 13, marginBottom: 16 }}>
-          Lors de la création d'un créneau, il est possible de le répéter sur plusieurs semaines.
-          Ce paramètre définit la durée maximale autorisée pour une récurrence.
-        </p>
         {config && (
           <div className="config-item" style={{ marginBottom: 16 }}>
             <span>Durée max actuelle</span>
@@ -729,7 +822,8 @@ export function AdminPage() {
               {importResult.success && (
                 <span style={{ marginLeft: 8, opacity: 0.8 }}>
                   ({importResult.configRestored} config, {importResult.usersRestored} utilisateurs,
-                  {importResult.slotsRestored} créneaux, {importResult.diversRestored} plongeurs, {importResult.palanqueesRestored} palanquées)
+                  {importResult.slotsRestored} créneaux, {importResult.diversRestored} plongeurs,
+                  {importResult.palanqueesRestored} palanquées, {importResult.waitingListRestored} liste d'attente)
                 </span>
               )}
             </div>

@@ -108,4 +108,20 @@ public class ConfigResource {
     public ConfigResponse updateMaxRecurringMonths(@Valid UpdateMaxRecurringMonthsRequest request) {
         return configService.updateMaxRecurringMonths(request.maxRecurringMonths());
     }
+
+    @PUT
+    @Path("/notification-settings")
+    @RolesAllowed("ADMIN")
+    public ConfigResponse updateNotifSettings(@Valid UpdateNotifSettingsRequest request) {
+        return configService.updateNotifSettings(
+                request.notifRegistrationEnabled(),
+                request.notifApprovedEnabled(),
+                request.notifCancelledEnabled(),
+                request.notifMovedToWlEnabled(),
+                request.notifDpNewRegEnabled(),
+                request.notifSafetyReminderEnabled(),
+                request.safetyReminderDelayDays(),
+                request.safetyReminderEmailBody()
+        );
+    }
 }

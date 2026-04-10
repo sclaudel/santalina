@@ -169,6 +169,18 @@ export function HelpPage() {
             <li>Cochez <strong>Directeur de plongée</strong> et renseignez les coordonnées.</li>
             <li>Cliquez sur <strong>Enregistrer</strong>.</li>
           </ol>
+          <h4>S'auto-assigner comme directeur (depuis le calendrier)</h4>
+          <p>
+            Si un créneau n'a pas encore de directeur de plongée, tout directeur de plongée peut
+            s'y désigner directement depuis le panneau de détails du créneau.
+          </p>
+          <ol>
+            <li>Ouvrez le créneau (il doit être <strong>sans directeur</strong> actuellement).</li>
+            <li>Cliquez sur le bouton <strong>🤿 M'assigner comme DP sur ce créneau</strong>.</li>
+            <li>Vos informations de profil (prénom, nom, email, téléphone, n° de licence) sont utilisées automatiquement.</li>
+            <li>Une fois assigné, vous pouvez <strong>configurer les inscriptions libres</strong> et gérer les plongeurs du créneau.</li>
+          </ol>
+          <div className="help-tip">💡 Ce bouton n'est visible que si le créneau n'a pas encore de DP. Il apparaît indépendamment de l'état des inscriptions libres. Votre <strong>numéro de téléphone</strong> est repris directement depuis <strong>Mon profil</strong> — assurez-vous qu'il est bien renseigné avant de vous assigner.</div>
           <div className="help-tip">💡 Les coordonnées du directeur (email, téléphone, N° de licence) sont exportées dans la fiche de sécurité Excel. La licence s'affiche sur la même ligne que le nom et le niveau : ex. <code>DUPONT Jean - MF2 - 12345678A</code>.</div>
         </>
       ),
@@ -214,6 +226,24 @@ export function HelpPage() {
             <li>Si des palanquées sont organisées, chaque palanquée est présentée dans un tableau séparé, sinon tous les plongeurs apparaissent dans un tableau unique.</li>
           </ul>
           <div className="help-tip">💡 Pour que la licence du DP apparaisse dans l'export, elle doit être saisie dans son profil utilisateur ou directement dans le formulaire DP sur le créneau.</div>
+
+          <h4>Exporter la liste en CSV</h4>
+          <p>Un export CSV de la liste des plongeurs est également disponible depuis le panneau de détails du créneau.</p>
+          <ol>
+            <li>Cliquez sur le créneau pour ouvrir le panneau de détails.</li>
+            <li>Cliquez sur <strong>📥 Télécharger liste CSV</strong>.</li>
+            <li>Le fichier <code>.csv</code> est téléchargé automatiquement (encodage UTF-8, séparateur <code>;</code>).</li>
+          </ol>
+          <h4>Contenu du CSV</h4>
+          <ul>
+            <li><strong>Nom</strong> — nom de famille en majuscules.</li>
+            <li><strong>Prénom</strong> — prénom du plongeur.</li>
+            <li><strong>Niveau</strong> — niveau de certification.</li>
+            <li><strong>Email</strong> — adresse e-mail si renseignée.</li>
+            <li><strong>Directeur de plongée</strong> — « Oui » si le plongeur est le directeur du créneau.</li>
+            <li><strong>Date certificat médical</strong> — date fournie lors de l'inscription libre (vide si le plongeur a été ajouté manuellement par un DP).</li>
+            <li><strong>Commentaire</strong> — commentaire laissé par le plongeur lors de l'inscription libre (vide si ajout manuel).</li>
+          </ul>
         </>
       ),
     },
@@ -256,7 +286,156 @@ export function HelpPage() {
             <li>Cliquez sur <strong>Temps ▾</strong> pour choisir la durée maximale : de 10' à 240' par pas de 10 minutes.</li>
             <li>Ces valeurs sont exportées dans la fiche de sécurité Excel, dans les cellules <strong>Profondeur max</strong> et <strong>Temps max</strong> de chaque groupe de plongeurs.</li>
           </ul>
+          <h4>Remettre un plongeur en liste d'attente</h4>
+          <ul>
+            <li>Lorsque les <strong>inscriptions sont ouvertes</strong> sur le créneau, un bouton <strong>Remettre en liste d'attente</strong> apparaît en bas de chaque fiche plongeur (hors directeur de plongée assigné).</li>
+            <li>Cliquez sur ce bouton pour annuler la place du plongeur et le replacer en liste d'attente : une confirmation est demandée avant l'action.</li>
+            <li>Ce bouton est <strong>masqué automatiquement</strong> lorsque les inscriptions sont fermées ou pas encore ouvertes sur le créneau.</li>
+          </ul>
           <div className="help-tip">💡 Les modifications de niveau, aptitudes, profondeur et temps sont enregistrées immédiatement sur le serveur.</div>
+        </>
+      ),
+    },
+
+    // ── INSCRIPTION LIBRE ─────────────────────────────────────────────────────
+    {
+      id: 'inscription-libre',
+      icon: '📋',
+      title: 'Inscription libre sur un créneau',
+      content: (
+        <>
+          <p>
+            Lorsqu'un directeur de plongée a <strong>activé les inscriptions libres</strong> sur un créneau,
+            tout plongeur inscrit sur la plateforme peut soumettre une demande d'inscription.
+          </p>
+
+          <h4>Pour les plongeurs (DIVER)</h4>
+          <ol>
+            <li>Un pictogramme 📋 apparaît sur les créneaux ouverts aux inscriptions libres.</li>
+            <li>Cliquez sur le créneau, puis sur <strong>📋 S'inscrire sur la liste d'attente</strong>.</li>
+            <li>
+              Remplissez le formulaire d'inscription :
+              <ul>
+                <li><strong>Prénom / Nom</strong> — champs obligatoires.</li>
+                <li><strong>E-mail</strong> (double saisie obligatoire pour éviter les erreurs)</li>
+                <li><strong>Niveau de certification</strong> — sélectionner parmi : N1, N2, N3, N4, N5, E2, E3, E4, PE12, PE40, PE60, MF1, MF2.</li>
+                <li><strong>Nombre de plongées effectuées</strong> — champ obligatoire.</li>
+                <li><strong>Date de la dernière plongée</strong> — champ obligatoire.</li>
+                <li><strong>Niveau en préparation</strong> — optionnel (vaste liste disponible).</li>
+                <li><strong>Commentaire pour le DP</strong> — optionnel, pour indiquer ce que vous souhaitez travailler ou faire durant la plongée.</li>
+                <li><strong>Date de début du certificat médical</strong> — <em>obligatoire</em>. Le certificat doit avoir moins d'un an à la date du créneau.</li>
+                <li>
+                  <strong>Confirmation de la validité de la licence FFESSM</strong> — <em>obligatoire</em>.
+                  Vous devez cocher : « Je confirme avoir vérifié sur le site de la FFESSM la validité de ma licence : OUI ».
+                </li>
+              </ul>
+            </li>
+            <li>Cliquez sur <strong>M'inscrire sur la liste d'attente</strong>.</li>
+            <li>Un <strong>e-mail de confirmation</strong> est envoyé à l'adresse renseignée.</li>
+          </ol>
+          <div className="help-tip">
+            💡 Votre demande sera examinée par le directeur de plongée. Vous recevrez un e-mail de validation lorsqu'il aura accepté votre inscription.
+          </div>
+
+          <h4>Annuler sa demande d'inscription</h4>
+          <p>
+            Si vous souhaitez annuler votre demande, contactez directement le directeur de plongée du créneau.
+            Une annulation après validation de votre inscription génère automatiquement un e-mail de notification au directeur.
+          </p>
+          <div className="help-warning">
+            ⚠️ L'annulation peut perturber l'organisation des palanquées. Une fenêtre de confirmation vous rappelle cet impact avant de valider.
+          </div>
+
+          <h4>Pour les directeurs de plongée (DIVE_DIRECTOR)</h4>
+          <ol>
+            <li>Ouvrez le panneau de détails du créneau.</li>
+            <li>
+              Cliquez sur <strong>⚙️ Configurer les inscriptions libres</strong>.
+              <ul>
+                <li>Cochez <strong>Autoriser l'inscription libre des plongeurs</strong> pour ouvrir les inscriptions.</li>
+                <li>Renseignez optionnellement une <strong>date d'ouverture</strong> (les inscriptions ne seront acceptées qu'à partir de cette date/heure).</li>
+                <li>Sans date d'ouverture, les inscriptions sont actives immédiatement.</li>
+              </ul>
+            </li>
+            <li>Cliquez sur <strong>✓ Enregistrer</strong>.</li>
+          </ol>
+          <div className="help-tip">💡 Le bouton « Configurer les inscriptions libres » n'est visible que pour le <strong>directeur de plongée assigné</strong> sur le créneau ou son <strong>créateur</strong>. Si vous n'êtes pas encore assigné comme DP, utilisez d'abord le bouton 🤿 M'assigner comme DP.</div>
+
+          <h4>Gérer la liste d'attente</h4>
+          <p>
+            La liste d'attente est accessible depuis la page <strong>Organisation des palanquées</strong> de votre créneau.
+            Elle est visible uniquement par vous (DP du créneau) et les administrateurs.
+          </p>
+          <ol>
+            <li>Les inscriptions apparaissent dans l'ordre d'arrivée (#1 = le premier inscrit).</li>
+            <li>
+              Pour chaque entrée, vous voyez : nom, niveau, e-mail, nombre de plongées, date de la dernière plongée, niveau en préparation et commentaire éventuel.
+            </li>
+            <li>
+              Cliquez sur <strong>✓ Valider</strong> pour accepter la demande :
+              le plongeur est transféré dans la liste des inscrits et reçoit un e-mail de confirmation après un délai de 15 minutes
+              (pour laisser le temps au DP de réorganiser les palanquées avant que le plongeur soit notifié).
+              La <strong>date du certificat médical</strong> et le <strong>commentaire</strong> sont conservés et apparaîtront dans l'export CSV.
+            </li>
+            <li>
+              Cliquez sur <strong>✕</strong> pour refuser / supprimer la demande ; 
+              le plongeur ayant un compte reçoit un e-mail d'annulation.
+            </li>
+          </ol>
+          <div className="help-tip">
+            💡 Les plongeurs validés apparaissent dans le pool <strong>Non assignés</strong> de la page d'organisation des palanquées.
+          </div>
+
+          <h4>Remettre un plongeur en liste d'attente</h4>
+          <p>
+            Depuis la vue <strong>Organisation des palanquées</strong>, chaque post-it de plongeur (hors directeur de plongée)
+            affiche un bouton <strong>Remettre en liste d'attente</strong>.
+            Ce bouton est accessible au DP du créneau et aux administrateurs.
+          </p>
+          <ol>
+            <li>Cliquez sur <strong>Remettre en liste d'attente</strong> sur le post-it du plongeur concerné.</li>
+            <li>Confirmez l'action dans la fenêtre de confirmation.</li>
+            <li>Le plongeur est retiré de sa palanquée et replacé en liste d'attente.</li>
+            <li>Il reçoit un e-mail de notification après un délai de 15 minutes.</li>
+          </ol>
+        </>
+      ),
+    },
+
+    // ── SAUVEGARDE & RESTAURATION (ADMIN) ───────────────────────────────────
+    {
+      id: 'sauvegarde',
+      icon: '💾',
+      title: 'Sauvegarde et restauration',
+      roles: ['ADMIN'],
+      content: (
+        <>
+          <p>La section <strong>💾 Sauvegarde</strong> est accessible via le menu utilisateur → <strong>⚙️ Administration → onglet Sauvegarde</strong>.</p>
+
+          <h4>Exporter une sauvegarde complète</h4>
+          <p>Exporte l'intégralité des données : configuration, utilisateurs, créneaux, plongeurs, palanquées et listes d'attente.</p>
+          <ol>
+            <li>Cliquez sur <strong>💾 Exporter une sauvegarde complète</strong>.</li>
+            <li>Un fichier <code>.json</code> est téléchargé automatiquement (<code>santalina-full-AAAA-MM-JJ.json</code>).</li>
+          </ol>
+          <div className="help-tip">💡 À utiliser avant une mise à jour importante ou pour migrer l'application vers un nouveau serveur.</div>
+
+          <h4>Exporter configuration + utilisateurs</h4>
+          <p>Exporte uniquement la configuration de l'application et les comptes utilisateurs (sans créneaux, plongeurs ni listes d'attente).</p>
+          <ol>
+            <li>Cliquez sur <strong>📋 Exporter configuration + utilisateurs</strong>.</li>
+            <li>Un fichier <code>santalina-config-users-AAAA-MM-JJ.json</code> est téléchargé.</li>
+          </ol>
+          <div className="help-tip">💡 Pratique pour réinitialiser les données plongée tout en conservant les comptes et la configuration du site.</div>
+
+          <h4>Importer une sauvegarde</h4>
+          <p>Restaure une sauvegarde précédemment exportée.</p>
+          <ol>
+            <li>Cliquez sur <strong>📂 Choisir un fichier</strong> et sélectionnez le fichier <code>.json</code>.</li>
+            <li>Cliquez sur <strong>⬆️ Importer</strong>.</li>
+            <li>Un résumé indique le nombre d'éléments restaurés (config, utilisateurs, créneaux, plongeurs, palanquées, listes d'attente).</li>
+          </ol>
+          <div className="help-warning">⚠️ L'import est irréversible : toutes les données existantes sont supprimées avant la restauration. Effectuez une sauvegarde complète juste avant si nécessaire.</div>
         </>
       ),
     },
@@ -423,6 +602,50 @@ export function HelpPage() {
               <strong>Inscription libre</strong> — si désactivé, seul un administrateur peut créer des comptes. Le bouton "S'inscrire" est masqué.
             </li>
           </ul>
+
+          <h4>Notifications par e-mail (admin)</h4>
+          <p>
+            La section <strong>🔔 Notifications par e-mail</strong> de l'administration permet d'activer ou de
+            désactiver chaque type de notification pour l'ensemble des utilisateurs.
+            Lorsqu'une notification est désactivée globalement, son contenu complet (destinataire, sujet, corps) est
+            tracé dans les <strong>logs du serveur</strong> (niveau INFO) pour faciliter le débogage.
+          </p>
+          <ul>
+            <li><strong>📩 Confirmation inscription en liste d'attente</strong> — envoyée au plongeur quand il s'inscrit en liste d'attente.</li>
+            <li><strong>✅ Inscription validée</strong> — envoyée au plongeur après validation par le DP (délai de 15 min).</li>
+            <li><strong>❌ Inscription annulée/supprimée</strong> — envoyée au plongeur si son inscription est annulée par un DP ou un admin.</li>
+            <li><strong>⏳ Remis en liste d'attente</strong> — envoyée au plongeur si un DP le remet en liste d'attente depuis la vue palanquées (délai de 15 min).</li>
+            <li><strong>📋 Nouvelles inscriptions sur un créneau (→ DP / créateur)</strong> — envoyée au directeur de plongée assigné et au créateur du créneau quand un plongeur s'inscrit librement en liste d'attente, ou est ajouté directement.</li>
+            <li><strong>📋 Rappel fiche de sécurité</strong> — envoyé au directeur de plongée assigné X jours après la sortie pour lui rappeler de transmettre la fiche de sécurité remplie. Désactivée par défaut. Le délai (en jours) et le contenu du mail sont configurables. Ce rappel n'est envoyé qu'une seule fois par créneau.</li>
+          </ul>
+        </>
+      ),
+    },
+    {
+      id: 'notifications-profil',
+      icon: '🔔',
+      title: '🔔 Mes préférences de notification',
+      roles: ['DIVER', 'DIVE_DIRECTOR', 'ADMIN'],
+      content: (
+        <>
+          <p>
+            Dans votre <strong>profil</strong> (menu utilisateur → Profil), la section
+            <strong> 🔔 Notifications par e-mail</strong> vous permet de désactiver les types de
+            notifications que vous ne souhaitez pas recevoir, indépendamment des paramètres globaux.
+          </p>
+          <ul>
+            <li><strong>📩 Confirmation d'inscription</strong> — reçue quand vous vous inscrivez en liste d'attente.</li>
+            <li><strong>✅ Inscription validée</strong> — reçue quand le DP valide votre inscription.</li>
+            <li><strong>❌ Inscription annulée</strong> — reçue si votre inscription est annulée par un DP ou admin.</li>
+            <li><strong>⏳ Remis en liste d'attente</strong> — reçue si vous êtes remis en liste d'attente.</li>
+            <li><strong>📋 Nouvelles inscriptions (en tant que DP assigné)</strong> — reçue quand un plongeur s'inscrit sur votre créneau et que vous êtes le directeur de plongée désigné. <em>Activée par défaut.</em></li>
+            <li><strong>📋 Nouvelles inscriptions (en tant que créateur)</strong> — reçue quand un plongeur s'inscrit sur un créneau que vous avez créé. <em>Désactivée par défaut.</em></li>
+            <li><strong>📋 Rappel fiche de sécurité (en tant que DP assigné)</strong> — reçu quelques jours après la sortie pour vous rappeler de transmettre la fiche de sécurité remplie. <em>Activée par défaut (si la fonctionnalité est activée globalement par l'administrateur).</em></li>
+          </ul>
+          <p>
+            <strong>Note :</strong> si la notification est désactivée globalement par l'administrateur,
+            elle ne sera pas envoyée même si vous l'avez activée dans votre profil.
+          </p>
         </>
       ),
     },
@@ -493,6 +716,15 @@ export function HelpPage() {
           { type: 'ol' as const, items: ['Dans le formulaire d\'ajout, cochez 🎖 Directeur de plongée sur ce créneau.', 'Renseignez son email et son téléphone (obligatoires).', 'Renseignez optionnellement son N° de licence (prérempli automatiquement si le DP est sélectionné depuis la recherche d\'utilisateurs).', 'Cliquez sur Ajouter.'] },
           { type: 'h4' as const, text: 'Sur un plongeur déjà inscrit' },
           { type: 'ol' as const, items: ['Dans la liste des plongeurs, cliquez sur l\'icône ✏️ à côté du nom.', 'Cochez Directeur de plongée et renseignez les coordonnées.', 'Cliquez sur Enregistrer.'] },
+          { type: 'h4' as const, text: 'S\'auto-assigner comme directeur (depuis le calendrier)' },
+          { type: 'paragraph' as const, text: 'Si un créneau n\'a pas encore de directeur, tout directeur de plongée peut s\'y désigner directement depuis le panneau de détails.' },
+          { type: 'ol' as const, items: [
+            'Ouvrez le créneau (il doit être sans directeur actuellement).',
+            'Cliquez sur le bouton 🤿 M\'assigner comme DP sur ce créneau.',
+            'Vos informations de profil (prénom, nom, email, téléphone, N° de licence) sont utilisées automatiquement.',
+            'Une fois assigné, vous pouvez configurer les inscriptions libres et gérer les plongeurs.',
+          ] },
+          { type: 'tip' as const, text: 'Votre numéro de téléphone est repris directement depuis Mon profil. Assurez-vous qu\'il est renseigné avant de vous assigner comme DP.' },
           { type: 'tip' as const, text: 'Les coordonnées du directeur (email, téléphone, N° licence) sont exportées dans la fiche de sécurité. La licence apparaît sur la ligne DP : NOM Prénom - Niveau - 12345678A.' },
         ],
       },
@@ -510,6 +742,8 @@ export function HelpPage() {
           { type: 'ol' as const, items: ['Cliquez sur le créneau pour ouvrir le panneau de détails.', 'Cliquez sur Exporter fiche de sécurité (Excel).', 'Le fichier .xlsx est téléchargé automatiquement.'] },
           { type: 'h4' as const, text: 'Contenu de la fiche' },
           { type: 'ul' as const, items: ['Cellule B4 — Date, club et infos DP : NOM Prénom - Niveau - N°Licence.', 'Colonnes A–C — Nom, prénom et niveau de chaque plongeur.', 'Colonne D — Aptitudes du plongeur (PE20, PA40, GP…) si renseignées dans l\'organisation des palanquées.', 'Si des palanquées sont organisées, chaque palanquée est dans un tableau séparé.'] },
+          { type: 'h4' as const, text: 'Export CSV' },
+          { type: 'paragraph' as const, text: 'Un export CSV est également disponible depuis le panneau de détails (bouton Télécharger liste CSV). Il contient : Nom, Prénom, Niveau, Email, Directeur de plongée, Date certificat médical, Commentaire.' },
           { type: 'tip' as const, text: 'Pour que la licence du DP apparaisse, elle doit être saisie dans son profil ou dans le formulaire DP sur le créneau.' },
         ],
       },
@@ -581,6 +815,21 @@ export function HelpPage() {
           { type: 'ul' as const, items: ['Types de plongée — ex : Exploration, Formation, Apnée.', 'Clubs — liste des clubs participants.'] },
           { type: 'h4' as const, text: 'Accès & inscriptions' },
           { type: 'ul' as const, items: ['Accès public au calendrier — si désactivé, les visiteurs non connectés voient une page de connexion.', 'Inscription libre — si désactivé, seul un administrateur peut créer des comptes.'] },
+        ],
+      },
+      {
+        icon: '💾', title: 'Sauvegarde et restauration',
+        items: [
+          { type: 'paragraph' as const, text: 'Section accessible dans Administration → onglet Sauvegarde.' },
+          { type: 'h4' as const, text: 'Exporter une sauvegarde complète' },
+          { type: 'paragraph' as const, text: 'Exporte tout : configuration, utilisateurs, créneaux, plongeurs, palanquées et listes d\'attente.' },
+          { type: 'ol' as const, items: ['Cliquez sur Exporter une sauvegarde complète.', 'Le fichier santalina-full-AAAA-MM-JJ.json est téléchargé.'] },
+          { type: 'h4' as const, text: 'Exporter configuration + utilisateurs' },
+          { type: 'paragraph' as const, text: 'Exporte la configuration et les comptes utilisateurs uniquement (sans créneaux ni listes d\'attente).' },
+          { type: 'ol' as const, items: ['Cliquez sur Exporter configuration + utilisateurs.', 'Le fichier santalina-config-users-AAAA-MM-JJ.json est téléchargé.'] },
+          { type: 'h4' as const, text: 'Importer une sauvegarde' },
+          { type: 'ol' as const, items: ['Cliquez sur Choisir un fichier et sélectionnez le fichier .json.', 'Cliquez sur Importer.', 'Un résumé indique le nombre d\'éléments restaurés.'] },
+          { type: 'warning' as const, text: 'L\'import est irréversible : toutes les données existantes sont supprimées avant la restauration.' },
         ],
       },
     ] : []),

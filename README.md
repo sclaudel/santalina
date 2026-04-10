@@ -14,15 +14,20 @@ Application de réservation de créneaux de plongée en lac, développée avec *
 - 🛡️ **RGPD** : consentement explicite collecté à l'inscription
 - 👥 **3 rôles** (cumulables) :
   - `ADMIN` 🔑 : configuration, tous les créneaux, gestion des utilisateurs
-  - `DIVE_DIRECTOR` 🤿 : création et suppression de ses propres créneaux + gestion des plongeurs
-  - `DIVER` 🏊 : lecture seule
+  - `DIVE_DIRECTOR` 🤿 : création et suppression de ses propres créneaux, gestion des plongeurs sur ses créneaux et ceux où il est assigné comme DP, auto-assignation comme DP sur tout créneau sans directeur
+  - `DIVER` 🏊 : consultation + inscription libre sur les créneaux ouverts
 - ⏰ **Créneaux** : 1h min, 10h max, résolution 15 min, chevauchements affichés côte à côte
-- 🤿 **Plongeurs** : ajout/modification/suppression de plongeurs (nom, prénom, niveau) sur chaque créneau
+- 🤿 **Plongeurs** : ajout/modification/suppression (nom, prénom capitalisé, niveau) sur chaque créneau
 - 🎯 **Capacité configurable** : max 25 plongeurs simultanés (modifiable par l'admin)
+- 📋 **Liste d'attente** : inscription libre pour les plongeurs (DIVER/DIVE_DIRECTOR non créateur), validation/refus par le DP responsable, badge de notification
+- 🔓 **Inscriptions libres** : le DP assigné (ou le créateur du créneau) peut ouvrir les inscriptions avec une date d'ouverture optionnelle — les plongeurs s'inscrivent eux-mêmes et peuvent annuler leur inscription (avertissement si < 48 h avant la sortie)
+- 🤿 **Auto-assignation DP** : un directeur de plongée peut se désigner lui-même comme DP sur n'importe quel créneau sans directeur, depuis le panneau de détails du calendrier, sans passer par le formulaire d'ajout
+- 🗂️ **Organisation des palanquées** : drag-and-drop, gestion des aptitudes/profondeurs, export Excel fiche de sécurité, export CSV liste des plongeurs avec emails
+- 🔒 **Normalisation des données** : prénoms capitalisés (composés inclus), emails en minuscules — à la saisie et à l'import backup
 - 🐳 **Docker-ready** : Dockerfile multi-stage + docker-compose
 - 🗄️ **Double base de données** : H2 fichier (dev) / PostgreSQL (prod) — couche d'abstraction Panache
-- 📊 **Statistiques** (ADMIN) : tableau de bord avec camemberts, histogrammes et tableaux — par mois, par année, par club, par type de créneau, avec filtres période
-- 🍔 **Navigation** : barre réduite à « Calendrier » ; Administration, Statistiques, Aide et Profil regroupés dans le menu utilisateur déroulant
+- 📊 **Statistiques** (ADMIN) : tableau de bord avec camemberts, histogrammes et tableaux
+- 💾 **Sauvegarde / restauration** : export JSON complet ou config+utilisateurs, import avec normalisation automatique
 
 ---
 
@@ -102,6 +107,17 @@ docker compose up --build
 | `POST` | `/api/slots/{id}/divers` | ADMIN, DIVE_DIRECTOR | Ajouter un plongeur |
 | `PUT` | `/api/slots/{id}/divers/{diverId}` | ADMIN, DIVE_DIRECTOR | Modifier un plongeur |
 | `DELETE` | `/api/slots/{id}/divers/{diverId}` | ADMIN, DIVE_DIRECTOR | Retirer un plongeur |
+| `DELETE` | `/api/slots/{id}/divers/me` | Authentifié | Auto-désinscription du plongeur connecté |
+| `GET` | `/api/slots/{id}/waiting-list` | ADMIN, DIVE_DIRECTOR | Liste d'attente du créneau |
+| `POST` | `/api/slots/{id}/waiting-list` | Authentifié | S'inscrire en liste d'attente |
+| `GET` | `/api/slots/{id}/waiting-list/me` | Authentifié | Mon entrée en liste d'attente |
+| `DELETE` | `/api/slots/{id}/waiting-list/{entryId}` | Authentifié | Annuler une inscription en liste d'attente |
+| `POST` | `/api/slots/{id}/waiting-list/{entryId}/approve` | ADMIN, DIVE_DIRECTOR | Valider une inscription |
+| `POST` | `/api/slots/{id}/waiting-list/{entryId}/reject` | ADMIN, DIVE_DIRECTOR | Refuser une inscription |
+| `GET` | `/api/slots/{id}/palanquees` | ADMIN, DIVE_DIRECTOR | Palanquées du créneau |
+| `POST` | `/api/slots/{id}/palanquees` | ADMIN, DIVE_DIRECTOR | Créer une palanquée |
+| `PUT` | `/api/slots/{id}/palanquees/{pid}` | ADMIN, DIVE_DIRECTOR | Modifier une palanquée |
+| `DELETE` | `/api/slots/{id}/palanquees/{pid}` | ADMIN, DIVE_DIRECTOR | Supprimer une palanquée |
 | `GET` | `/api/users/me` | Authentifié | Mon profil |
 | `PUT` | `/api/users/me` | Authentifié | Modifier profil |
 | `GET` | `/api/users` | ADMIN | Liste utilisateurs |
@@ -152,24 +168,29 @@ Accessible via le **menu utilisateur → 📊 Statistiques** (réservé au rôle
 src/main/
 ├── java/org/santalina/diving/
 │   ├── config/          # DivingConfig (@ConfigProperty)
-│   ├── domain/          # Entités JPA (User, DiveSlot, SlotDiver, AppConfigEntry)
+│   ├── domain/          # Entités JPA (User, DiveSlot, SlotDiver, WaitingListEntry, Palanquee, AppConfigEntry)
 │   ├── dto/             # Records Java (request/response)
 │   ├── exception/       # GlobalExceptionMapper
-│   ├── mail/            # PasswordResetMailer, ActivationMailer
-│   ├── resource/        # JAX-RS endpoints (AuthResource, SlotResource, UserResource, StatsResource…)
-│   ├── security/        # JwtUtil, PasswordUtil (BCrypt)
-│   ├── service/         # AuthService, SlotService, UserService, ConfigService
+│   ├── mail/            # PasswordResetMailer, ActivationMailer, WaitingListMailer
+│   ├── resource/        # JAX-RS endpoints (AuthResource, SlotResource, SlotDiverResource,
+│   │                   #   WaitingListResource, PalanqueeResource, UserResource, StatsResource, BackupResource…)
+│   ├── security/        # JwtUtil, PasswordUtil (BCrypt), NameUtil (capitalisation)
+│   ├── service/         # AuthService, UserService, ConfigService, BackupService
 │   └── startup/         # AppStartup (init admin + config)
 ├── resources/
 │   ├── application.properties
-│   └── db/migration/    # Flyway V1..V14
+│   └── db/migration/    # Flyway V1..V14+
 └── webui/               # Frontend React + TypeScript + Vite
     └── src/
-        ├── components/  # NavBar, CalendarPicker, DayView, WeekView, MonthView, SlotBlock, SlotForm, LoginModal
+        ├── components/  # NavBar, CalendarPicker, DayView, WeekView, MonthView, SlotBlock,
+        │               #   SlotForm, LoginModal, SelfRegistrationModal
         ├── context/     # AuthContext (JWT + état multi-rôles)
         ├── pages/       # CalendarPage, ProfilePage, AdminPage, StatsPage, MyStatsPage,
-        │               #   HelpPage, ResetPasswordPage, ActivatePage
-        ├── services/    # api.ts, authService, slotService, adminService, slotDiverService, statsService
+        │               #   HelpPage, ResetPasswordPage, ActivatePage, PalanqueePage
+        ├── services/    # api.ts, authService, slotService, adminService, slotDiverService,
+        │               #   waitingListService, palanqueeService, statsService
+        ├── utils/       # exportFicheSecurite, exportFicheSecuriteAvecPalanquees,
+        │               #   exportDiverList (CSV), exportHelpPdf, slotTypeColors
         └── types/       # Types TypeScript partagés
 ```
 

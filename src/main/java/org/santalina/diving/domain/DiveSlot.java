@@ -43,6 +43,21 @@ public class DiveSlot extends PanacheEntityBase {
     @JoinColumn(name = "created_by", nullable = true)
     public User createdBy;
 
+    /** Indique si le DP a ouvert les inscriptions en libre-service. */
+    @Column(name = "registration_open", nullable = false)
+    public boolean registrationOpen = false;
+
+    /**
+     * Date/heure à partir de laquelle les inscriptions sont acceptées.
+     * Si null et {@code registrationOpen = true}, les inscriptions sont ouvertes immédiatement.
+     */
+    @Column(name = "registration_opens_at")
+    public LocalDateTime registrationOpensAt;
+
+    /** Date/heure à laquelle le rappel fiche de sécurité a été envoyé au DP (null = pas encore envoyé). */
+    @Column(name = "reminder_sent_at")
+    public LocalDateTime reminderSentAt;
+
     @Column(name = "created_at", nullable = false)
     public LocalDateTime createdAt = LocalDateTime.now();
 

@@ -5,7 +5,10 @@ import { slotDiverService } from '../services/slotDiverService';
 import { slotService } from '../services/slotService';
 import { adminService } from '../services/adminService';
 import { palanqueeService } from '../services/palanqueeService';
+import { waitingListService } from '../services/waitingListService';
+import { useAuth } from '../context/AuthContext';
 import { getSlotTypeStyle } from '../utils/slotTypeColors';
+import { SelfRegistrationModal } from './SelfRegistrationModal';
 
 
 /** Réinitialise le zoom iOS après fermeture d'un formulaire.
@@ -94,6 +97,7 @@ export function SlotBlock({
   slot, height, onDelete, onRefresh, onOpenPalanquees,
   canEdit, currentUserId, currentUserRole, maxDivers = 25, config,
 }: Props) {
+  const { user: currentUser } = useAuth();
   const [showTooltip, setShowTooltip]         = useState(false);
   const [showDiverForm, setShowDiverForm]     = useState(false);
   const [tooltipStyle, setTooltipStyle]       = useState<React.CSSProperties>({});
@@ -139,6 +143,30 @@ export function SlotBlock({
   const [editSearchResults, setEditSearchResults] = useState<UserSearchResult[]>([]);
   const [editSearchLoading, setEditSearchLoading] = useState(false);
 
+  // Auto-inscription (DIVER / DP non créateur)
+  const [showSelfRegModal, setShowSelfRegModal] = useState(false);
+  // Entrée en liste d'attente de l'utilisateur connecté (null = pas inscrit, undefined = pas encore chargé)
+  const [myWaitingEntry, setMyWaitingEntry] = useState<import('../types').WaitingListEntry | null | undefined>(undefined);
+  const [cancelingMyEntry, setCancelingMyEntry] = useState(false);
+  const [cancelMyEntryError, setCancelMyEntryError] = useState('');
+  // Auto-désinscription depuis la liste des inscrits
+  const [cancelingMyDiverEntry, setCancelingMyDiverEntry] = useState(false);
+  const [cancelMyDiverError, setCancelMyDiverError] = useState('');
+
+  // Auto-assignation comme directeur de plongée
+  const [selfAssigning, setSelfAssigning]       = useState(false);
+  const [selfAssignError, setSelfAssignError]   = useState('');
+
+  // Paramètres d'inscription (DIVE_DIRECTOR / ADMIN)
+  const [regOpen, setRegOpen]           = useState(slot.registrationOpen);
+  const [regOpensAt, setRegOpensAt]     = useState(
+    slot.registrationOpensAt ? slot.registrationOpensAt.slice(0, 16) : ''
+  );
+  const [regSaving, setRegSaving]       = useState(false);
+  const [regError, setRegError]         = useState('');
+  const [regSuccess, setRegSuccess]     = useState('');
+  const [editingReg, setEditingReg]     = useState(false);
+
   const times = timeOptions(config?.slotResolutionMinutes ?? 15);
 
   const blockRef   = useRef<HTMLDivElement>(null);
@@ -146,7 +174,10 @@ export function SlotBlock({
 
   const canEditThisSlot = canEdit && (
     currentUserRole === 'ADMIN' ||
-    (currentUserRole === 'DIVE_DIRECTOR' && slot.createdById === currentUserId)
+    (currentUserRole === 'DIVE_DIRECTOR' && (
+      slot.createdById === currentUserId ||
+      divers.some(d => d.isDirector && d.userId === currentUserId)
+    ))
   );
 
   const usedDivers     = divers.length;
@@ -183,7 +214,7 @@ export function SlotBlock({
     if (!blockRef.current) return;
     const rect       = blockRef.current.getBoundingClientRect();
     const spaceRight = window.innerWidth - rect.right;
-    const maxH       = Math.min(520, window.innerHeight - 24);
+    const maxH       = window.innerHeight - 24;
     const top        = Math.max(8, Math.min(rect.top, window.innerHeight - maxH - 8));
 
     if (spaceRight >= TOOLTIP_WIDTH + 12) {
@@ -231,6 +262,9 @@ export function SlotBlock({
     computePos();
     setShowTooltip(true);
     setLoading(true);
+    const isCanRegister = currentUserRole === 'DIVER' || (currentUserRole === 'DIVE_DIRECTOR' && !canEditThisSlot);
+    // Afficher le bouton S'inscrire immédiatement (optimiste), puis corriger si déjà inscrit
+    if (isCanRegister) setMyWaitingEntry(null);
     try {
       const [fresh, pals] = await Promise.all([
         slotDiverService.getBySlot(slot.id),
@@ -240,6 +274,12 @@ export function SlotBlock({
       setPalanquees(pals);
     } catch { /* silencieux */ }
     finally { setLoading(false); }
+    // Chargement de l'entrée liste d'attente indépendant — une erreur ici ne bloque pas le reste
+    if (isCanRegister) {
+      waitingListService.getMyEntry(slot.id)
+        .then(e => setMyWaitingEntry(e ?? null))
+        .catch(() => setMyWaitingEntry(null));
+    }
   };
 
   // Clic en dehors → fermer
@@ -402,11 +442,67 @@ export function SlotBlock({
   };
 
   const handleRemoveDiver = async (diverId: number) => {
+    const diver = divers.find(d => d.id === diverId);
+    const name = diver ? `${diver.firstName} ${diver.lastName}` : 'ce plongeur';
+    if (!window.confirm(`Retirer ${name} du cr\u00e9neau\u00a0?`)) return;
     try {
       await slotDiverService.remove(slot.id, diverId);
       setDivers(prev => prev.filter(d => d.id !== diverId));
       onRefresh();
     } catch { /* silencieux */ }
+  };
+
+  /** Enregistre les paramètres d'inscription libre (DP). */
+  const handleSaveRegistration = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRegSaving(true); setRegError(''); setRegSuccess('');
+    try {
+      await waitingListService.updateRegistration(slot.id, {
+        registrationOpen: regOpen,
+        registrationOpensAt: regOpensAt ? regOpensAt + ':00' : null,
+      });
+      setEditingReg(false);
+      setRegSuccess(regOpen ? '✓ Inscriptions libres activées' : '✓ Inscriptions libres désactivées');
+      setTimeout(() => setRegSuccess(''), 3000);
+      onRefresh();
+    } catch (err: unknown) {
+      const m = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setRegError(m || 'Erreur lors de la mise à jour');
+    } finally { setRegSaving(false); }
+  };
+
+  /** Vrai si les inscriptions sont actives maintenant. */
+  const isRegNowOpen = (() => {
+    if (!slot.registrationOpen) return false;
+    if (!slot.registrationOpensAt) return true;
+    return new Date() >= new Date(slot.registrationOpensAt);
+  })();
+
+  const handleSelfAssignDP = async () => {
+    if (!currentUser) { setSelfAssignError("Utilisateur non connecté"); return; }
+    const phone = currentUser.phone ?? '';
+    if (!phone.trim()) {
+      setSelfAssignError("Votre profil ne contient pas de numéro de téléphone. Veuillez le renseigner dans Mon profil avant de vous assigner comme DP.");
+      return;
+    }
+    setSelfAssigning(true); setSelfAssignError('');
+    try {
+      const d = await slotDiverService.add(slot.id, {
+        firstName:     currentUser.firstName,
+        lastName:      currentUser.lastName,
+        level:         'Directeur de plongée',
+        email:         currentUser.email,
+        phone,
+        isDirector:    true,
+        aptitudes:     '',
+        licenseNumber: currentUser.licenseNumber ?? '',
+      });
+      setDivers(prev => [d, ...prev]);
+      onRefresh();
+    } catch (err: unknown) {
+      const m = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setSelfAssignError(m || "Erreur lors de l'assignation");
+    } finally { setSelfAssigning(false); }
   };
 
   // ---- Hover tooltip (desktop uniquement, lecture seule) ----
@@ -427,6 +523,11 @@ export function SlotBlock({
             </span>
           )}
           {currentClub && <span className="slot-tag slot-tag-club">🏊 {currentClub}</span>}
+        </div>
+      )}
+      {canEditThisSlot && (slot.waitingListCount ?? 0) > 0 && (
+        <div className="slot-hover-waiting-badge" title="Cliquer pour gérer la liste d'attente">
+          📋 {slot.waitingListCount} plongeur{(slot.waitingListCount ?? 0) > 1 ? 's' : ''} en attente
         </div>
       )}
       {divers.length === 0 ? (
@@ -559,7 +660,7 @@ export function SlotBlock({
             ? <p className="slot-tooltip-empty">Aucun plongeur inscrit</p>
             : (
               <ul className="diver-list">
-                {divers.map(d => (
+                {[...divers].sort((a, b) => (b.isDirector ? 1 : 0) - (a.isDirector ? 1 : 0) || a.lastName.localeCompare(b.lastName)).map(d => (
                   <li key={d.id} className={`diver-item ${d.isDirector ? 'diver-item-director' : ''}`}>
                     {/* Mode affichage */}
                     {editingDiver?.id !== d.id ? (
@@ -773,12 +874,189 @@ export function SlotBlock({
         </button>
       )}
 
+      {/* ── Inscriptions libres (DIVER ou DIVE_DIRECTOR non créateur) ── */}
+      {(currentUserRole === 'DIVER' || (currentUserRole === 'DIVE_DIRECTOR' && !canEditThisSlot)) && (() => {
+        const myDiverEntry = divers.find(d => d.userId != null && d.userId === currentUserId) ?? null;
+        const slotStart = slot.slotDate && slot.startTime
+          ? new Date(`${slot.slotDate}T${slot.startTime}:00`)
+          : null;
+        const hoursUntil = slotStart ? (slotStart.getTime() - Date.now()) / 3_600_000 : Infinity;
+        const isWithin48h = hoursUntil >= 0 && hoursUntil < 48;
+        return (
+          <div style={{ padding: '6px 0 2px' }}>
+            {!hasDirector ? (
+              // Pas encore de directeur sur ce créneau — inscription non disponible
+              <div className="slot-tooltip-empty" style={{ textAlign: 'center', padding: '8px 0' }}>
+                ℹ️ Aucun directeur de plongée assigné à ce créneau
+              </div>
+            ) : myDiverEntry ? (
+              // Déjà inscrit directement
+              <div className="slot-waiting-own-entry">
+                <div className="slot-waiting-own-entry-label">
+                  ✅ Vous êtes inscrit(e) sur ce créneau
+                </div>
+                {isWithin48h && (
+                  <div className="diver-form-error" style={{ marginBottom: 6 }}>
+                    ⚠️ Attention : la sortie est dans moins de 48h. Votre annulation aura un impact sur l’organisation.
+                  </div>
+                )}
+                {cancelMyDiverError && (
+                  <div className="diver-form-error" style={{ marginBottom: 6 }}>{cancelMyDiverError}</div>
+                )}
+                <button
+                  className="btn-cancel-own-entry"
+                  disabled={cancelingMyDiverEntry}
+                  onClick={async () => {
+                    const warn = isWithin48h
+                      ? '⚠️ La sortie est dans moins de 48h. Votre annulation aura un impact sur l’organisation.\n\nConfirmer l’annulation ?'
+                      : 'Annuler votre inscription sur ce créneau ?';
+                    if (!window.confirm(warn)) return;
+                    setCancelingMyDiverEntry(true);
+                    setCancelMyDiverError('');
+                    try {
+                      await slotDiverService.cancelMe(slot.id);
+                      setDivers(prev => prev.filter(d => d.id !== myDiverEntry.id));
+                      onRefresh();
+                    } catch {
+                      setCancelMyDiverError('Erreur lors de l’annulation. Veuillez réessayer.');
+                    } finally {
+                      setCancelingMyDiverEntry(false);
+                    }
+                  }}
+                >
+                  {cancelingMyDiverEntry ? '…' : '✕ Annuler mon inscription'}
+                </button>
+              </div>
+            ) : myWaitingEntry ? (
+              // Déjà inscrit en liste d’attente
+              <div className="slot-waiting-own-entry">
+                <div className="slot-waiting-own-entry-label">
+                  📌 Vous êtes en liste d’attente (à partir du{' '}
+                  {new Date(myWaitingEntry.registeredAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })})
+                </div>
+                {cancelMyEntryError && (
+                  <div className="diver-form-error" style={{ marginBottom: 6 }}>{cancelMyEntryError}</div>
+                )}
+                <button
+                  className="btn-cancel-own-entry"
+                  disabled={cancelingMyEntry}
+                  onClick={async () => {
+                    if (!window.confirm('Annuler votre inscription en liste d’attente ?')) return;
+                    setCancelingMyEntry(true);
+                    setCancelMyEntryError('');
+                    try {
+                      await waitingListService.cancel(slot.id, myWaitingEntry.id);
+                      setMyWaitingEntry(null);
+                    } catch {
+                      setCancelMyEntryError('Erreur lors de l’annulation. Veuillez réessayer.');
+                    } finally {
+                      setCancelingMyEntry(false);
+                    }
+                  }}
+                >
+                  {cancelingMyEntry ? '…' : '✕ Annuler mon inscription'}
+                </button>
+              </div>
+            ) : myWaitingEntry === null && isRegNowOpen ? (
+              // Pas encore inscrit et inscriptions ouvertes
+              <button
+                className="btn btn-primary"
+                style={{ width: '100%', justifyContent: 'center', padding: '10px 16px', fontSize: 14, fontWeight: 600 }}
+                onClick={() => setShowSelfRegModal(true)}
+              >
+                S’inscrire
+              </button>
+            ) : null}
+          </div>
+        );
+      })()}
+
+      {/* ── Auto-assignation DP (DIVE_DIRECTOR non encore assigné, créneau sans directeur) ── */}
+      {!hasDirector && currentUserRole === 'DIVE_DIRECTOR' && !canEditThisSlot && (
+        <div className="slot-selfassign-dp">
+          <button
+            className="btn btn-primary slot-selfassign-btn"
+            onClick={handleSelfAssignDP}
+            disabled={selfAssigning}
+          >
+            {selfAssigning ? '⏳ Assignation…' : '🤿 M\'assigner comme DP sur ce créneau'}
+          </button>
+          {selfAssignError && <div className="diver-form-error">{selfAssignError}</div>}
+        </div>
+      )}
+
+      {/* ── Gestion inscriptions libres (DP / ADMIN) ── */}
+      {canEditThisSlot && (
+        <div className="slot-registration-section">
+          {regSuccess && <div className="diver-form-success">{regSuccess}</div>}
+          {!editingReg ? (
+            <button
+              className="btn-edit-slot-info"
+              style={{ background: slot.registrationOpen ? '#dcfce7' : '#f1f5f9', color: slot.registrationOpen ? '#166534' : '#475569' }}
+              onClick={() => {
+                setRegOpen(slot.registrationOpen);
+                setRegOpensAt(slot.registrationOpensAt ? slot.registrationOpensAt.slice(0, 16) : '');
+                setRegError('');
+                setEditingReg(true);
+              }}
+            >
+              {slot.registrationOpen ? '✅ Inscriptions libres actives' : '⚙️ Configurer les inscriptions libres'}
+            </button>
+          ) : (
+            <form onSubmit={handleSaveRegistration} className="slot-info-edit-form">
+              {regError && <div className="diver-form-error">{regError}</div>}
+              <label className="diver-director-checkbox" style={{ marginBottom: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={regOpen}
+                  onChange={e => setRegOpen(e.target.checked)}
+                />
+                <span>Autoriser l'inscription libre des plongeurs</span>
+              </label>
+              {regOpen && (
+                <div className="slot-info-field">
+                  <label>Date d'ouverture des inscriptions (vide = immédiatement)</label>
+                  <input
+                    type="datetime-local"
+                    value={regOpensAt}
+                    onChange={e => setRegOpensAt(e.target.value)}
+                  />
+                </div>
+              )}
+              <div className="diver-form-actions" style={{ marginTop: 6 }}>
+                <button type="submit" disabled={regSaving} className="btn-diver-save">
+                  {regSaving ? '…' : '✓ Enregistrer'}
+                </button>
+                <button
+                  type="button"
+                  className="btn-diver-cancel"
+                  onClick={() => { setEditingReg(false); setRegError(''); }}
+                >
+                  Annuler
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      )}
+
       {/* Bouton export fiche de sécurité */}
       {canEditThisSlot && (
         <button className="btn-export-fiche" onClick={handleExportFiche}>
           {palanquees.length > 0
             ? '📥 Exporter fiche de sécurité avec palanquées (Excel)'
             : '📊 Exporter fiche de sécurité (Excel)'}
+        </button>
+      )}
+
+      {/* Bouton liste d'attente (accès rapide pour DP/ADMIN) */}
+      {canEditThisSlot && (slot.waitingListCount ?? 0) > 0 && (
+        <button
+          className="btn-export-fiche btn-waiting-list-alert"
+          onClick={() => { closeTooltip(); onOpenPalanquees?.(slot.id); }}
+          title="Voir et gérer la liste d'attente"
+        >
+          📋 {slot.waitingListCount} plongeur{(slot.waitingListCount ?? 0) > 1 ? 's' : ''} en liste d'attente →
         </button>
       )}
 
@@ -828,6 +1106,15 @@ export function SlotBlock({
           {!isCompact && currentClub     && <div className="slot-block-club">🏊 {currentClub}</div>}
           {!isCompact && currentTitle    && <div className="slot-block-title">{currentTitle}</div>}
           <div className="slot-block-count" style={{ color }}>🤿 {usedDivers}/{currentDiverCount}</div>
+          {/* Indicateur inscriptions ouvertes */}
+          {!isCompact && isRegNowOpen && (currentUserRole === 'DIVER' || (currentUserRole === 'DIVE_DIRECTOR' && !canEditThisSlot)) && (
+            <div className="slot-block-reg-open" title="Inscriptions ouvertes — cliquer pour s'inscrire">📋</div>
+          )}
+          {!isCompact && canEditThisSlot && (slot.waitingListCount ?? 0) > 0 && (
+            <div className="slot-block-waiting" title={`${slot.waitingListCount} plongeur(s) en liste d'attente`}>
+              📋 {slot.waitingListCount}
+            </div>
+          )}
           {canEditThisSlot && !isCompact && (
             <button className="slot-block-delete"
               onClick={e => { e.stopPropagation(); onDelete(slot.id); }}
@@ -841,6 +1128,21 @@ export function SlotBlock({
       </div>
       {hoverTooltipContent}
       {tooltipContent}
+      {showSelfRegModal && (
+        <SelfRegistrationModal
+          slot={slot}
+          onClose={() => setShowSelfRegModal(false)}
+          onSuccess={(newEmail?: string) => {
+            setShowSelfRegModal(false);
+            // Recharger l'entrée de l'utilisateur pour afficher le bouton d'annulation
+            waitingListService.getMyEntry(slot.id).then(e => setMyWaitingEntry(e ?? null)).catch(() => {});
+            const emailNote = newEmail
+              ? `\n\nVotre profil a été mis à jour avec l'adresse ${newEmail}.`
+              : '';
+            alert(`✅ Votre inscription en liste d'attente a bien été enregistrée. Vous recevrez un e-mail de confirmation.${emailNote}`);
+          }}
+        />
+      )}
     </>
   );
 }

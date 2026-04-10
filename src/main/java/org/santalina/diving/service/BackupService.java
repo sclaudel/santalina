@@ -7,6 +7,7 @@ import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
 import org.santalina.diving.domain.*;
 import org.santalina.diving.dto.BackupDto.*;
+import org.santalina.diving.security.NameUtil;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,7 +38,7 @@ public class BackupService {
 
         LOG.infof("Export config-users : %d entrées de config, %d utilisateurs", config.size(), users.size());
         return new BackupData(BACKUP_VERSION, "config-users", LocalDateTime.now(),
-                config, users, null, null, null);
+                config, users, null, null, null, null);
     }
 
     /** Export complet (config + utilisateurs + créneaux + plongeurs). */
@@ -67,10 +68,15 @@ public class BackupService {
                 .map(this::toPalanqueeEntry)
                 .collect(Collectors.toList());
 
-        LOG.infof("Export full : %d config, %d users, %d slots, %d divers, %d palanquees",
-                config.size(), users.size(), slots.size(), divers.size(), palanquees.size());
+        List<WaitingListBackupEntry> waitingList = WaitingListEntry.<WaitingListEntry>listAll()
+                .stream()
+                .map(this::toWaitingListEntry)
+                .collect(Collectors.toList());
+
+        LOG.infof("Export full : %d config, %d users, %d slots, %d divers, %d palanquees, %d waitingList",
+                config.size(), users.size(), slots.size(), divers.size(), palanquees.size(), waitingList.size());
         return new BackupData(BACKUP_VERSION, "full", LocalDateTime.now(),
-                config, users, slots, divers, palanquees);
+                config, users, slots, divers, palanquees, waitingList);
     }
 
     // ---- Import ----
@@ -84,6 +90,7 @@ public class BackupService {
         LOG.warnf("Démarrage de l'import (type=%s, exportedAt=%s)", backup.type(), backup.exportedAt());
 
         // 1. Vider dans l'ordre des dépendances
+        em.createNativeQuery("DELETE FROM waiting_list_entries").executeUpdate();
         em.createNativeQuery("DELETE FROM slot_divers").executeUpdate();
         em.createNativeQuery("DELETE FROM palanquees").executeUpdate();
         em.createNativeQuery("DELETE FROM dive_slots").executeUpdate();
@@ -109,15 +116,22 @@ public class BackupService {
         if (backup.users() != null) {
             for (UserEntry u : backup.users()) {
                 User user = new User();
-                user.email          = u.email();
+                user.email          = u.email() != null ? u.email().trim().toLowerCase() : null;
                 user.passwordHash   = u.passwordHash();
-                user.firstName      = u.firstName();
-                user.lastName       = u.lastName();
+                user.firstName      = NameUtil.capitalize(u.firstName());
+                user.lastName       = u.lastName() != null ? u.lastName().trim().toUpperCase() : null;
                 user.phone          = u.phone();
                 user.licenseNumber  = u.licenseNumber();
                 user.activated      = u.activated();
                 user.consentGiven   = u.consentGiven();
                 user.consentDate    = u.consentDate();
+                user.notifOnRegistration    = u.notifOnRegistration();
+                user.notifOnApproved        = u.notifOnApproved();
+                user.notifOnCancelled       = u.notifOnCancelled();
+                user.notifOnMovedToWaitlist = u.notifOnMovedToWaitlist();
+                user.notifOnDpRegistration  = u.notifOnDpRegistration();
+                user.notifOnCreatorRegistration = u.notifOnCreatorRegistration();
+                user.notifOnSafetyReminder  = u.notifOnSafetyReminder();
                 user.createdAt      = LocalDateTime.now();
                 user.updatedAt      = LocalDateTime.now();
                 // Rôles
@@ -142,16 +156,18 @@ public class BackupService {
         if (backup.slots() != null) {
             for (SlotEntry s : backup.slots()) {
                 DiveSlot slot = new DiveSlot();
-                slot.slotDate  = s.slotDate();
-                slot.startTime = s.startTime();
-                slot.endTime   = s.endTime();
-                slot.diverCount = s.diverCount();
-                slot.title     = s.title();
-                slot.notes     = s.notes();
-                slot.slotType  = s.slotType();
-                slot.club      = s.club();
-                slot.createdAt = s.createdAt() != null ? s.createdAt() : LocalDateTime.now();
-                slot.updatedAt = LocalDateTime.now();
+                slot.slotDate           = s.slotDate();
+                slot.startTime          = s.startTime();
+                slot.endTime            = s.endTime();
+                slot.diverCount         = s.diverCount();
+                slot.title              = s.title();
+                slot.notes              = s.notes();
+                slot.slotType           = s.slotType();
+                slot.club               = s.club();
+                slot.registrationOpen   = s.registrationOpen();
+                slot.registrationOpensAt = s.registrationOpensAt();
+                slot.createdAt          = s.createdAt() != null ? s.createdAt() : LocalDateTime.now();
+                slot.updatedAt          = LocalDateTime.now();
                 // Lier au créateur si possible
                 if (s.createdById() != null) {
                     User creator = User.find("email",
@@ -190,14 +206,16 @@ public class BackupService {
 
                 SlotDiver diver = new SlotDiver();
                 diver.slot          = linkedSlot;
-                diver.firstName     = d.firstName();
-                diver.lastName      = d.lastName();
+                diver.firstName     = NameUtil.capitalize(d.firstName());
+                diver.lastName      = d.lastName() != null ? d.lastName().trim().toUpperCase() : null;
                 diver.level         = d.level();
-                diver.email         = d.email();
+                diver.email         = d.email() != null ? d.email().trim().toLowerCase() : null;
                 diver.phone         = d.phone();
                 diver.isDirector    = d.isDirector();
                 diver.aptitudes     = d.aptitudes();
                 diver.licenseNumber = d.licenseNumber();
+                diver.medicalCertDate = d.medicalCertDate();
+                diver.comment       = d.comment();
                 diver.addedAt       = LocalDateTime.now();
                 diver.persist();
                 diverCount++;
@@ -251,13 +269,48 @@ public class BackupService {
         }
         em.flush();
 
-        LOG.infof("Import terminé : %d config, %d users, %d slots, %d divers, %d palanquees",
-                configCount, userCount, slotCount, diverCount, palanqueeCount);
+        // 7. Restaurer les entrées en liste d'attente
+        int waitingListCount = 0;
+        if (backup.waitingListEntries() != null && backup.slots() != null) {
+            for (WaitingListBackupEntry we : backup.waitingListEntries()) {
+                final Long origSlotId = we.slotId();
+                SlotEntry origSlot = backup.slots().stream()
+                        .filter(s -> origSlotId.equals(s.id()))
+                        .findFirst().orElse(null);
+                if (origSlot == null) continue;
+
+                DiveSlot linkedSlot = DiveSlot.find(
+                        "slotDate = ?1 and startTime = ?2 and endTime = ?3",
+                        origSlot.slotDate(), origSlot.startTime(), origSlot.endTime())
+                        .firstResult();
+                if (linkedSlot == null) continue;
+
+                WaitingListEntry entry = new WaitingListEntry();
+                entry.slot          = linkedSlot;
+                entry.firstName     = we.firstName();
+                entry.lastName      = we.lastName();
+                entry.email         = we.email();
+                entry.level         = we.level();
+                entry.numberOfDives = we.numberOfDives();
+                entry.lastDiveDate  = we.lastDiveDate();
+                entry.preparedLevel = we.preparedLevel();
+                entry.comment       = we.comment();
+                entry.registeredAt    = we.registeredAt() != null ? we.registeredAt() : LocalDateTime.now();
+                entry.medicalCertDate = we.medicalCertDate();
+                entry.licenseConfirmed = we.licenseConfirmed();
+                entry.persist();
+                waitingListCount++;
+            }
+        }
+        em.flush();
+
+        LOG.infof("Import terminé : %d config, %d users, %d slots, %d divers, %d palanquees, %d waitingList",
+                configCount, userCount, slotCount, diverCount, palanqueeCount, waitingListCount);
 
         return new ImportResult(true,
-                String.format("Import réussi : %d config, %d utilisateurs, %d créneaux, %d plongeurs, %d palanquées",
-                        configCount, userCount, slotCount, diverCount, palanqueeCount),
-                configCount, userCount, slotCount, diverCount, palanqueeCount);
+                String.format("Import réussi : %d config, %d utilisateurs, %d créneaux, %d plongeurs, %d palanquées, %d liste d'attente",
+                        configCount, userCount, slotCount, diverCount, palanqueeCount, waitingListCount),
+                configCount, userCount, slotCount, diverCount, palanqueeCount, waitingListCount);
     }
 
     // ---- Mappeurs ----
@@ -266,25 +319,37 @@ public class BackupService {
         List<String> roles = u.roles.stream().map(Enum::name).collect(Collectors.toList());
         return new UserEntry(u.id, u.email, u.passwordHash,
                 u.firstName, u.lastName, u.phone, u.licenseNumber,
-                u.activated, u.consentGiven, u.consentDate, roles);
+                u.activated, u.consentGiven, u.consentDate, roles,
+                u.notifOnRegistration, u.notifOnApproved, u.notifOnCancelled,
+                u.notifOnMovedToWaitlist, u.notifOnDpRegistration, u.notifOnCreatorRegistration,
+                u.notifOnSafetyReminder);
     }
 
     private SlotEntry toSlotEntry(DiveSlot s) {
         return new SlotEntry(s.id, s.slotDate, s.startTime, s.endTime,
                 s.diverCount, s.title, s.notes, s.slotType, s.club,
-                s.createdBy != null ? s.createdBy.id : null, s.createdAt);
+                s.createdBy != null ? s.createdBy.id : null, s.createdAt,
+                s.registrationOpen, s.registrationOpensAt);
     }
 
     private DiverEntry toDiverEntry(SlotDiver d) {
         return new DiverEntry(d.id, d.slot != null ? d.slot.id : null,
                 d.firstName, d.lastName, d.level, d.email, d.phone,
                 d.isDirector, d.aptitudes, d.licenseNumber,
-                d.palanquee != null ? d.palanquee.id : null, d.palanqueePosition);
+                d.palanquee != null ? d.palanquee.id : null, d.palanqueePosition,
+                d.medicalCertDate, d.comment);
     }
 
     private PalanqueeEntry toPalanqueeEntry(Palanquee p) {
         return new PalanqueeEntry(p.id, p.slot != null ? p.slot.id : null,
                 p.name, p.position, p.depth, p.duration);
+    }
+
+    private WaitingListBackupEntry toWaitingListEntry(WaitingListEntry e) {
+        return new WaitingListBackupEntry(e.id, e.slot != null ? e.slot.id : null,
+                e.firstName, e.lastName, e.email, e.level,
+                e.numberOfDives, e.lastDiveDate, e.preparedLevel, e.comment, e.registeredAt,
+                e.medicalCertDate, e.licenseConfirmed);
     }
 }
 

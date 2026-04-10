@@ -2,6 +2,7 @@ package org.santalina.diving.domain;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -40,6 +41,12 @@ public class SlotDiver extends PanacheEntityBase {
 
     @Column(name = "license_number")
     public String licenseNumber;
+
+    @Column(name = "medical_cert_date")
+    public LocalDate medicalCertDate;
+
+    @Column(columnDefinition = "TEXT")
+    public String comment;
 
     @Column(name = "added_at", nullable = false)
     public LocalDateTime addedAt = LocalDateTime.now();
@@ -80,5 +87,17 @@ public class SlotDiver extends PanacheEntityBase {
     public static boolean existsBySlotAndNameExcluding(Long slotId, String firstName, String lastName, Long excludeId) {
         return count("slot.id = ?1 and lower(firstName) = lower(?2) and lower(lastName) = lower(?3) and id != ?4",
                 slotId, firstName, lastName, excludeId) > 0;
+    }
+
+    /** Vérifie si un email est le directeur de plongée assigné sur un créneau. */
+    public static boolean isAssignedDirectorByEmail(Long slotId, String email) {
+        if (email == null || email.isBlank()) return false;
+        return count("slot.id = ?1 and isDirector = true and lower(email) = lower(?2)", slotId, email) > 0;
+    }
+
+    /** Retourne l'entrée d'un email pour un créneau donné (non-directeur). */
+    public static SlotDiver findBySlotAndEmail(Long slotId, String email) {
+        if (email == null || email.isBlank()) return null;
+        return find("slot.id = ?1 and lower(email) = lower(?2)", slotId, email).firstResult();
     }
 }

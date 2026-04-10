@@ -2,7 +2,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { slotDiverService } from '../services/slotDiverService';
 import { palanqueeService } from '../services/palanqueeService';
 import { slotService } from '../services/slotService';
-import type { DiveSlot, SlotDiver, Palanquee } from '../types';
+import { waitingListService } from '../services/waitingListService';
+import { exportDiverListCsv } from '../utils/exportDiverList';
+import type { DiveSlot, SlotDiver, Palanquee, WaitingListEntry } from '../types';
 
 // ── constantes ──────────────────────────────────────────────────────────────
 const LEVEL_COLORS: Record<string, string> = {
@@ -38,13 +40,15 @@ interface DiverCardProps {
   onAptitudesChange: (diverId: number, newAptitudes: string) => void;
   onTap?: (id: number) => void;
   isPicked?: boolean;
+  onMoveToWaitingList?: (diverId: number) => void;
+  movingToWlId?: number | null;
 }
 
 const APTITUDES_OPTIONS = ['PE12','PE20','PE40','PE60','PA12','PA20','PA40','PA60','E1','E2','E3','E4','GP'];
 const DEPTH_OPTIONS = ['6m', '12m', '20m', '30m', '40m', '50m', '60m'];
 const DURATION_OPTIONS = Array.from({ length: 24 }, (_, i) => `${(i + 1) * 10}'`);
 
-function DiverCard({ diver, onDragStart, onDragEnter, isDragging, onLevelChange, onAptitudesChange, onTap, isPicked }: DiverCardProps) {
+function DiverCard({ diver, onDragStart, onDragEnter, isDragging, onLevelChange, onAptitudesChange, onTap, isPicked, onMoveToWaitingList, movingToWlId }: DiverCardProps) {
   const [editingLevel, setEditingLevel] = useState(false);
   const [editingAptitudes, setEditingAptitudes] = useState(false);
   const color = getLevelColor(diver.level);
@@ -116,6 +120,21 @@ function DiverCard({ diver, onDragStart, onDragEnter, isDragging, onLevelChange,
           {diver.aptitudes ? diver.aptitudes : <span className="palanquee-postit-aptitudes--empty">aptitudes</span>}
         </div>
       )}
+      {onMoveToWaitingList && !diver.isDirector && (
+        <button
+          className="palanquee-postit-wl-btn"
+          title="Remettre ce plongeur en liste d'attente (annule sa place confirmée)"
+          disabled={movingToWlId === diver.id}
+          onClick={e => { e.stopPropagation(); onMoveToWaitingList(diver.id); }}
+          onMouseDown={e => e.stopPropagation()}
+        >
+          {movingToWlId === diver.id ? (
+            <span className="palanquee-postit-wl-btn__spinner">⏳</span>
+          ) : (
+            <>Remettre en liste d'attente</>
+          )}
+        </button>
+      )}
     </div>
   );
 }
@@ -139,6 +158,8 @@ interface DropZoneProps {
   onAptitudesChange: (diverId: number, newAptitudes: string) => void;
   onTapDiver?: (id: number) => void;   // mobile: tap to pick
   mobilePickedId?: number | null;      // mobile: highlight picked diver
+  onMoveToWaitingList?: (diverId: number) => void;
+  movingToWlId?: number | null;
 }
 
 function DropZone({
@@ -146,6 +167,7 @@ function DropZone({
   onDragEnterCard, onDragEnterEnd, insertBeforeId,
   label, labelIcon, isUnassigned = false, isPool = false, palanqueeIndex,
   onLevelChange, onAptitudesChange, onTapDiver, mobilePickedId,
+  onMoveToWaitingList, movingToWlId,
 }: DropZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -198,6 +220,8 @@ function DropZone({
               onAptitudesChange={onAptitudesChange}
               onTap={onTapDiver}
               isPicked={mobilePickedId === d.id}
+              onMoveToWaitingList={onMoveToWaitingList}
+              movingToWlId={movingToWlId}
             />
           </>
         ))}
@@ -210,6 +234,16 @@ function DropZone({
       </div>
     </div>
   );
+}
+
+// ── helpers ──────────────────────────────────────────────────────────────────
+
+/** Retourne true si les inscriptions sont actuellement actives sur le créneau,
+ *  en reproduisant la logique backend (registrationOpen + registrationOpensAt). */
+function isRegistrationCurrentlyActive(slot: DiveSlot | null): boolean {
+  if (!slot || !slot.registrationOpen) return false;
+  if (!slot.registrationOpensAt) return true;
+  return new Date() >= new Date(slot.registrationOpensAt);
 }
 
 // ── PalanqueePage ─────────────────────────────────────────────────────────────
@@ -225,6 +259,13 @@ export function PalanqueePage({ slotId, onBack }: Props) {
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState('');
   const [draggedId, setDraggedId]   = useState<number | null>(null);
+
+  // Liste d'attente
+  const [waitingList, setWaitingList]     = useState<WaitingListEntry[]>([]);
+  const [approvingId, setApprovingId]     = useState<number | null>(null);
+  const [cancelingId, setCancelingId]     = useState<number | null>(null);
+  const [wlError, setWlError]             = useState('');
+  const [movingToWlId, setMovingToWlId]   = useState<number | null>(null);
 
   // renaming state: palanqueeId → draft name
   const [renamingId, setRenamingId]     = useState<number | null>(null);
@@ -262,6 +303,13 @@ export function PalanqueePage({ slotId, onBack }: Props) {
       setSlot(slotData);
       setAllDivers(diversData);
       setPalanquees(pData);
+      // Charger la liste d'attente en silence (peut échouer si non autorisé)
+      try {
+        const wl = await waitingListService.getWaitingList(slotId);
+        setWaitingList(wl);
+      } catch {
+        setWaitingList([]);
+      }
     } catch {
       setError('Impossible de charger les données du créneau.');
     } finally {
@@ -555,6 +603,57 @@ export function PalanqueePage({ slotId, onBack }: Props) {
     } catch { await loadAll(); }
   }, [palanquees, slotId, loadAll]);
 
+  // ── liste d'attente ──────────────────────────────────────────────────────
+
+  const handleApprove = useCallback(async (entryId: number) => {
+    setApprovingId(entryId);
+    setWlError('');
+    try {
+      await waitingListService.approve(slotId, entryId);
+      await loadAll();
+    } catch (err: unknown) {
+      const m = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setWlError(m || 'Erreur lors de la validation');
+    } finally {
+      setApprovingId(null);
+    }
+  }, [slotId, loadAll]);
+
+  const handleCancelEntry = useCallback(async (entryId: number) => {
+    setCancelingId(entryId);
+    setWlError('');
+    try {
+      await waitingListService.cancel(slotId, entryId);
+      setWaitingList(prev => prev.filter(e => e.id !== entryId));
+    } catch (err: unknown) {
+      const m = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setWlError(m || 'Erreur lors de la suppression');
+    } finally {
+      setCancelingId(null);
+    }
+  }, [slotId]);
+
+  const handleMoveToWaitingList = useCallback(async (diverId: number) => {
+    if (!window.confirm('Remettre ce plongeur en liste d’attente ?')) return;
+    setMovingToWlId(diverId);
+    setWlError('');
+    try {
+      await slotDiverService.moveToWaitingList(slotId, diverId);
+      await loadAll();
+    } catch (err: unknown) {
+      const m = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setWlError(m || 'Erreur lors du transfert en liste d’attente');
+    } finally {
+      setMovingToWlId(null);
+    }
+  }, [slotId, loadAll]);
+
+  // ── export liste plongeurs CSV ───────────────────────────────────────────
+  const handleExportDiverList = () => {
+    if (!slot) return;
+    exportDiverListCsv(slot, allDivers);
+  };
+
   // ── export Excel ─────────────────────────────────────────────────────────
   const handleExportExcel = async () => {
     if (!slot) return;
@@ -607,6 +706,14 @@ export function PalanqueePage({ slotId, onBack }: Props) {
           </button>
           <button
             className="palanquee-export-btn"
+            onClick={handleExportDiverList}
+            disabled={allDivers.length === 0}
+            title="Télécharger la liste des plongeurs avec emails (CSV)"
+          >
+            📋 Liste plongeurs
+          </button>
+          <button
+            className="palanquee-export-btn"
             onClick={handleExportExcel}
             disabled={exporting || allDivers.length === 0}
             title="Exporter la fiche de sécurité Excel avec les palanquées"
@@ -617,6 +724,100 @@ export function PalanqueePage({ slotId, onBack }: Props) {
       </div>
 
       {error && <div className="palanquee-error">{error}</div>}
+
+      {/* ── Liste d'attente (visible uniquement par le DP / ADMIN) ── */}
+      {waitingList.length > 0 && (
+        <div className="palanquee-waiting-list">
+          <div className="palanquee-waiting-list-header">
+            <div className="palanquee-waiting-list-title-row">
+              <h3 className="palanquee-waiting-list-title">
+                📋 Liste d'attente
+                <span className="palanquee-waiting-list-badge">{waitingList.length}</span>
+              </h3>
+              <span className="palanquee-waiting-list-hint">
+                Validez pour ajouter au pool · Refusez pour retirer
+              </span>
+            </div>
+            {slot && allDivers.length >= slot.diverCount && (
+              <div className="palanquee-wl-full-notice">
+                ⚠️ Créneau complet ({allDivers.length}/{slot.diverCount}) — retirez un plongeur pour pouvoir valider une inscription
+              </div>
+            )}
+          </div>
+          {wlError && <div className="palanquee-error" style={{ marginBottom: 8 }}>{wlError}</div>}
+          <div className="palanquee-waiting-list-entries">
+            {waitingList.map((entry, idx) => {
+              const regDate = new Date(entry.registeredAt).toLocaleDateString('fr-FR', {
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit',
+              });
+              return (
+                <div key={entry.id} className="palanquee-wl-entry">
+                  <div className="palanquee-wl-entry-rank">#{idx + 1}</div>
+
+                  <div className="palanquee-wl-entry-body">
+                    <div className="palanquee-wl-entry-top">
+                      <span className="palanquee-wl-entry-name">{entry.firstName} {entry.lastName}</span>
+                      <span className="palanquee-wl-entry-level">{entry.level}</span>
+                      {entry.preparedLevel && entry.preparedLevel !== 'Aucun' && (
+                        <span className="palanquee-wl-entry-prep" title="Niveau en préparation">
+                          → {entry.preparedLevel}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="palanquee-wl-entry-meta">
+                      <a href={`mailto:${entry.email}`} className="palanquee-wl-entry-email" title="Envoyer un e-mail">
+                        ✉️ {entry.email}
+                      </a>
+                      {entry.numberOfDives !== undefined && (
+                        <span className="palanquee-wl-chip" title="Nombre de plongées">
+                          🤿 {entry.numberOfDives} plongée{entry.numberOfDives > 1 ? 's' : ''}
+                        </span>
+                      )}
+                      {entry.lastDiveDate && (
+                        <span className="palanquee-wl-chip" title="Dernière plongée">
+                          📅 {entry.lastDiveDate}
+                        </span>
+                      )}
+                      <span className="palanquee-wl-chip palanquee-wl-chip--date" title="Date d'inscription">
+                        ⏱ {regDate}
+                      </span>
+                    </div>
+
+                    {entry.comment && (
+                      <div className="palanquee-wl-entry-comment">
+                        💬 <em>{entry.comment}</em>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="palanquee-wl-entry-actions">
+                    <button
+                      className="btn-wl-approve"
+                      disabled={approvingId === entry.id || (slot !== null && allDivers.length >= slot.diverCount)}
+                      onClick={() => handleApprove(entry.id)}
+                      title={slot && allDivers.length >= slot.diverCount
+                        ? "Créneau complet — retirez un plongeur d'abord"
+                        : "Valider — ajoute le plongeur dans la liste des inscrits"}
+                    >
+                      {approvingId === entry.id ? '…' : '✓ Valider'}
+                    </button>
+                    <button
+                      className="btn-wl-cancel"
+                      disabled={cancelingId === entry.id}
+                      onClick={() => handleCancelEntry(entry.id)}
+                      title="Refuser et retirer de la liste d'attente"
+                    >
+                      {cancelingId === entry.id ? '…' : '✕ Refuser'}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="palanquee-hint">
         {isMobile
@@ -646,6 +847,8 @@ export function PalanqueePage({ slotId, onBack }: Props) {
           onAptitudesChange={handleAptitudesChange}
           onTapDiver={isMobile ? handleMobilePick : undefined}
           mobilePickedId={isMobile ? mobilePickedId : undefined}
+          onMoveToWaitingList={isRegistrationCurrentlyActive(slot) ? handleMoveToWaitingList : undefined}
+          movingToWlId={movingToWlId}
         />
       </div>
 
@@ -753,6 +956,8 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                       onAptitudesChange={handleAptitudesChange}
                       onTapDiver={handleMobilePick}
                       mobilePickedId={mobilePickedId}
+                      onMoveToWaitingList={isRegistrationCurrentlyActive(slot) ? handleMoveToWaitingList : undefined}
+                      movingToWlId={movingToWlId}
                     />
                   </div>
                 );
@@ -833,6 +1038,8 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                 palanqueeIndex={idx + 1}
                 onLevelChange={handleLevelChange}
                 onAptitudesChange={handleAptitudesChange}
+                onMoveToWaitingList={isRegistrationCurrentlyActive(slot) ? handleMoveToWaitingList : undefined}
+                movingToWlId={movingToWlId}
               />
             </div>
           ))}

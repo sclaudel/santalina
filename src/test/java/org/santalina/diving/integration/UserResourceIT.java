@@ -96,4 +96,63 @@ class UserResourceIT {
                 .then()
                 .statusCode(400);
     }
+
+    /* ── Notification prefs ── */
+
+    @Test
+    void updateNotifPrefs_shouldReturn401_withoutAuthentication() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                      {"notifOnRegistration":true,"notifOnApproved":true,
+                       "notifOnCancelled":true,"notifOnMovedToWaitlist":true,"notifOnDpRegistration":true,
+                       "notifOnCreatorRegistration":false,"notifOnSafetyReminder":true}
+                      """)
+                .when().put("/api/users/me/notifications")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    @TestSecurity(user = "diver_notif@test.com", roles = {"DIVER"})
+    void updateNotifPrefs_shouldReturn200_whenAuthenticated() {
+        // Créer l'utilisateur dans la base
+        createTestUser("diver_notif@test.com");
+        try {
+            given()
+                    .contentType(ContentType.JSON)
+                    .body("""
+                          {"notifOnRegistration":false,"notifOnApproved":true,
+                           "notifOnCancelled":false,"notifOnMovedToWaitlist":true,"notifOnDpRegistration":true,
+                           "notifOnCreatorRegistration":false,"notifOnSafetyReminder":true}
+                          """)
+                    .when().put("/api/users/me/notifications")
+                    .then()
+                    .statusCode(200)
+                    .body("notifOnRegistration", equalTo(false))
+                    .body("notifOnApproved", equalTo(true))
+                    .body("notifOnCancelled", equalTo(false));
+        } finally {
+            deleteTestUser("diver_notif@test.com");
+        }
+    }
+
+    @jakarta.transaction.Transactional
+    void createTestUser(String email) {
+        org.santalina.diving.domain.User u = new org.santalina.diving.domain.User();
+        u.email = email;
+        u.firstName = "Test";
+        u.lastName = "Notif";
+        u.passwordHash = "x";
+        u.activated = true;
+        u.role = org.santalina.diving.domain.UserRole.DIVER;
+        u.roles = java.util.Set.of(org.santalina.diving.domain.UserRole.DIVER);
+        u.persist();
+    }
+
+    @jakarta.transaction.Transactional
+    void deleteTestUser(String email) {
+        org.santalina.diving.domain.User u = org.santalina.diving.domain.User.findByEmail(email);
+        if (u != null) u.delete();
+    }
 }

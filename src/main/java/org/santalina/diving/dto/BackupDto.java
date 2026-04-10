@@ -1,5 +1,6 @@
 package org.santalina.diving.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -16,7 +17,8 @@ public class BackupDto {
             List<UserEntry> users,
             List<SlotEntry> slots,        // null si type="config-users"
             List<DiverEntry> divers,      // null si type="config-users"
-            List<PalanqueeEntry> palanquees // null si type="config-users"
+            List<PalanqueeEntry> palanquees, // null si type="config-users"
+            List<WaitingListBackupEntry> waitingListEntries // null si type="config-users"
     ) {}
 
     public record ConfigEntry(
@@ -35,7 +37,14 @@ public class BackupDto {
             boolean activated,
             boolean consentGiven,
             LocalDateTime consentDate,
-            List<String> roles
+            List<String> roles,
+            boolean notifOnRegistration,
+            boolean notifOnApproved,
+            boolean notifOnCancelled,
+            boolean notifOnMovedToWaitlist,
+            boolean notifOnDpRegistration,
+            boolean notifOnCreatorRegistration,
+            boolean notifOnSafetyReminder
     ) {}
 
     public record SlotEntry(
@@ -49,7 +58,9 @@ public class BackupDto {
             String slotType,
             String club,
             Long createdById,
-            LocalDateTime createdAt
+            LocalDateTime createdAt,
+            boolean registrationOpen,
+            @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") LocalDateTime registrationOpensAt
     ) {}
 
     public record DiverEntry(
@@ -64,7 +75,9 @@ public class BackupDto {
             String aptitudes,
             String licenseNumber,
             Long palanqueeId,
-            int palanqueePosition
+            int palanqueePosition,
+            LocalDate medicalCertDate,
+            String comment
     ) {}
 
     public record PalanqueeEntry(
@@ -76,6 +89,22 @@ public class BackupDto {
             String duration
     ) {}
 
+    public record WaitingListBackupEntry(
+            Long id,
+            Long slotId,
+            String firstName,
+            String lastName,
+            String email,
+            String level,
+            Integer numberOfDives,
+            LocalDate lastDiveDate,
+            String preparedLevel,
+            String comment,
+            LocalDateTime registeredAt,
+            LocalDate medicalCertDate,
+            boolean licenseConfirmed
+    ) {}
+
     /** Réponse d'un import */
     public record ImportResult(
             boolean success,
@@ -84,7 +113,8 @@ public class BackupDto {
             int usersRestored,
             int slotsRestored,
             int diversRestored,
-            int palanqueesRestored
+            int palanqueesRestored,
+            int waitingListRestored
     ) {}
 }
 

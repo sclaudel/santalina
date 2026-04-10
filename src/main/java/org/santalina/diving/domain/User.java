@@ -72,6 +72,32 @@ public class User extends PanacheEntityBase {
     @Column(name = "updated_at", nullable = false)
     public LocalDateTime updatedAt = LocalDateTime.now();
 
+    // ---- Préférences de notifications e-mail ----
+
+    @Column(name = "notif_on_registration", nullable = false)
+    public boolean notifOnRegistration = true;
+
+    @Column(name = "notif_on_approved", nullable = false)
+    public boolean notifOnApproved = true;
+
+    @Column(name = "notif_on_cancelled", nullable = false)
+    public boolean notifOnCancelled = true;
+
+    @Column(name = "notif_on_moved_to_waitlist", nullable = false)
+    public boolean notifOnMovedToWaitlist = true;
+
+    /** Recevoir les notifications d'inscription sur mes créneaux (en tant que DP/créateur) */
+    @Column(name = "notif_on_dp_registration", nullable = false)
+    public boolean notifOnDpRegistration = true;
+
+    /** Recevoir les notifications d'inscription sur mes créneaux (en tant que créateur uniquement) */
+    @Column(name = "notif_on_creator_registration", nullable = false)
+    public boolean notifOnCreatorRegistration = false;
+
+    /** Recevoir le rappel de fiche de sécurité (en tant que DP assigné sur un créneau) */
+    @Column(name = "notif_on_safety_reminder", nullable = false)
+    public boolean notifOnSafetyReminder = true;
+
     // ---- helpers ----
 
     /** Retourne le nom complet (prénom + nom). */
@@ -94,7 +120,8 @@ public class User extends PanacheEntityBase {
     // ---- Panache finders ----
 
     public static User findByEmail(String email) {
-        return find("email", email).firstResult();
+        if (email == null || email.isBlank()) return null;
+        return find("lower(email) = lower(?1)", email.trim()).firstResult();
     }
 
     public static long countAdmins() {
