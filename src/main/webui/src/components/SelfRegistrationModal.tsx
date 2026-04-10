@@ -23,8 +23,12 @@ export function SelfRegistrationModal({ slot, onClose, onSuccess }: Props) {
   const [level, setLevel]               = useState('');
   const [preparedLevel, setPreparedLevel] = useState('Aucun');
   const [comment, setComment]           = useState('');
+  const [medicalCertDate, setMedicalCertDate] = useState('');
+  const [licenseConfirmed, setLicenseConfirmed] = useState(false);
   const [loading, setLoading]           = useState(false);
   const [error, setError]               = useState<string | null>(null);
+
+  const today = new Date().toISOString().split('T')[0];
 
   const userName = storedUser ? `${storedUser.firstName} ${storedUser.lastName}` : '';
 
@@ -49,6 +53,14 @@ export function SelfRegistrationModal({ slot, onClose, onSuccess }: Props) {
       setError('Veuillez sélectionner votre niveau.');
       return;
     }
+    if (!medicalCertDate) {
+      setError('La date de début de votre certificat médical est obligatoire.');
+      return;
+    }
+    if (!licenseConfirmed) {
+      setError('Vous devez confirmer la validité de votre licence FFESSM.');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -63,6 +75,8 @@ export function SelfRegistrationModal({ slot, onClose, onSuccess }: Props) {
         level,
         preparedLevel: preparedLevel === 'Aucun' ? undefined : preparedLevel,
         comment: comment.trim() || undefined,
+        medicalCertDate,
+        licenseConfirmed,
       });
       onSuccess(emailChanged ? trimmedEmail : undefined);
     } catch (err) {
@@ -158,6 +172,35 @@ export function SelfRegistrationModal({ slot, onClose, onSuccess }: Props) {
               placeholder="Ce que vous souhaitez travailler ou faire durant la plongée…"
               style={{ resize: 'vertical' }}
             />
+          </div>
+
+          <div className="form-group" style={{ marginTop: 12 }}>
+            <label>Date de début de mon certificat médical <span style={{ color: '#ef4444' }}>*</span></label>
+            <input
+              type="date"
+              value={medicalCertDate}
+              onChange={e => setMedicalCertDate(e.target.value)}
+              max={today}
+              required
+            />
+            <p style={{ fontSize: 12, color: '#6b7280', margin: '4px 0 0' }}>
+              J'ai un certificat médical en cours de validité. Sa date de début est le {medicalCertDate ? new Date(medicalCertDate).toLocaleDateString('fr-FR') : '[champ date]'}.
+            </p>
+          </div>
+
+          <div className="form-group" style={{ marginTop: 12 }}>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', fontWeight: 'normal' }}>
+              <input
+                type="checkbox"
+                checked={licenseConfirmed}
+                onChange={e => setLicenseConfirmed(e.target.checked)}
+                style={{ marginTop: 3, flexShrink: 0 }}
+              />
+              <span>
+                Je confirme avoir vérifié sur le site de la FFESSM la validité de ma licence : <strong>OUI</strong>
+                <span style={{ color: '#ef4444' }}> *</span>
+              </span>
+            </label>
           </div>
 
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>

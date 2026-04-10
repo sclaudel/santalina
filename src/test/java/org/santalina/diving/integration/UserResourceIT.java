@@ -105,7 +105,8 @@ class UserResourceIT {
                 .contentType(ContentType.JSON)
                 .body("""
                       {"notifOnRegistration":true,"notifOnApproved":true,
-                       "notifOnCancelled":true,"notifOnMovedToWaitlist":true,"notifOnDpRegistration":true}
+                       "notifOnCancelled":true,"notifOnMovedToWaitlist":true,"notifOnDpRegistration":true,
+                       "notifOnCreatorRegistration":false}
                       """)
                 .when().put("/api/users/me/notifications")
                 .then()
@@ -122,7 +123,8 @@ class UserResourceIT {
                     .contentType(ContentType.JSON)
                     .body("""
                           {"notifOnRegistration":false,"notifOnApproved":true,
-                           "notifOnCancelled":false,"notifOnMovedToWaitlist":true,"notifOnDpRegistration":true}
+                           "notifOnCancelled":false,"notifOnMovedToWaitlist":true,"notifOnDpRegistration":true,
+                           "notifOnCreatorRegistration":false}
                           """)
                     .when().put("/api/users/me/notifications")
                     .then()

@@ -168,13 +168,77 @@ class WaitingListResourceIT {
                     {"firstName":"Bob","lastName":"DUPONT",
                      "email":"bob_wl@test.com","emailConfirm":"bob_wl@test.com",
                      "level":"N2","numberOfDives":20,
-                     "lastDiveDate":"2025-03-15"}
+                     "lastDiveDate":"2025-03-15",
+                     "medicalCertDate":"2099-07-01",
+                     "licenseConfirmed":true}
                     """)
                 .when().post("/api/slots/{slotId}/waiting-list", slot.id)
                 .then()
                 .statusCode(201)
                 .body("email", equalTo("bob_wl@test.com"))
                 .body("level", equalTo("N2"));
+        } finally {
+            cleanup(slot.id);
+        }
+    }
+
+    @Test
+    @TestSecurity(user = "diver@test.com", roles = {"DIVER"})
+    void register_shouldReturn400_whenLicenseNotConfirmed() {
+        DiveSlot slot = createSlot(true);
+        try {
+            given()
+                .contentType(ContentType.JSON)
+                .body("""
+                    {"firstName":"Bob","lastName":"DUPONT",
+                     "email":"bob_wl@test.com","emailConfirm":"bob_wl@test.com",
+                     "level":"N2","medicalCertDate":"2099-07-01",
+                     "licenseConfirmed":false}
+                    """)
+                .when().post("/api/slots/{slotId}/waiting-list", slot.id)
+                .then()
+                .statusCode(400);
+        } finally {
+            cleanup(slot.id);
+        }
+    }
+
+    @Test
+    @TestSecurity(user = "diver@test.com", roles = {"DIVER"})
+    void register_shouldReturn400_whenMedicalCertMissing() {
+        DiveSlot slot = createSlot(true);
+        try {
+            given()
+                .contentType(ContentType.JSON)
+                .body("""
+                    {"firstName":"Bob","lastName":"DUPONT",
+                     "email":"bob_wl@test.com","emailConfirm":"bob_wl@test.com",
+                     "level":"N2","licenseConfirmed":true}
+                    """)
+                .when().post("/api/slots/{slotId}/waiting-list", slot.id)
+                .then()
+                .statusCode(400);
+        } finally {
+            cleanup(slot.id);
+        }
+    }
+
+    @Test
+    @TestSecurity(user = "diver@test.com", roles = {"DIVER"})
+    void register_shouldReturn400_whenMedicalCertExpired() {
+        DiveSlot slot = createSlot(true);
+        try {
+            given()
+                .contentType(ContentType.JSON)
+                .body("""
+                    {"firstName":"Bob","lastName":"DUPONT",
+                     "email":"bob_wl@test.com","emailConfirm":"bob_wl@test.com",
+                     "level":"N2","medicalCertDate":"2097-01-01",
+                     "licenseConfirmed":true}
+                    """)
+                .when().post("/api/slots/{slotId}/waiting-list", slot.id)
+                .then()
+                .statusCode(400);
         } finally {
             cleanup(slot.id);
         }

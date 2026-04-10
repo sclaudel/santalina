@@ -22,7 +22,8 @@ public class UserDto {
             boolean notifOnApproved,
             boolean notifOnCancelled,
             boolean notifOnMovedToWaitlist,
-            boolean notifOnDpRegistration
+            boolean notifOnDpRegistration,
+            boolean notifOnCreatorRegistration
     ) {
         public static UserResponse from(User user) {
             return new UserResponse(
@@ -34,7 +35,8 @@ public class UserDto {
                     user.notifOnApproved,
                     user.notifOnCancelled,
                     user.notifOnMovedToWaitlist,
-                    user.notifOnDpRegistration
+                    user.notifOnDpRegistration,
+                    user.notifOnCreatorRegistration
             );
         }
     }
@@ -64,7 +66,8 @@ public class UserDto {
             @NotNull Boolean notifOnApproved,
             @NotNull Boolean notifOnCancelled,
             @NotNull Boolean notifOnMovedToWaitlist,
-            @NotNull Boolean notifOnDpRegistration
+            @NotNull Boolean notifOnDpRegistration,
+            @NotNull Boolean notifOnCreatorRegistration
     ) {}
 
     public record CreateUserRequest(

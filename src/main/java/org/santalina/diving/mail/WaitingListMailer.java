@@ -152,12 +152,14 @@ public class WaitingListMailer {
     // Mail au DP : un plongeur vient de s'inscrire en liste d'attente
     // =========================================================================
 
-    public void sendNewRegistrationToDP(WaitingListEntry entry, DiveSlot slot, String dpEmail) {
+    public void sendNewRegistrationToDP(WaitingListEntry entry, DiveSlot slot, String dpEmail, boolean isAssignedDp) {
         if (dpEmail == null || dpEmail.isBlank()) return;
 
         String siteName  = configService.getSiteName();
         String slotLabel = slotLabel(slot);
         String subject   = "[" + siteName + "] Nouvelle demande d'inscription \u2014 " + slotLabel;
+
+        String certDate = entry.medicalCertDate != null ? entry.medicalCertDate.toString() : "non renseign\u00e9e";
 
         String body = "<html><body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;\">"
             + "<h2 style=\"color:#1e40af;\">\uD83D\uDCCB Nouvelle demande d'inscription</h2>"
@@ -169,6 +171,8 @@ public class WaitingListMailer {
             + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Cr\u00e9neau :</td><td style=\"padding:4px 8px;\"><strong>" + slotLabel + "</strong></td></tr>"
             + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Date :</td><td style=\"padding:4px 8px;\">" + slot.slotDate + "</td></tr>"
             + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Horaire :</td><td style=\"padding:4px 8px;\">" + slot.startTime + " \u2013 " + slot.endTime + "</td></tr>"
+            + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Cert. m\u00e9dical (d\u00e9but) :</td><td style=\"padding:4px 8px;\">" + certDate + "</td></tr>"
+            + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Licence FFESSM valid\u00e9e :</td><td style=\"padding:4px 8px;\">" + (entry.licenseConfirmed ? "\u2705 Oui" : "\u274C Non") + "</td></tr>"
             + (entry.comment != null && !entry.comment.isBlank()
                 ? "<tr><td style=\"padding:4px 8px;color:#6b7280;vertical-align:top;\">Commentaire :</td><td style=\"padding:4px 8px;\">" + entry.comment + "</td></tr>"
                 : "")
@@ -179,14 +183,14 @@ public class WaitingListMailer {
             + "<p style=\"color:#6b7280;font-size:12px;\">Syst\u00e8me de r\u00e9servation \u2014 " + siteName + "</p>"
             + "</body></html>";
 
-        if (!shouldSendDp(configService.isNotifDpNewRegEnabled(), "dp_new_registration", dpEmail, subject, body)) return;
+        if (!shouldSendDp(configService.isNotifDpNewRegEnabled(), "dp_new_registration", dpEmail, isAssignedDp, subject, body)) return;
         sendSingle(dpEmail, subject, body);
     }
 
     // =========================================================================    // Mail au DP/créateur : un plongeur a été ajouté directement sur le créneau
     // =========================================================================
 
-    public void sendNewSlotDiverToDP(SlotDiver diver, DiveSlot slot, String dpEmail) {
+    public void sendNewSlotDiverToDP(SlotDiver diver, DiveSlot slot, String dpEmail, boolean isAssignedDp) {
         if (dpEmail == null || dpEmail.isBlank()) return;
 
         String siteName  = configService.getSiteName();
@@ -209,14 +213,14 @@ public class WaitingListMailer {
             + "<p style=\"color:#6b7280;font-size:12px;\">Système de réservation — " + siteName + "</p>"
             + "</body></html>";
 
-        if (!shouldSendDp(configService.isNotifDpNewRegEnabled(), "dp_slot_registration", dpEmail, subject, body)) return;
+        if (!shouldSendDp(configService.isNotifDpNewRegEnabled(), "dp_slot_registration", dpEmail, isAssignedDp, subject, body)) return;
         sendSingle(dpEmail, subject, body);
     }
 
     // =========================================================================    // Mail au DP : un plongeur a annul\u00e9 sa demande d'inscription
     // =========================================================================
 
-    public void sendCancellationToDP(WaitingListEntry entry, DiveSlot slot, String dpEmail) {
+    public void sendCancellationToDP(WaitingListEntry entry, DiveSlot slot, String dpEmail, boolean isAssignedDp) {
         if (dpEmail == null || dpEmail.isBlank()) return;
 
         String siteName  = configService.getSiteName();
@@ -239,7 +243,7 @@ public class WaitingListMailer {
             + "<p style=\"color:#6b7280;font-size:12px;\">Syst\u00e8me de r\u00e9servation \u2014 " + siteName + "</p>"
             + "</body></html>";
 
-        if (!shouldSendDp(configService.isNotifDpNewRegEnabled(), "dp_cancellation", dpEmail, subject, body)) return;
+        if (!shouldSendDp(configService.isNotifDpNewRegEnabled(), "dp_cancellation", dpEmail, isAssignedDp, subject, body)) return;
         sendSingle(dpEmail, subject, body);
     }
 
@@ -273,17 +277,22 @@ public class WaitingListMailer {
     }
 
     private boolean shouldSendDp(boolean globalEnabled, String notifType,
-                                  String dpEmail, String subject, String body) {
+                                  String dpEmail, boolean isAssignedDp, String subject, String body) {
         if (!globalEnabled) {
             LOG.infof("[NOTIF D\u00c9SACTIV\u00c9E][global][%s] Destinataire: %s | Sujet: %s | Contenu: %s",
                     notifType, dpEmail, subject, body);
             return false;
-        }        User user = User.findByEmail(dpEmail);
-        if (user != null && !user.notifOnDpRegistration) {
-            LOG.infof("[NOTIF DÉSACTIVÉE][préférence][%s] Destinataire: %s | Sujet: %s | Contenu: %s",
-                    notifType, dpEmail, subject, body);
-            return false;
-        }        return true;
+        }
+        User user = User.findByEmail(dpEmail);
+        if (user != null) {
+            boolean userEnabled = isAssignedDp ? user.notifOnDpRegistration : user.notifOnCreatorRegistration;
+            if (!userEnabled) {
+                LOG.infof("[NOTIF D\u00c9SACTIV\u00c9E][pr\u00e9f\u00e9rence][%s] Destinataire: %s | Sujet: %s | Contenu: %s",
+                        notifType, dpEmail, subject, body);
+                return false;
+            }
+        }
+        return true;
     }
 
     private String slotLabel(DiveSlot slot) {

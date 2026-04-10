@@ -18,6 +18,7 @@ export function ProfilePage() {
   const [notifOnCancelled, setNotifOnCancelled] = useState(user?.notifOnCancelled ?? true);
   const [notifOnMovedToWaitlist, setNotifOnMovedToWaitlist] = useState(user?.notifOnMovedToWaitlist ?? true);
   const [notifOnDpRegistration, setNotifOnDpRegistration] = useState(user?.notifOnDpRegistration ?? true);
+  const [notifOnCreatorRegistration, setNotifOnCreatorRegistration] = useState(user?.notifOnCreatorRegistration ?? false);
   const [notifLoading, setNotifLoading] = useState(false);
 
   // Charge le profil complet depuis l'API pour avoir phone & licenseNumber à jour
@@ -32,6 +33,7 @@ export function ProfilePage() {
       setNotifOnCancelled(profile.notifOnCancelled ?? true);
       setNotifOnMovedToWaitlist(profile.notifOnMovedToWaitlist ?? true);
       setNotifOnDpRegistration(profile.notifOnDpRegistration ?? true);
+      setNotifOnCreatorRegistration(profile.notifOnCreatorRegistration ?? false);
     }).catch(() => {
       // Repli sur les données du contexte si l'API échoue
       setFirstName(user?.firstName || '');
@@ -84,7 +86,7 @@ export function ProfilePage() {
   const handleUpdateNotifPrefs = async () => {
     setMsg(''); setError(''); setNotifLoading(true);
     try {
-      await authService.updateNotifPrefs({ notifOnRegistration, notifOnApproved, notifOnCancelled, notifOnMovedToWaitlist, notifOnDpRegistration });
+      await authService.updateNotifPrefs({ notifOnRegistration, notifOnApproved, notifOnCancelled, notifOnMovedToWaitlist, notifOnDpRegistration, notifOnCreatorRegistration });
       setMsg('Préférences de notification enregistrées.');
     } catch {
       setError('Erreur lors de l\'enregistrement des préférences.');
@@ -180,7 +182,8 @@ export function ProfilePage() {
               { label: '✅ Inscription validée par le directeur de plongée', value: notifOnApproved, setter: setNotifOnApproved },
               { label: '❌ Inscription annulée ou supprimée', value: notifOnCancelled, setter: setNotifOnCancelled },
               { label: '⏳ Remis en liste d\'attente', value: notifOnMovedToWaitlist, setter: setNotifOnMovedToWaitlist },
-              { label: '📋 Nouvelles inscriptions sur mes créneaux (en tant que DP / créateur)', value: notifOnDpRegistration, setter: setNotifOnDpRegistration },
+              { label: '📋 Nouvelles inscriptions sur mes créneaux (en tant que DP assigné)', value: notifOnDpRegistration, setter: setNotifOnDpRegistration },
+              { label: '📋 Nouvelles inscriptions sur mes créneaux (en tant que créateur)', value: notifOnCreatorRegistration, setter: setNotifOnCreatorRegistration },
             ] as { label: string; value: boolean; setter: (v: boolean) => void }[]).map(({ label, value, setter }) => (
               <label key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
                 <input type="checkbox" checked={value} onChange={e => setter(e.target.checked)} />

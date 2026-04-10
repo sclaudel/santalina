@@ -78,6 +78,19 @@ public class WaitingListResource {
                     + " à " + slot.registrationOpensAt.toLocalTime());
         }
 
+        // Vérifier que le plongeur confirme sa licence FFESSM
+        if (!Boolean.TRUE.equals(request.licenseConfirmed())) {
+            throw new BadRequestException("Vous devez confirmer la validité de votre licence FFESSM");
+        }
+
+        // Vérifier la date du certificat médical
+        if (request.medicalCertDate() == null) {
+            throw new BadRequestException("La date de début de votre certificat médical est obligatoire");
+        }
+        if (request.medicalCertDate().isBefore(slot.slotDate.minusYears(1))) {
+            throw new BadRequestException("Votre certificat médical est expiré (plus d'un an avant la date du créneau)");
+        }
+
         // Vérifier la double saisie email
         if (!request.email().equalsIgnoreCase(request.emailConfirm())) {
             throw new BadRequestException("Les deux adresses e-mail ne correspondent pas");
@@ -103,13 +116,15 @@ public class WaitingListResource {
         entry.lastDiveDate  = request.lastDiveDate();
         entry.preparedLevel = request.preparedLevel();
         entry.comment       = request.comment();
+        entry.medicalCertDate  = request.medicalCertDate();
+        entry.licenseConfirmed = Boolean.TRUE.equals(request.licenseConfirmed());
         entry.persist();
 
         mailer.sendWaitingListConfirmation(entry, slot);
 
-        // Notifier le DP et le créateur de la nouvelle inscription
-        for (String ownerEmail : resolveOwnerEmails(slot)) {
-            mailer.sendNewRegistrationToDP(entry, slot, ownerEmail);
+        // Notifier le DP assigné et le créateur du créneau (séparément pour les préférences)
+        for (OwnerRef owner : resolveOwnerRefs(slot)) {
+            mailer.sendNewRegistrationToDP(entry, slot, owner.email(), owner.isAssignedDp());
         }
 
         return Response.status(201).entity(WaitingListResponse.from(entry)).build();
@@ -233,8 +248,8 @@ public class WaitingListResource {
 
         // Envoyer mail au DP et au créateur si c'est le plongeur qui annule
         if (isDiver && !isAdmin && !isSlotOwner) {
-            for (String ownerEmail : resolveOwnerEmails(slot)) {
-                mailer.sendCancellationToDP(entry, slot, ownerEmail);
+            for (OwnerRef owner : resolveOwnerRefs(slot)) {
+                mailer.sendCancellationToDP(entry, slot, owner.email(), owner.isAssignedDp());
             }
         }
 
@@ -274,18 +289,27 @@ public class WaitingListResource {
         return (roles != null && !roles.isEmpty()) ? roles.iterator().next() : "";
     }
 
-    /** Retourne les e-mails uniques du DP assigné et du créateur du créneau. */
-    private List<String> resolveOwnerEmails(DiveSlot slot) {
-        List<String> emails = new ArrayList<>();
+    /** Référence à un propriétaire du créneau (DP assigné et/ou créateur) */
+    private record OwnerRef(String email, boolean isAssignedDp) {}
+
+    /** Retourne les propriétaires du créneau (DP assigné et créateur) avec leur rôle. */
+    private List<OwnerRef> resolveOwnerRefs(DiveSlot slot) {
+        List<OwnerRef> owners = new ArrayList<>();
+
         SlotDiver dp = SlotDiver.<SlotDiver>find("slot.id = ?1 and isDirector = true", slot.id).firstResult();
-        if (dp != null && dp.email != null && !dp.email.isBlank()) {
-            emails.add(dp.email.toLowerCase());
+        String dpEmail = (dp != null && dp.email != null && !dp.email.isBlank())
+                ? dp.email.toLowerCase() : null;
+        if (dpEmail != null) {
+            owners.add(new OwnerRef(dpEmail, true));
         }
+
         if (slot.createdBy != null && slot.createdBy.email != null && !slot.createdBy.email.isBlank()) {
             String creatorEmail = slot.createdBy.email.toLowerCase();
-            if (!emails.contains(creatorEmail)) emails.add(creatorEmail);
+            if (!creatorEmail.equals(dpEmail)) {
+                owners.add(new OwnerRef(creatorEmail, false));
+            }
         }
-        return emails;
+        return owners;
     }
 
     /** Vérifie si un email est déjà présent dans slot_divers pour ce créneau. */

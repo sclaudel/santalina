@@ -43,7 +43,9 @@ public class WaitingListDto {
             Integer numberOfDives,
             LocalDate lastDiveDate,
             String preparedLevel,
-            String comment
+            String comment,
+            LocalDate medicalCertDate,
+            Boolean licenseConfirmed
     ) {}
 
     /**
@@ -60,6 +62,8 @@ public class WaitingListDto {
             LocalDate lastDiveDate,
             String preparedLevel,
             String comment,
+            LocalDate medicalCertDate,
+            boolean licenseConfirmed,
             @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") LocalDateTime registeredAt
     ) {
         public static WaitingListResponse from(WaitingListEntry e) {
@@ -74,6 +78,8 @@ public class WaitingListDto {
                     e.lastDiveDate,
                     e.preparedLevel,
                     e.comment,
+                    e.medicalCertDate,
+                    e.licenseConfirmed,
                     e.registeredAt
             );
         }

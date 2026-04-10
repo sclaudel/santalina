@@ -90,6 +90,10 @@ public class User extends PanacheEntityBase {
     @Column(name = "notif_on_dp_registration", nullable = false)
     public boolean notifOnDpRegistration = true;
 
+    /** Recevoir les notifications d'inscription sur mes créneaux (en tant que créateur uniquement) */
+    @Column(name = "notif_on_creator_registration", nullable = false)
+    public boolean notifOnCreatorRegistration = false;
+
     // ---- helpers ----
 
     /** Retourne le nom complet (prénom + nom). */

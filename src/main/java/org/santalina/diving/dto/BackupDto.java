@@ -41,7 +41,8 @@ public class BackupDto {
             boolean notifOnApproved,
             boolean notifOnCancelled,
             boolean notifOnMovedToWaitlist,
-            boolean notifOnDpRegistration
+            boolean notifOnDpRegistration,
+            boolean notifOnCreatorRegistration
     ) {}
 
     public record SlotEntry(
@@ -93,7 +94,9 @@ public class BackupDto {
             LocalDate lastDiveDate,
             String preparedLevel,
             String comment,
-            LocalDateTime registeredAt
+            LocalDateTime registeredAt,
+            LocalDate medicalCertDate,
+            boolean licenseConfirmed
     ) {}
 
     /** Réponse d'un import */

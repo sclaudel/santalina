@@ -51,6 +51,14 @@ public class WaitingListEntry extends PanacheEntityBase {
     @Column(columnDefinition = "TEXT")
     public String comment;
 
+    /** Date de début de validité du certificat médical (obligatoire). */
+    @Column(name = "medical_cert_date")
+    public LocalDate medicalCertDate;
+
+    /** Atteste que le plongeur a vérifié la validité de sa licence FFESSM. */
+    @Column(name = "license_confirmed", nullable = false)
+    public boolean licenseConfirmed = false;
+
     @Column(name = "registered_at", nullable = false)
     public LocalDateTime registeredAt = LocalDateTime.now();
 

@@ -130,6 +130,7 @@ public class BackupService {
                 user.notifOnCancelled       = u.notifOnCancelled();
                 user.notifOnMovedToWaitlist = u.notifOnMovedToWaitlist();
                 user.notifOnDpRegistration  = u.notifOnDpRegistration();
+                user.notifOnCreatorRegistration = u.notifOnCreatorRegistration();
                 user.createdAt      = LocalDateTime.now();
                 user.updatedAt      = LocalDateTime.now();
                 // Rôles
@@ -289,7 +290,9 @@ public class BackupService {
                 entry.lastDiveDate  = we.lastDiveDate();
                 entry.preparedLevel = we.preparedLevel();
                 entry.comment       = we.comment();
-                entry.registeredAt  = we.registeredAt() != null ? we.registeredAt() : LocalDateTime.now();
+                entry.registeredAt    = we.registeredAt() != null ? we.registeredAt() : LocalDateTime.now();
+                entry.medicalCertDate = we.medicalCertDate();
+                entry.licenseConfirmed = we.licenseConfirmed();
                 entry.persist();
                 waitingListCount++;
             }
@@ -313,7 +316,7 @@ public class BackupService {
                 u.firstName, u.lastName, u.phone, u.licenseNumber,
                 u.activated, u.consentGiven, u.consentDate, roles,
                 u.notifOnRegistration, u.notifOnApproved, u.notifOnCancelled,
-                u.notifOnMovedToWaitlist, u.notifOnDpRegistration);
+                u.notifOnMovedToWaitlist, u.notifOnDpRegistration, u.notifOnCreatorRegistration);
     }
 
     private SlotEntry toSlotEntry(DiveSlot s) {
@@ -337,7 +340,8 @@ public class BackupService {
     private WaitingListBackupEntry toWaitingListEntry(WaitingListEntry e) {
         return new WaitingListBackupEntry(e.id, e.slot != null ? e.slot.id : null,
                 e.firstName, e.lastName, e.email, e.level,
-                e.numberOfDives, e.lastDiveDate, e.preparedLevel, e.comment, e.registeredAt);
+                e.numberOfDives, e.lastDiveDate, e.preparedLevel, e.comment, e.registeredAt,
+                e.medicalCertDate, e.licenseConfirmed);
     }
 }
 

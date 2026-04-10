@@ -299,6 +299,11 @@ export function HelpPage() {
                 <li><strong>Date de la dernière plongée</strong> — champ obligatoire.</li>
                 <li><strong>Niveau en préparation</strong> — optionnel (vaste liste disponible).</li>
                 <li><strong>Commentaire pour le DP</strong> — optionnel, pour indiquer ce que vous souhaitez travailler ou faire durant la plongée.</li>
+                <li><strong>Date de début du certificat médical</strong> — <em>obligatoire</em>. Le certificat doit avoir moins d'un an à la date du créneau.</li>
+                <li>
+                  <strong>Confirmation de la validité de la licence FFESSM</strong> — <em>obligatoire</em>.
+                  Vous devez cocher : « Je confirme avoir vérifié sur le site de la FFESSM la validité de ma licence : OUI ».
+                </li>
               </ul>
             </li>
             <li>Cliquez sur <strong>M'inscrire sur la liste d'attente</strong>.</li>
@@ -607,7 +612,8 @@ export function HelpPage() {
             <li><strong>✅ Inscription validée</strong> — reçue quand le DP valide votre inscription.</li>
             <li><strong>❌ Inscription annulée</strong> — reçue si votre inscription est annulée par un DP ou admin.</li>
             <li><strong>⏳ Remis en liste d'attente</strong> — reçue si vous êtes remis en liste d'attente.</li>
-            <li><strong>📋 Nouvelles inscriptions sur mes créneaux</strong> — reçue (en tant que directeur de plongée ou créateur) quand un plongeur rejoint votre créneau.</li>
+            <li><strong>📋 Nouvelles inscriptions (en tant que DP assigné)</strong> — reçue quand un plongeur s'inscrit sur votre créneau et que vous êtes le directeur de plongée désigné. <em>Activée par défaut.</em></li>
+            <li><strong>📋 Nouvelles inscriptions (en tant que créateur)</strong> — reçue quand un plongeur s'inscrit sur un créneau que vous avez créé. <em>Désactivée par défaut.</em></li>
           </ul>
           <p>
             <strong>Note :</strong> si la notification est désactivée globalement par l'administrateur,

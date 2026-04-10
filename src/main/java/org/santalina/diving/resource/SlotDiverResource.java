@@ -118,9 +118,9 @@ public class SlotDiverResource {
         // Notifier le DP et le créateur si un plongeur (non directeur) est ajouté
         if (!diver.isDirector) {
             String callerEmail = identity.getPrincipal().getName().toLowerCase();
-            for (String ownerEmail : resolveOwnerEmails(slot)) {
-                if (!ownerEmail.equalsIgnoreCase(callerEmail)) {
-                    mailer.sendNewSlotDiverToDP(diver, slot, ownerEmail);
+            for (OwnerRef owner : resolveOwnerRefs(slot)) {
+                if (!owner.email().equalsIgnoreCase(callerEmail)) {
+                    mailer.sendNewSlotDiverToDP(diver, slot, owner.email(), owner.isAssignedDp());
                 }
             }
         }
@@ -287,17 +287,18 @@ public class SlotDiverResource {
         return (roles != null && !roles.isEmpty()) ? roles.iterator().next() : "";
     }
 
-    /** Retourne les e-mails uniques du DP assigné et du créateur du créneau. */
-    private List<String> resolveOwnerEmails(DiveSlot slot) {
-        List<String> emails = new ArrayList<>();
+    private record OwnerRef(String email, boolean isAssignedDp) {}
+
+    /** Retourne les références uniques du DP assigné et du créateur du créneau. */
+    private List<OwnerRef> resolveOwnerRefs(DiveSlot slot) {
+        List<OwnerRef> owners = new ArrayList<>();
         SlotDiver dp = SlotDiver.<SlotDiver>find("slot.id = ?1 and isDirector = true", slot.id).firstResult();
-        if (dp != null && dp.email != null && !dp.email.isBlank()) {
-            emails.add(dp.email.toLowerCase());
-        }
+        String dpEmail = (dp != null && dp.email != null && !dp.email.isBlank()) ? dp.email.toLowerCase() : null;
+        if (dpEmail != null) owners.add(new OwnerRef(dpEmail, true));
         if (slot.createdBy != null && slot.createdBy.email != null && !slot.createdBy.email.isBlank()) {
             String creatorEmail = slot.createdBy.email.toLowerCase();
-            if (!emails.contains(creatorEmail)) emails.add(creatorEmail);
+            if (!creatorEmail.equals(dpEmail)) owners.add(new OwnerRef(creatorEmail, false));
         }
-        return emails;
+        return owners;
     }
 }

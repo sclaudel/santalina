@@ -17,6 +17,7 @@ export interface User {
   notifOnCancelled?: boolean;
   notifOnMovedToWaitlist?: boolean;
   notifOnDpRegistration?: boolean;
+  notifOnCreatorRegistration?: boolean;
 }
 
 export interface LoginResponse {
@@ -249,6 +250,8 @@ export interface WaitingListEntry {
   preparedLevel?: string;
   comment?: string;
   registeredAt: string;     // ISO datetime
+  medicalCertDate?: string;  // YYYY-MM-DD
+  licenseConfirmed?: boolean;
 }
 
 export interface WaitingListRequest {
@@ -261,6 +264,8 @@ export interface WaitingListRequest {
   lastDiveDate?: string;
   preparedLevel?: string;
   comment?: string;
+  medicalCertDate: string;   // YYYY-MM-DD
+  licenseConfirmed: boolean;
 }
 
 export interface UpdateRegistrationRequest {
