@@ -55,6 +55,10 @@ public class WaitingListEntry extends PanacheEntityBase {
     @Column(name = "medical_cert_date")
     public LocalDate medicalCertDate;
 
+    /** Club d'appartenance du plongeur (optionnel). */
+    @Column
+    public String club;
+
     /** Atteste que le plongeur a vérifié la validité de sa licence FFESSM. */
     @Column(name = "license_confirmed", nullable = false)
     public boolean licenseConfirmed = false;

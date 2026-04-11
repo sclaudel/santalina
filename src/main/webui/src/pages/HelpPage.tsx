@@ -241,6 +241,7 @@ export function HelpPage() {
             <li><strong>Niveau</strong> — niveau de certification.</li>
             <li><strong>Email</strong> — adresse e-mail si renseignée.</li>
             <li><strong>Directeur de plongée</strong> — « Oui » si le plongeur est le directeur du créneau.</li>
+            <li><strong>Club</strong> — club d'appartenance fourni lors de l'inscription libre (vide si le plongeur a été ajouté manuellement par un DP).</li>
             <li><strong>Date certificat médical</strong> — date fournie lors de l'inscription libre (vide si le plongeur a été ajouté manuellement par un DP).</li>
             <li><strong>Commentaire</strong> — commentaire laissé par le plongeur lors de l'inscription libre (vide si ajout manuel).</li>
           </ul>
@@ -319,6 +320,7 @@ export function HelpPage() {
                 <li><strong>Prénom / Nom</strong> — champs obligatoires.</li>
                 <li><strong>E-mail</strong> (double saisie obligatoire pour éviter les erreurs)</li>
                 <li><strong>Niveau de certification</strong> — sélectionner parmi : N1, N2, N3, N4, N5, E2, E3, E4, PE12, PE40, PE60, MF1, MF2.</li>
+                <li><strong>Club d'appartenance</strong> — optionnel, sélectionner votre club dans la liste configurée par l'administrateur. Affiché dans la liste d'attente pour aider le DP à identifier les plongeurs.</li>
                 <li><strong>Nombre de plongées effectuées</strong> — champ obligatoire.</li>
                 <li><strong>Date de la dernière plongée</strong> — champ obligatoire.</li>
                 <li><strong>Niveau en préparation</strong> — optionnel (vaste liste disponible).</li>
@@ -369,13 +371,13 @@ export function HelpPage() {
           <ol>
             <li>Les inscriptions apparaissent dans l'ordre d'arrivée (#1 = le premier inscrit).</li>
             <li>
-              Pour chaque entrée, vous voyez : nom, niveau, e-mail, nombre de plongées, date de la dernière plongée, niveau en préparation et commentaire éventuel.
+              Pour chaque entrée, vous voyez : nom, niveau, club d'appartenance (si renseigné), e-mail, nombre de plongées, date de la dernière plongée, niveau en préparation et commentaire éventuel.
             </li>
             <li>
               Cliquez sur <strong>✓ Valider</strong> pour accepter la demande :
               le plongeur est transféré dans la liste des inscrits et reçoit un e-mail de confirmation après un délai de 15 minutes
               (pour laisser le temps au DP de réorganiser les palanquées avant que le plongeur soit notifié).
-              La <strong>date du certificat médical</strong> et le <strong>commentaire</strong> sont conservés et apparaîtront dans l'export CSV.
+              La <strong>date du certificat médical</strong>, le <strong>commentaire</strong> et le <strong>club d'appartenance</strong> sont conservés et apparaîtront dans la liste des inscrits.
             </li>
             <li>
               Cliquez sur <strong>✕</strong> pour refuser / supprimer la demande ; 
@@ -590,7 +592,7 @@ export function HelpPage() {
           <h4>Listes configurables</h4>
           <ul>
             <li><strong>Types de plongée</strong> — ex : Exploration, Formation, Apnée. Chaque entrée peut être personnalisée avec une couleur.</li>
-            <li><strong>Clubs</strong> — liste des clubs participants, associée à chaque créneau.</li>
+            <li><strong>Clubs</strong> — liste des clubs participants. Utilisée à deux endroits : associée à chaque <strong>créneau</strong> (club organisateur) et proposée aux plongeurs lors de leur <strong>inscription libre</strong> pour indiquer leur club d'appartenance.</li>
           </ul>
 
           <h4>Accès &amp; inscriptions</h4>
@@ -743,7 +745,7 @@ export function HelpPage() {
           { type: 'h4' as const, text: 'Contenu de la fiche' },
           { type: 'ul' as const, items: ['Cellule B4 — Date, club et infos DP : NOM Prénom - Niveau - N°Licence.', 'Colonnes A–C — Nom, prénom et niveau de chaque plongeur.', 'Colonne D — Aptitudes du plongeur (PE20, PA40, GP…) si renseignées dans l\'organisation des palanquées.', 'Si des palanquées sont organisées, chaque palanquée est dans un tableau séparé.'] },
           { type: 'h4' as const, text: 'Export CSV' },
-          { type: 'paragraph' as const, text: 'Un export CSV est également disponible depuis le panneau de détails (bouton Télécharger liste CSV). Il contient : Nom, Prénom, Niveau, Email, Directeur de plongée, Date certificat médical, Commentaire.' },
+          { type: 'paragraph' as const, text: 'Un export CSV est également disponible depuis le panneau de détails (bouton Télécharger liste CSV). Il contient : Nom, Prénom, Niveau, Email, Directeur de plongée, Club, Date certificat médical, Commentaire.' },
           { type: 'tip' as const, text: 'Pour que la licence du DP apparaisse, elle doit être saisie dans son profil ou dans le formulaire DP sur le créneau.' },
         ],
       },

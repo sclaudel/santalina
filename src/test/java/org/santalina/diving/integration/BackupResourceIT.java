@@ -227,7 +227,8 @@ class BackupResourceIT {
                             "comment": "Test commentaire",
                             "registeredAt": "2099-01-01T00:00:00",
                             "medicalCertDate": "2099-01-01",
-                            "licenseConfirmed": true
+                            "licenseConfirmed": true,
+                            "club": "Club Santalina"
                         }
                     ]
                 }

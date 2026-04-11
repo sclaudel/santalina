@@ -45,7 +45,8 @@ public class WaitingListDto {
             String preparedLevel,
             String comment,
             LocalDate medicalCertDate,
-            Boolean licenseConfirmed
+            Boolean licenseConfirmed,
+            String club
     ) {}
 
     /**
@@ -64,7 +65,8 @@ public class WaitingListDto {
             String comment,
             LocalDate medicalCertDate,
             boolean licenseConfirmed,
-            @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") LocalDateTime registeredAt
+            @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") LocalDateTime registeredAt,
+            String club
     ) {
         public static WaitingListResponse from(WaitingListEntry e) {
             return new WaitingListResponse(
@@ -80,7 +82,8 @@ public class WaitingListDto {
                     e.comment,
                     e.medicalCertDate,
                     e.licenseConfirmed,
-                    e.registeredAt
+                    e.registeredAt,
+                    e.club
             );
         }
     }

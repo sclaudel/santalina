@@ -118,6 +118,7 @@ public class WaitingListResource {
         entry.comment       = request.comment();
         entry.medicalCertDate  = request.medicalCertDate();
         entry.licenseConfirmed = Boolean.TRUE.equals(request.licenseConfirmed());
+        entry.club             = request.club();
         entry.persist();
 
         mailer.sendWaitingListConfirmation(entry, slot);
@@ -206,6 +207,7 @@ public class WaitingListResource {
         diver.aptitudes     = null;  // preparedLevel est informatif uniquement, pas pré-rempli dans les aptitudes
         diver.medicalCertDate = entry.medicalCertDate;
         diver.comment        = entry.comment;
+        diver.club           = entry.club;
         diver.persist();
 
         // Planifier l'envoi du mail de validation avec le délai de grâce (15 min)

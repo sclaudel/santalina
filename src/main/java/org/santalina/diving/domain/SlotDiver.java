@@ -48,6 +48,9 @@ public class SlotDiver extends PanacheEntityBase {
     @Column(columnDefinition = "TEXT")
     public String comment;
 
+    @Column
+    public String club;
+
     @Column(name = "added_at", nullable = false)
     public LocalDateTime addedAt = LocalDateTime.now();
 

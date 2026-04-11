@@ -1131,6 +1131,7 @@ export function SlotBlock({
       {showSelfRegModal && (
         <SelfRegistrationModal
           slot={slot}
+          clubs={config?.clubs ?? []}
           onClose={() => setShowSelfRegModal(false)}
           onSuccess={(newEmail?: string) => {
             setShowSelfRegModal(false);

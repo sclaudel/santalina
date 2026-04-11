@@ -73,6 +73,7 @@ export interface SlotDiver {
   userId?: number;
   medicalCertDate?: string;
   comment?: string;
+  club?: string;
 }
 
 export interface SlotDiverRequest {
@@ -84,6 +85,7 @@ export interface SlotDiverRequest {
   isDirector: boolean;
   aptitudes?: string;
   licenseNumber?: string;
+  club?: string;
 }
 
 export interface DiveSlot {
@@ -259,6 +261,7 @@ export interface WaitingListEntry {
   registeredAt: string;     // ISO datetime
   medicalCertDate?: string;  // YYYY-MM-DD
   licenseConfirmed?: boolean;
+  club?: string;
 }
 
 export interface WaitingListRequest {
@@ -273,6 +276,7 @@ export interface WaitingListRequest {
   comment?: string;
   medicalCertDate: string;   // YYYY-MM-DD
   licenseConfirmed: boolean;
+  club?: string;
 }
 
 export interface UpdateRegistrationRequest {
