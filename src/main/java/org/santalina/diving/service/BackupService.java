@@ -216,6 +216,7 @@ public class BackupService {
                 diver.licenseNumber = d.licenseNumber();
                 diver.medicalCertDate = d.medicalCertDate();
                 diver.comment       = d.comment();
+                diver.club          = d.club();
                 diver.addedAt       = LocalDateTime.now();
                 diver.persist();
                 diverCount++;
@@ -298,6 +299,7 @@ public class BackupService {
                 entry.registeredAt    = we.registeredAt() != null ? we.registeredAt() : LocalDateTime.now();
                 entry.medicalCertDate = we.medicalCertDate();
                 entry.licenseConfirmed = we.licenseConfirmed();
+                entry.club          = we.club();
                 entry.persist();
                 waitingListCount++;
             }
@@ -337,7 +339,7 @@ public class BackupService {
                 d.firstName, d.lastName, d.level, d.email, d.phone,
                 d.isDirector, d.aptitudes, d.licenseNumber,
                 d.palanquee != null ? d.palanquee.id : null, d.palanqueePosition,
-                d.medicalCertDate, d.comment);
+                d.medicalCertDate, d.comment, d.club);
     }
 
     private PalanqueeEntry toPalanqueeEntry(Palanquee p) {
@@ -349,7 +351,7 @@ public class BackupService {
         return new WaitingListBackupEntry(e.id, e.slot != null ? e.slot.id : null,
                 e.firstName, e.lastName, e.email, e.level,
                 e.numberOfDives, e.lastDiveDate, e.preparedLevel, e.comment, e.registeredAt,
-                e.medicalCertDate, e.licenseConfirmed);
+                e.medicalCertDate, e.licenseConfirmed, e.club);
     }
 }
 

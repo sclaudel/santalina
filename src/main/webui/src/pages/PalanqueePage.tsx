@@ -770,6 +770,11 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                       <a href={`mailto:${entry.email}`} className="palanquee-wl-entry-email" title="Envoyer un e-mail">
                         ✉️ {entry.email}
                       </a>
+                      {entry.club && (
+                        <span className="palanquee-wl-chip" title="Club d'appartenance">
+                          🏊 {entry.club}
+                        </span>
+                      )}
                       {entry.numberOfDives !== undefined && (
                         <span className="palanquee-wl-chip" title="Nombre de plongées">
                           🤿 {entry.numberOfDives} plongée{entry.numberOfDives > 1 ? 's' : ''}

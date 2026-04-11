@@ -301,6 +301,50 @@ class WaitingListResourceIT {
     }
 
     @Test
+    @TestSecurity(user = "diver@test.com", roles = {"DIVER"})
+    void register_shouldReturn201_withClub_andClubPersistedInResponse() {
+        DiveSlot slot = createSlot(true);
+        try {
+            given()
+                .contentType(ContentType.JSON)
+                .body("""
+                    {"firstName":"Bob","lastName":"DUPONT",
+                     "email":"bob_club@test.com","emailConfirm":"bob_club@test.com",
+                     "level":"N2","numberOfDives":20,
+                     "lastDiveDate":"2025-03-15",
+                     "medicalCertDate":"2099-07-01",
+                     "licenseConfirmed":true,
+                     "club":"Club Santalina"}
+                    """)
+                .when().post("/api/slots/{slotId}/waiting-list", slot.id)
+                .then()
+                .statusCode(201)
+                .body("club", equalTo("Club Santalina"));
+        } finally {
+            cleanup(slot.id);
+        }
+    }
+
+    @Test
+    @TestSecurity(user = "admin@test.com", roles = {"ADMIN"})
+    void approve_shouldTransferClubToSlotDiver() {
+        DiveSlot slot = createSlot(true);
+        try {
+            WaitingListEntry entry = createEntryWithClub(slot.id, "Club Santalina");
+
+            given()
+                .contentType(ContentType.JSON)
+                .when().post("/api/slots/{slotId}/waiting-list/{entryId}/approve",
+                        slot.id, entry.id)
+                .then()
+                .statusCode(200)
+                .body("club", equalTo("Club Santalina"));
+        } finally {
+            cleanup(slot.id);
+        }
+    }
+
+    @Test
     @TestSecurity(user = "admin@test.com", roles = {"ADMIN"})
     void approve_shouldReturn200_andTransferToDivers() {
         DiveSlot slot = createSlot(true);
@@ -354,6 +398,24 @@ class WaitingListResourceIT {
         } finally {
             cleanup(slot.id);
         }
+    }
+
+    @Transactional
+    WaitingListEntry createEntryWithClub(Long slotId, String club) {
+        DiveSlot slot = DiveSlot.findById(slotId);
+        WaitingListEntry entry = new WaitingListEntry();
+        entry.slot          = slot;
+        entry.firstName     = "Alice";
+        entry.lastName      = "MARTIN";
+        entry.email         = "alice_club_" + System.nanoTime() + "@test.com";
+        entry.level         = "N2";
+        entry.numberOfDives = 30;
+        entry.lastDiveDate  = LocalDate.of(2025, 1, 15);
+        entry.medicalCertDate = LocalDate.of(2025, 3, 1);
+        entry.comment       = "Je veux travailler la remontée lente";
+        entry.club          = club;
+        entry.persist();
+        return entry;
     }
 
     // ── helpers secondaires ────────────────────────────────────────────────────

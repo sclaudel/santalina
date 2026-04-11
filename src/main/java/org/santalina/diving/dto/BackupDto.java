@@ -77,7 +77,8 @@ public class BackupDto {
             Long palanqueeId,
             int palanqueePosition,
             LocalDate medicalCertDate,
-            String comment
+            String comment,
+            String club
     ) {}
 
     public record PalanqueeEntry(
@@ -102,7 +103,8 @@ public class BackupDto {
             String comment,
             LocalDateTime registeredAt,
             LocalDate medicalCertDate,
-            boolean licenseConfirmed
+            boolean licenseConfirmed,
+            String club
     ) {}
 
     /** Réponse d'un import */

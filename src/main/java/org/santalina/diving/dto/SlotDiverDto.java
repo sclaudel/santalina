@@ -16,7 +16,8 @@ public class SlotDiverDto {
             String phone,
             boolean isDirector,
             String aptitudes,
-            String licenseNumber
+            String licenseNumber,
+            String club
     ) {}
 
     public record SlotDiverResponse(
@@ -31,7 +32,8 @@ public class SlotDiverDto {
             String licenseNumber,
             Long userId,
             LocalDate medicalCertDate,
-            String comment
+            String comment,
+            String club
     ) {
         public static SlotDiverResponse from(SlotDiver d) {
             String licenseNumber = d.licenseNumber;
@@ -45,7 +47,7 @@ public class SlotDiverDto {
             }
             return new SlotDiverResponse(d.id, d.firstName, d.lastName, d.level,
                     d.email, d.phone, d.isDirector, d.aptitudes, licenseNumber, userId,
-                    d.medicalCertDate, d.comment);
+                    d.medicalCertDate, d.comment, d.club);
         }
     }
 }
