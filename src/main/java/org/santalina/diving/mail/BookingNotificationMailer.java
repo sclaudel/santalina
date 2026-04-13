@@ -57,23 +57,23 @@ public class BookingNotificationMailer {
                   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
                 </head>
                 <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                  <h2 style="color: #1e40af;">🤿 Nouveau créneau créé</h2>
-                  <p>Un nouveau créneau de plongée vient d'être créé.</p>
+                  <h2 style="color: #1e40af;">🤿 Nouveau cr&eacute;neau cr&eacute;&eacute;</h2>
+                  <p>Un nouveau cr&eacute;neau de plong&eacute;e vient d'&ecirc;tre cr&eacute;&eacute;e.</p>
                   <table style="border-collapse:collapse; width:100%%; margin:16px 0;">
                     <tr><td style='padding:4px 8px;color:#6b7280;'>Titre :</td><td style='padding:4px 8px;'><strong>%s</strong></td></tr>
                     <tr><td style='padding:4px 8px;color:#6b7280;'>Date :</td><td style='padding:4px 8px;'>%s</td></tr>
                     <tr><td style='padding:4px 8px;color:#6b7280;'>Horaire :</td><td style='padding:4px 8px;'>%s – %s</td></tr>
                     <tr><td style='padding:4px 8px;color:#6b7280;'>Places :</td><td style='padding:4px 8px;'>%d</td></tr>
-                    <tr><td style='padding:4px 8px;color:#6b7280;'>Créé par :</td><td style='padding:4px 8px;'>%s</td></tr>
+                    <tr><td style='padding:4px 8px;color:#6b7280;'>Cr&eacute;&eacute; par :</td><td style='padding:4px 8px;'>%s</td></tr>
                     %s
                     %s
                     %s
                   </table>
                   <p style="color:#9ca3af;font-size:11px;margin-top:20px;">💡 Pour ne plus recevoir ces notifications,
                   <a href="%s" style="color:#9ca3af;">modifiez la configuration de notification</a>
-                  dans les paramètres administrateurs.</p>
+                  dans les param&egrave;tres administrateurs.</p>
                   <hr style="border: 1px solid #e5e7eb; margin-top: 30px;" />
-                  <p style="color: #6b7280; font-size: 12px;">Système de réservation — Santalina</p>
+                  <p style="color: #6b7280; font-size: 12px;">Syst&egrave;me de r&eacute;servation — Santalina</p>
                 </body>
                 </html>
                 """.formatted(
@@ -131,26 +131,26 @@ public class BookingNotificationMailer {
                   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
                 </head>
                 <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                  <h2 style="color: #1e40af;">🔁 %d créneau(x) récurrent(s) créé(s)</h2>
-                  <p>Une série de <strong>%d créneaux</strong> de plongée vient d'être créée.</p>
+                  <h2 style="color: #1e40af;">🔁 %d cr&eacute;neau(x) r&eacute;current(s) cr&eacute;&eacute;(s)</h2>
+                  <p>Une s&eacute;rie de <strong>%d cr&eacute;neaux</strong> de plong&eacute;e vient d'&ecirc;tre cr&eacute;&eacute;e.</p>
                   <table style="border-collapse:collapse; width:100%%; margin:16px 0;">
                     <tr><td style='padding:4px 8px;color:#6b7280;'>Titre :</td><td style='padding:4px 8px;'><strong>%s</strong></td></tr>
                     <tr><td style='padding:4px 8px;color:#6b7280;'>Horaire :</td><td style='padding:4px 8px;'>%s – %s</td></tr>
                     <tr><td style='padding:4px 8px;color:#6b7280;'>Places :</td><td style='padding:4px 8px;'>%d</td></tr>
-                    <tr><td style='padding:4px 8px;color:#6b7280;'>Créé par :</td><td style='padding:4px 8px;'>%s</td></tr>
+                    <tr><td style='padding:4px 8px;color:#6b7280;'>Cr&eacute;&eacute; par :</td><td style='padding:4px 8px;'>%s</td></tr>
                     %s
                     %s
                     %s
                   </table>
-                  <h3 style="color:#374151; font-size:14px; margin-bottom:8px;">Dates créées (%d)</h3>
+                  <h3 style="color:#374151; font-size:14px; margin-bottom:8px;">Dates cr&eacute;&eacute;es (%d)</h3>
                   <ul style="columns:3; -webkit-columns:3; margin:0; padding-left:20px; font-size:13px; color:#374151;">
                     %s
                   </ul>
                   <p style="color:#9ca3af;font-size:11px;margin-top:20px;">💡 Pour ne plus recevoir ces notifications,
                   <a href="%s" style="color:#9ca3af;">modifiez la configuration de notification</a>
-                  dans les paramètres administrateurs.</p>
+                  dans les param&egrave;tres administrateurs.</p>
                   <hr style="border: 1px solid #e5e7eb; margin-top: 30px;" />
-                  <p style="color: #6b7280; font-size: 12px;">Système de réservation — Santalina</p>
+                  <p style="color: #6b7280; font-size: 12px;">Syst&egrave;me de r&eacute;servation — Santalina</p>
                 </body>
                 </html>
                 """.formatted(
