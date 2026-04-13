@@ -9,6 +9,7 @@ import org.santalina.diving.domain.DiveSlot;
 import org.santalina.diving.domain.SlotDiver;
 import org.santalina.diving.domain.User;
 import org.santalina.diving.domain.WaitingListEntry;
+import org.santalina.diving.config.DivingConfig;
 import org.santalina.diving.service.ConfigService;
 
 @ApplicationScoped
@@ -22,6 +23,9 @@ public class WaitingListMailer {
     @Inject
     ConfigService configService;
 
+    @Inject
+    DivingConfig config;
+
     // =========================================================================
     // Mail au plongeur : inscription en liste d'attente
     // =========================================================================
@@ -33,7 +37,7 @@ public class WaitingListMailer {
         String slotLabel = slotLabel(slot);
         String subject   = "[" + siteName + "] Inscription en liste d'attente \u2014 " + slotLabel;
 
-        String body = "<html><body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;\">"
+        String body = "<!DOCTYPE html>\n<html lang=\"fr\">\n<head>\n  <meta charset=\"UTF-8\" />\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n</head>\n<body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;\">"
             + "<h2 style=\"color:#1e40af;\">\uD83E\uDD3F Inscription en liste d'attente</h2>"
             + "<p>Bonjour <strong>" + entry.firstName + " " + entry.lastName + "</strong>,</p>"
             + "<p>Votre demande d'inscription pour le cr\u00e9neau suivant a bien \u00e9t\u00e9 enregistr\u00e9e."
@@ -45,7 +49,7 @@ public class WaitingListMailer {
             + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Votre niveau :</td><td style=\"padding:4px 8px;\">" + entry.level + "</td></tr>"
             + "</table>"
             + "<p style=\"color:#6b7280;font-size:13px;\">Vous pouvez annuler votre inscription depuis la page du cr\u00e9neau tant que votre place n'a pas encore \u00e9t\u00e9 valid\u00e9e.</p>"
-            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, connectez-vous et modifiez vos pr\u00e9f\u00e9rences dans votre <strong>Profil</strong> \u2192 <em>Notifications par e-mail</em>.</p>"
+            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, <a href=\"" + config.baseUrl() + "/?goto=profile#notifications\" style=\"color:#9ca3af;\">modifiez vos pr\u00e9f\u00e9rences de notification</a> dans votre profil.</p>"
             + "<hr style=\"border:1px solid #e5e7eb;margin-top:30px;\"/>"
             + "<p style=\"color:#6b7280;font-size:12px;\">Syst\u00e8me de r\u00e9servation \u2014 " + siteName + "</p>"
             + "</body></html>";
@@ -65,7 +69,7 @@ public class WaitingListMailer {
         String slotLabel = slotLabel(slot);
         String subject   = "[" + siteName + "] Inscription valid\u00e9e \u2014 " + slotLabel;
 
-        String body = "<html><body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;\">"
+        String body = "<!DOCTYPE html>\n<html lang=\"fr\">\n<head>\n  <meta charset=\"UTF-8\" />\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n</head>\n<body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;\">"
             + "<h2 style=\"color:#16a34a;\">\u2705 Inscription valid\u00e9e !</h2>"
             + "<p>Bonjour <strong>" + firstName + " " + lastName + "</strong>,</p>"
             + "<p>Votre inscription pour le cr\u00e9neau suivant a \u00e9t\u00e9 <strong>valid\u00e9e</strong> par le directeur de plong\u00e9e."
@@ -76,7 +80,7 @@ public class WaitingListMailer {
             + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Horaire :</td><td style=\"padding:4px 8px;\">" + slot.startTime + " \u2013 " + slot.endTime + "</td></tr>"
             + "</table>"
             + "<p>\u00c0 tr\u00e8s bient\u00f4t sous l'eau ! \uD83C\uDF0A</p>"
-            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, connectez-vous et modifiez vos pr\u00e9f\u00e9rences dans votre <strong>Profil</strong> \u2192 <em>Notifications par e-mail</em>.</p>"
+            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, <a href=\"" + config.baseUrl() + "/?goto=profile#notifications\" style=\"color:#9ca3af;\">modifiez vos pr\u00e9f\u00e9rences de notification</a> dans votre profil.</p>"
             + "<hr style=\"border:1px solid #e5e7eb;margin-top:30px;\"/>"
             + "<p style=\"color:#6b7280;font-size:12px;\">Syst\u00e8me de r\u00e9servation \u2014 " + siteName + "</p>"
             + "</body></html>";
@@ -97,7 +101,7 @@ public class WaitingListMailer {
         String slotLabel = slotLabel(slot);
         String subject   = "[" + siteName + "] Remis en liste d'attente \u2014 " + slotLabel;
 
-        String body = "<html><body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;\">"
+        String body = "<!DOCTYPE html>\n<html lang=\"fr\">\n<head>\n  <meta charset=\"UTF-8\" />\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n</head>\n<body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;\">"
             + "<h2 style=\"color:#d97706;\">\u23F3 Remis en liste d'attente</h2>"
             + "<p>Bonjour <strong>" + firstName + " " + lastName + "</strong>,</p>"
             + "<p>Le directeur de plong\u00e9e vous a remis en <strong>liste d'attente</strong>"
@@ -109,7 +113,7 @@ public class WaitingListMailer {
             + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Votre niveau :</td><td style=\"padding:4px 8px;\">" + level + "</td></tr>"
             + "</table>"
             + "<p style=\"color:#6b7280;font-size:13px;\">Vous pouvez annuler votre inscription depuis la page du cr\u00e9neau si vous le souhaitez.</p>"
-            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, connectez-vous et modifiez vos pr\u00e9f\u00e9rences dans votre <strong>Profil</strong> \u2192 <em>Notifications par e-mail</em>.</p>"
+            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, <a href=\"" + config.baseUrl() + "/?goto=profile#notifications\" style=\"color:#9ca3af;\">modifiez vos pr\u00e9f\u00e9rences de notification</a> dans votre profil.</p>"
             + "<hr style=\"border:1px solid #e5e7eb;margin-top:30px;\"/>"
             + "<p style=\"color:#6b7280;font-size:12px;\">Syst\u00e8me de r\u00e9servation \u2014 " + siteName + "</p>"
             + "</body></html>";
@@ -129,7 +133,7 @@ public class WaitingListMailer {
         String slotLabel = slotLabel(slot);
         String subject   = "[" + siteName + "] Inscription annul\u00e9e \u2014 " + slotLabel;
 
-        String body = "<html><body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;\">"
+        String body = "<!DOCTYPE html>\n<html lang=\"fr\">\n<head>\n  <meta charset=\"UTF-8\" />\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n</head>\n<body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;\">"
             + "<h2 style=\"color:#dc2626;\">\u274C Inscription annul\u00e9e</h2>"
             + "<p>Bonjour <strong>" + firstName + " " + lastName + "</strong>,</p>"
             + "<p>Le directeur de plong\u00e9e a annul\u00e9 votre inscription pour le cr\u00e9neau suivant :</p>"
@@ -139,7 +143,7 @@ public class WaitingListMailer {
             + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Horaire :</td><td style=\"padding:4px 8px;\">" + slot.startTime + " \u2013 " + slot.endTime + "</td></tr>"
             + "</table>"
             + "<p style=\"color:#6b7280;font-size:13px;\">Pour toute question, rapprochez-vous du directeur de plong\u00e9e du cr\u00e9neau.</p>"
-            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, connectez-vous et modifiez vos pr\u00e9f\u00e9rences dans votre <strong>Profil</strong> \u2192 <em>Notifications par e-mail</em>.</p>"
+            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, <a href=\"" + config.baseUrl() + "/?goto=profile#notifications\" style=\"color:#9ca3af;\">modifiez vos pr\u00e9f\u00e9rences de notification</a> dans votre profil.</p>"
             + "<hr style=\"border:1px solid #e5e7eb;margin-top:30px;\"/>"
             + "<p style=\"color:#6b7280;font-size:12px;\">Syst\u00e8me de r\u00e9servation \u2014 " + siteName + "</p>"
             + "</body></html>";
@@ -161,7 +165,7 @@ public class WaitingListMailer {
 
         String certDate = entry.medicalCertDate != null ? entry.medicalCertDate.toString() : "non renseign\u00e9e";
 
-        String body = "<html><body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;\">"
+        String body = "<!DOCTYPE html>\n<html lang=\"fr\">\n<head>\n  <meta charset=\"UTF-8\" />\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n</head>\n<body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;\">"
             + "<h2 style=\"color:#1e40af;\">\uD83D\uDCCB Nouvelle demande d'inscription</h2>"
             + "<p>Un(e) plongeur(se) vient de s'inscrire en liste d'attente pour votre cr\u00e9neau :</p>"
             + "<table style=\"border-collapse:collapse;width:100%;margin:16px 0;\">"
@@ -178,7 +182,7 @@ public class WaitingListMailer {
                 : "")
             + "</table>"
             + "<p style=\"color:#6b7280;font-size:13px;\">Connectez-vous pour valider ou refuser cette demande depuis la gestion du cr\u00e9neau.</p>"
-            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, connectez-vous et modifiez vos pr\u00e9f\u00e9rences dans votre <strong>Profil</strong> \u2192 <em>Notifications par e-mail</em>.</p>"
+            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, <a href=\"" + config.baseUrl() + "/?goto=profile#notifications\" style=\"color:#9ca3af;\">modifiez vos pr\u00e9f\u00e9rences de notification</a> dans votre profil.</p>"
             + "<hr style=\"border:1px solid #e5e7eb;margin-top:30px;\"/>"
             + "<p style=\"color:#6b7280;font-size:12px;\">Syst\u00e8me de r\u00e9servation \u2014 " + siteName + "</p>"
             + "</body></html>";
@@ -197,7 +201,7 @@ public class WaitingListMailer {
         String slotLabel = slotLabel(slot);
         String subject   = "[" + siteName + "] Nouvelle inscription — " + slotLabel;
 
-        String body = "<html><body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;\">"
+        String body = "<!DOCTYPE html>\n<html lang=\"fr\">\n<head>\n  <meta charset=\"UTF-8\" />\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n</head>\n<body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;\">"
             + "<h2 style=\"color:#1e40af;\">\uD83D\uDCCB Nouvelle inscription sur votre créneau</h2>"
             + "<p>Un(e) plongeur(se) a été inscrit(e) directement sur votre créneau :</p>"
             + "<table style=\"border-collapse:collapse;width:100%;margin:16px 0;\">"
@@ -208,7 +212,7 @@ public class WaitingListMailer {
             + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Date :</td><td style=\"padding:4px 8px;\">" + slot.slotDate + "</td></tr>"
             + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Horaire :</td><td style=\"padding:4px 8px;\">" + slot.startTime + " – " + slot.endTime + "</td></tr>"
             + "</table>"
-            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, connectez-vous et modifiez vos pr\u00e9f\u00e9rences dans votre <strong>Profil</strong> \u2192 <em>Notifications par e-mail</em>.</p>"
+            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, <a href=\"" + config.baseUrl() + "/?goto=profile#notifications\" style=\"color:#9ca3af;\">modifiez vos pr\u00e9f\u00e9rences de notification</a> dans votre profil.</p>"
             + "<hr style=\"border:1px solid #e5e7eb;margin-top:30px;\"/>"
             + "<p style=\"color:#6b7280;font-size:12px;\">Système de réservation — " + siteName + "</p>"
             + "</body></html>";
@@ -227,7 +231,7 @@ public class WaitingListMailer {
         String slotLabel = slotLabel(slot);
         String subject   = "[" + siteName + "] Annulation d'inscription \u2014 " + slotLabel;
 
-        String body = "<html><body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;\">"
+        String body = "<!DOCTYPE html>\n<html lang=\"fr\">\n<head>\n  <meta charset=\"UTF-8\" />\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n</head>\n<body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;\">"
             + "<h2 style=\"color:#dc2626;\">\u274C Annulation d'inscription</h2>"
             + "<p>Le/la plongeur(se) <strong>" + entry.firstName + " " + entry.lastName + "</strong> a annul\u00e9 sa demande d'inscription pour le cr\u00e9neau suivant :</p>"
             + "<table style=\"border-collapse:collapse;width:100%;margin:16px 0;\">"
@@ -238,7 +242,7 @@ public class WaitingListMailer {
             + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Niveau :</td><td style=\"padding:4px 8px;\">" + entry.level + "</td></tr>"
             + "</table>"
             + "<p style=\"color:#6b7280;font-size:13px;\">Pensez \u00e0 v\u00e9rifier l'organisation de la sortie.</p>"
-            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, connectez-vous et modifiez vos pr\u00e9f\u00e9rences dans votre <strong>Profil</strong> \u2192 <em>Notifications par e-mail</em>.</p>"
+            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, <a href=\"" + config.baseUrl() + "/?goto=profile#notifications\" style=\"color:#9ca3af;\">modifiez vos pr\u00e9f\u00e9rences de notification</a> dans votre profil.</p>"
             + "<hr style=\"border:1px solid #e5e7eb;margin-top:30px;\"/>"
             + "<p style=\"color:#6b7280;font-size:12px;\">Syst\u00e8me de r\u00e9servation \u2014 " + siteName + "</p>"
             + "</body></html>";
@@ -268,7 +272,7 @@ public class WaitingListMailer {
                 .replace("{slotDate}", slot.slotDate.toString())
                 .replace("{slotLabel}", slotLabel);
 
-        String body = "<html><body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;\">"
+        String body = "<!DOCTYPE html>\n<html lang=\"fr\">\n<head>\n  <meta charset=\"UTF-8\" />\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n</head>\n<body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;\">"
             + "<h2 style=\"color:#d97706;\">\uD83D\uDCCB Rappel fiche de s\u00e9curit\u00e9</h2>"
             + "<p>Bonjour <strong>" + firstName + " " + lastName + "</strong>,</p>"
             + "<div style=\"margin:16px 0;\">" + bodyText.replace("\n", "<br>") + "</div>"
@@ -277,7 +281,7 @@ public class WaitingListMailer {
             + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Date :</td><td style=\"padding:4px 8px;\">" + slot.slotDate + "</td></tr>"
             + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Horaire :</td><td style=\"padding:4px 8px;\">" + slot.startTime + " \u2013 " + slot.endTime + "</td></tr>"
             + "</table>"
-            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, connectez-vous et modifiez vos pr\u00e9f\u00e9rences dans votre <strong>Profil</strong> \u2192 <em>Notifications par e-mail</em>.</p>"
+            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, <a href=\"" + config.baseUrl() + "/?goto=profile#notifications\" style=\"color:#9ca3af;\">modifiez vos pr\u00e9f\u00e9rences de notification</a> dans votre profil.</p>"
             + "<hr style=\"border:1px solid #e5e7eb;margin-top:30px;\"/>"
             + "<p style=\"color:#6b7280;font-size:12px;\">Syst\u00e8me de r\u00e9servation \u2014 " + siteName + "</p>"
             + "</body></html>";
@@ -342,8 +346,11 @@ public class WaitingListMailer {
     }
 
     private void sendSingle(String to, String subject, String body) {
+        String profileUrl = config.baseUrl() + "/?goto=profile#notifications";
         try {
-            mailer.send(Mail.withHtml(to, subject, body));
+            mailer.send(Mail.withHtml(to, subject, body)
+                    .addHeader("List-Unsubscribe", "<" + profileUrl + ">")
+                    .addHeader("List-Unsubscribe-Post", "List-Unsubscribe=One-Click"));
         } catch (Exception e) {
             LOG.warnf("Impossible d'envoyer le mail '%s' \u00e0 %s : %s", subject, to, e.getMessage());
         }

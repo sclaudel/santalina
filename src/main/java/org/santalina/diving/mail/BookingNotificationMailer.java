@@ -5,6 +5,7 @@ import io.quarkus.mailer.Mailer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
+import org.santalina.diving.config.DivingConfig;
 import org.santalina.diving.domain.DiveSlot;
 import org.santalina.diving.service.ConfigService;
 
@@ -20,6 +21,9 @@ public class BookingNotificationMailer {
 
     @Inject
     ConfigService configService;
+
+    @Inject
+    DivingConfig config;
 
     // -------------------------------------------------------------------------
     // Créneau simple
@@ -46,7 +50,12 @@ public class BookingNotificationMailer {
         String creator = slot.createdBy != null ? slot.createdBy.fullName() : "Inconnu";
 
         String body = """
-                <html>
+                <!DOCTYPE html>
+                <html lang="fr">
+                <head>
+                  <meta charset="UTF-8" />
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                </head>
                 <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                   <h2 style="color: #1e40af;">🤿 Nouveau créneau créé</h2>
                   <p>Un nouveau créneau de plongée vient d'être créé.</p>
@@ -60,6 +69,9 @@ public class BookingNotificationMailer {
                     %s
                     %s
                   </table>
+                  <p style="color:#9ca3af;font-size:11px;margin-top:20px;">💡 Pour ne plus recevoir ces notifications,
+                  <a href="%s" style="color:#9ca3af;">modifiez la configuration de notification</a>
+                  dans les paramètres administrateurs.</p>
                   <hr style="border: 1px solid #e5e7eb; margin-top: 30px;" />
                   <p style="color: #6b7280; font-size: 12px;">Système de réservation — Santalina</p>
                 </body>
@@ -72,7 +84,8 @@ public class BookingNotificationMailer {
                 creator,
                 typeInfo,
                 clubInfo,
-                notesInfo
+                notesInfo,
+                config.baseUrl() + "/?goto=admin"
         );
 
         String siteName = configService.getSiteName();
@@ -111,7 +124,12 @@ public class BookingNotificationMailer {
         }
 
         String body = """
-                <html>
+                <!DOCTYPE html>
+                <html lang="fr">
+                <head>
+                  <meta charset="UTF-8" />
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                </head>
                 <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                   <h2 style="color: #1e40af;">🔁 %d créneau(x) récurrent(s) créé(s)</h2>
                   <p>Une série de <strong>%d créneaux</strong> de plongée vient d'être créée.</p>
@@ -128,6 +146,9 @@ public class BookingNotificationMailer {
                   <ul style="columns:3; -webkit-columns:3; margin:0; padding-left:20px; font-size:13px; color:#374151;">
                     %s
                   </ul>
+                  <p style="color:#9ca3af;font-size:11px;margin-top:20px;">💡 Pour ne plus recevoir ces notifications,
+                  <a href="%s" style="color:#9ca3af;">modifiez la configuration de notification</a>
+                  dans les paramètres administrateurs.</p>
                   <hr style="border: 1px solid #e5e7eb; margin-top: 30px;" />
                   <p style="color: #6b7280; font-size: 12px;">Système de réservation — Santalina</p>
                 </body>
@@ -141,7 +162,8 @@ public class BookingNotificationMailer {
                 creator,
                 typeInfo, clubInfo, notesInfo,
                 slots.size(),
-                dateListHtml.toString()
+                dateListHtml.toString(),
+                config.baseUrl() + "/?goto=admin"
         );
 
         String siteName = configService.getSiteName();
@@ -154,13 +176,16 @@ public class BookingNotificationMailer {
     // -------------------------------------------------------------------------
 
     private void sendToAll(String notifEmail, String subject, String body) {
+        String configUrl = config.baseUrl() + "/?goto=admin";
         String[] recipients = notifEmail.split(",");
         for (String recipient : recipients) {
             String email = recipient.trim();
             if (email.isBlank()) continue;
             LOG.infof("Envoi mail [%s] à %s", subject, email);
             try {
-                mailer.send(Mail.withHtml(email, subject, body));
+                mailer.send(Mail.withHtml(email, subject, body)
+                        .addHeader("List-Unsubscribe", "<" + configUrl + ">")
+                        .addHeader("List-Unsubscribe-Post", "List-Unsubscribe=One-Click"));
             } catch (Exception e) {
                 LOG.errorf(e, "Échec de l'envoi du mail à %s", email);
             }

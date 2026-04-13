@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/authService';
 
 export function ProfilePage() {
   const { user } = useAuth();
+  const notifSectionRef = useRef<HTMLDivElement>(null);
   const [firstName, setFirstName] = useState(user?.firstName || '');
   const [lastName, setLastName]   = useState(user?.lastName  || '');
   const [phone, setPhone]         = useState(user?.phone || '');
@@ -21,6 +22,13 @@ export function ProfilePage() {
   const [notifOnCreatorRegistration, setNotifOnCreatorRegistration] = useState(user?.notifOnCreatorRegistration ?? false);
   const [notifOnSafetyReminder, setNotifOnSafetyReminder] = useState(user?.notifOnSafetyReminder ?? true);
   const [notifLoading, setNotifLoading] = useState(false);
+
+  // Scroll vers la section notifications si le hash #notifications est présent dans l'URL
+  useEffect(() => {
+    if (window.location.hash === '#notifications') {
+      notifSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, []);
 
   // Charge le profil complet depuis l'API pour avoir phone & licenseNumber à jour
   useEffect(() => {
@@ -173,7 +181,7 @@ export function ProfilePage() {
           </form>
         </div>
 
-        <div className="profile-section">
+        <div className="profile-section" id="notifications" ref={notifSectionRef}>
           <h3>🔔 Notifications par e-mail</h3>
           <p style={{ color: '#6b7280', fontSize: 13, marginBottom: 16 }}>
             Désactivez les types de notifications que vous ne souhaitez pas recevoir.

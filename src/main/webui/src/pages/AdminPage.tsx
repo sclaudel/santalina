@@ -14,6 +14,15 @@ const EMPTY_FORM: CreateUserRequest = {
   email: '', firstName: '', lastName: '', password: '', phone: '', licenseNumber: '', roles: ['DIVER'],
 };
 
+type AdminTabId = 'general' | 'catalog' | 'users' | 'operations';
+
+const ADMIN_TABS: { id: AdminTabId; label: string; description: string }[] = [
+  { id: 'general', label: '⚙️ Général', description: 'Réglages principaux du site' },
+  { id: 'catalog', label: '📚 Référentiels', description: 'Listes et types de créneaux' },
+  { id: 'users', label: '👥 Utilisateurs', description: 'Comptes, rôles et permissions' },
+  { id: 'operations', label: '🛠️ Opérations', description: 'Logs, sauvegarde et restauration' },
+];
+
 export function AdminPage() {
   const [users, setUsers]                   = useState<User[]>([]);
   const [config, setConfig]                 = useState<AppConfig | null>(null);
@@ -82,6 +91,7 @@ export function AdminPage() {
   const [backupLoading, setBackupLoading]   = useState(false);
   const [importLoading, setImportLoading]   = useState(false);
   const [importResult, setImportResult]     = useState<ImportResult | null>(null);
+  const [activeTab, setActiveTab]           = useState<AdminTabId>('general');
   const importFileRef = useRef<HTMLInputElement>(null);
 
   const loadData = async () => {
@@ -403,6 +413,27 @@ export function AdminPage() {
       {msg   && <div className="alert alert-success">{msg}</div>}
       {error && <div className="alert alert-error">{error}</div>}
 
+      <div className="admin-tabs" role="tablist" aria-label="Sections d'administration">
+        {ADMIN_TABS.map(tab => (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            className={`admin-tab ${activeTab === tab.id ? 'admin-tab-active' : ''}`}
+            aria-selected={activeTab === tab.id}
+            aria-controls={`admin-panel-${tab.id}`}
+            id={`admin-tab-${tab.id}`}
+            onClick={() => setActiveTab(tab.id)}
+            title={tab.description}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'general' && (
+        <div id="admin-panel-general" role="tabpanel" aria-labelledby="admin-tab-general">
+
       {/* Configuration du lac */}
       <div className="admin-section">
         <h2>🌊 Configuration du lac</h2>
@@ -684,6 +715,12 @@ export function AdminPage() {
         </form>
       </div>
 
+      </div>
+      )}
+
+      {activeTab === 'operations' && (
+        <div id="admin-panel-operations" role="tabpanel" aria-labelledby="admin-tab-operations">
+
       {/* ── Téléchargement des logs ── */}
       <div className="admin-section">
         <h2>📋 Logs des services</h2>
@@ -831,6 +868,12 @@ export function AdminPage() {
         </div>
       </div>
 
+      </div>
+      )}
+
+      {activeTab === 'catalog' && (
+        <div id="admin-panel-catalog" role="tabpanel" aria-labelledby="admin-tab-catalog">
+
       {/* Listes configurables */}
       <div className="admin-section">
         <h2>📋 Listes configurables</h2>
@@ -933,6 +976,12 @@ export function AdminPage() {
           </>
         )}
       </div>
+
+      </div>
+      )}
+
+      {activeTab === 'users' && (
+        <div id="admin-panel-users" role="tabpanel" aria-labelledby="admin-tab-users">
 
       {/* Gestion des utilisateurs */}
       <div className="admin-section">        <div className="admin-section-header">
@@ -1132,6 +1181,9 @@ export function AdminPage() {
           </div>
         )}
       </div>
+
+      </div>
+      )}
     </div>
   );
 }
