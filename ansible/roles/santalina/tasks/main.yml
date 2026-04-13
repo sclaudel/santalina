@@ -265,15 +265,17 @@
     chdir: "{{ app_dir }}"
   become: false
 
-# Redémarrer nginx si son fichier de configuration a changé
-# (ex : passage HTTP → HTTPS lors d'un re-déploiement — docker compose up -d
-# ne redémarre pas un conteneur quand seul un fichier bind-mounté est modifié)
-- name: Redémarrer Nginx si la configuration a changé
+# Recharger nginx après docker compose up -d — nécessaire car :
+# - docker compose up -d ne redémarre pas un conteneur quand seul un fichier
+#   bind-mounté (nginx.conf) change sur disque ;
+# - un reload est sans coupure et garantit que la conf active correspond au
+#   fichier déployé, même si le template n'a pas changé cette fois-ci
+#   (ex : re-déploiement après un crash/restart du conteneur nginx).
+- name: Recharger la configuration Nginx (reload gracieux)
   ansible.builtin.command:
-    cmd: docker compose restart nginx
+    cmd: docker exec santalina-nginx nginx -s reload
     chdir: "{{ app_dir }}"
   become: false
-  when: nginx_conf_deploy.changed
 
 # ── DKIM — récupération de la clé publique ────────────────────────────────────
 # La génération RSA peut prendre plusieurs minutes sur un VPS (entropie limitée).
