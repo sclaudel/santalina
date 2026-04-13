@@ -19,11 +19,14 @@ function AppContent() {
 
   const urlParams = new URLSearchParams(window.location.search);
   const token = urlParams.get('token');
+  const gotoParam = urlParams.get('goto');
   const isResetPage = window.location.pathname === '/reset-password' && token;
   const isActivatePage = window.location.pathname === '/activate' && token;
 
   const [currentPage, setCurrentPage] = useState<string>('calendar');
   const [appConfig, setAppConfig] = useState<AppConfig | null>(null);
+  // Redirect post-login si l'URL contient ?goto=
+  const gotoHandledRef = useRef(false);
   // Contexte de retour vers le calendrier (date + vue) après navigation palanquées
   const calendarReturnRef = useRef<{ date: string; viewMode: string } | null>(null);
   const calendarViewModeRef = useRef<string>('day');
@@ -31,6 +34,16 @@ function AppContent() {
   useEffect(() => {
     adminService.getConfig().then(setAppConfig).catch(() => {});
   }, []);
+
+  // Gère la redirection ?goto= dès que l'authentification est confirmée
+  useEffect(() => {
+    if (gotoParam && isAuthenticated && !gotoHandledRef.current) {
+      gotoHandledRef.current = true;
+      navigate(gotoParam);
+    }
+  // navigate est stable (défini hors du cycle), gotoParam est une constante de render
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, gotoParam]);
 
   const navigate = (page: string) => {
     if (page === 'admin' && user?.role !== 'ADMIN') return;

@@ -83,7 +83,7 @@ class BookingNotificationMailerTest {
         assertNotNull(mail.getHeaders().get("List-Unsubscribe"),
                 "Le header List-Unsubscribe doit être présent");
         assertTrue(mail.getHeaders().get("List-Unsubscribe").stream()
-                .anyMatch(v -> v.contains(BASE_URL + "/config")),
+                .anyMatch(v -> v.contains(BASE_URL + "/?goto=admin")),
                 "Le header List-Unsubscribe doit pointer vers la page config");
     }
 
@@ -92,7 +92,7 @@ class BookingNotificationMailerTest {
         mailer.sendSlotCreatedNotification(buildSlot());
 
         String html = mailbox.getMailsSentTo(ADMIN_EMAIL).get(0).getHtml();
-        assertTrue(html.contains(BASE_URL + "/config"),
+        assertTrue(html.contains(BASE_URL + "/?goto=admin"),
                 "Le corps du mail doit contenir le lien vers la page config");
     }
 
@@ -133,7 +133,7 @@ class BookingNotificationMailerTest {
 
         var mail = mailbox.getMailsSentTo(ADMIN_EMAIL).get(0);
         assertTrue(mail.getHeaders().get("List-Unsubscribe").stream()
-                .anyMatch(v -> v.contains(BASE_URL + "/config")),
+                .anyMatch(v -> v.contains(BASE_URL + "/?goto=admin")),
                 "Le header List-Unsubscribe doit pointer vers la page config");
     }
 

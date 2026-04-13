@@ -49,7 +49,7 @@ public class WaitingListMailer {
             + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Votre niveau :</td><td style=\"padding:4px 8px;\">" + entry.level + "</td></tr>"
             + "</table>"
             + "<p style=\"color:#6b7280;font-size:13px;\">Vous pouvez annuler votre inscription depuis la page du cr\u00e9neau tant que votre place n'a pas encore \u00e9t\u00e9 valid\u00e9e.</p>"
-            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, <a href=\"" + config.baseUrl() + "/profile\" style=\"color:#9ca3af;\">modifiez vos pr\u00e9f\u00e9rences de notification</a> dans votre profil.</p>"
+            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, <a href=\"" + config.baseUrl() + "/?goto=profile#notifications\" style=\"color:#9ca3af;\">modifiez vos pr\u00e9f\u00e9rences de notification</a> dans votre profil.</p>"
             + "<hr style=\"border:1px solid #e5e7eb;margin-top:30px;\"/>"
             + "<p style=\"color:#6b7280;font-size:12px;\">Syst\u00e8me de r\u00e9servation \u2014 " + siteName + "</p>"
             + "</body></html>";
@@ -80,7 +80,7 @@ public class WaitingListMailer {
             + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Horaire :</td><td style=\"padding:4px 8px;\">" + slot.startTime + " \u2013 " + slot.endTime + "</td></tr>"
             + "</table>"
             + "<p>\u00c0 tr\u00e8s bient\u00f4t sous l'eau ! \uD83C\uDF0A</p>"
-            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, <a href=\"" + config.baseUrl() + "/profile\" style=\"color:#9ca3af;\">modifiez vos pr\u00e9f\u00e9rences de notification</a> dans votre profil.</p>"
+            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, <a href=\"" + config.baseUrl() + "/?goto=profile#notifications\" style=\"color:#9ca3af;\">modifiez vos pr\u00e9f\u00e9rences de notification</a> dans votre profil.</p>"
             + "<hr style=\"border:1px solid #e5e7eb;margin-top:30px;\"/>"
             + "<p style=\"color:#6b7280;font-size:12px;\">Syst\u00e8me de r\u00e9servation \u2014 " + siteName + "</p>"
             + "</body></html>";
@@ -113,7 +113,7 @@ public class WaitingListMailer {
             + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Votre niveau :</td><td style=\"padding:4px 8px;\">" + level + "</td></tr>"
             + "</table>"
             + "<p style=\"color:#6b7280;font-size:13px;\">Vous pouvez annuler votre inscription depuis la page du cr\u00e9neau si vous le souhaitez.</p>"
-            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, <a href=\"" + config.baseUrl() + "/profile\" style=\"color:#9ca3af;\">modifiez vos pr\u00e9f\u00e9rences de notification</a> dans votre profil.</p>"
+            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, <a href=\"" + config.baseUrl() + "/?goto=profile#notifications\" style=\"color:#9ca3af;\">modifiez vos pr\u00e9f\u00e9rences de notification</a> dans votre profil.</p>"
             + "<hr style=\"border:1px solid #e5e7eb;margin-top:30px;\"/>"
             + "<p style=\"color:#6b7280;font-size:12px;\">Syst\u00e8me de r\u00e9servation \u2014 " + siteName + "</p>"
             + "</body></html>";
@@ -143,7 +143,7 @@ public class WaitingListMailer {
             + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Horaire :</td><td style=\"padding:4px 8px;\">" + slot.startTime + " \u2013 " + slot.endTime + "</td></tr>"
             + "</table>"
             + "<p style=\"color:#6b7280;font-size:13px;\">Pour toute question, rapprochez-vous du directeur de plong\u00e9e du cr\u00e9neau.</p>"
-            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, <a href=\"" + config.baseUrl() + "/profile\" style=\"color:#9ca3af;\">modifiez vos pr\u00e9f\u00e9rences de notification</a> dans votre profil.</p>"
+            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, <a href=\"" + config.baseUrl() + "/?goto=profile#notifications\" style=\"color:#9ca3af;\">modifiez vos pr\u00e9f\u00e9rences de notification</a> dans votre profil.</p>"
             + "<hr style=\"border:1px solid #e5e7eb;margin-top:30px;\"/>"
             + "<p style=\"color:#6b7280;font-size:12px;\">Syst\u00e8me de r\u00e9servation \u2014 " + siteName + "</p>"
             + "</body></html>";
@@ -182,7 +182,7 @@ public class WaitingListMailer {
                 : "")
             + "</table>"
             + "<p style=\"color:#6b7280;font-size:13px;\">Connectez-vous pour valider ou refuser cette demande depuis la gestion du cr\u00e9neau.</p>"
-            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, <a href=\"" + config.baseUrl() + "/profile\" style=\"color:#9ca3af;\">modifiez vos pr\u00e9f\u00e9rences de notification</a> dans votre profil.</p>"
+            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, <a href=\"" + config.baseUrl() + "/?goto=profile#notifications\" style=\"color:#9ca3af;\">modifiez vos pr\u00e9f\u00e9rences de notification</a> dans votre profil.</p>"
             + "<hr style=\"border:1px solid #e5e7eb;margin-top:30px;\"/>"
             + "<p style=\"color:#6b7280;font-size:12px;\">Syst\u00e8me de r\u00e9servation \u2014 " + siteName + "</p>"
             + "</body></html>";
@@ -212,7 +212,7 @@ public class WaitingListMailer {
             + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Date :</td><td style=\"padding:4px 8px;\">" + slot.slotDate + "</td></tr>"
             + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Horaire :</td><td style=\"padding:4px 8px;\">" + slot.startTime + " – " + slot.endTime + "</td></tr>"
             + "</table>"
-            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, <a href=\"" + config.baseUrl() + "/profile\" style=\"color:#9ca3af;\">modifiez vos pr\u00e9f\u00e9rences de notification</a> dans votre profil.</p>"
+            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, <a href=\"" + config.baseUrl() + "/?goto=profile#notifications\" style=\"color:#9ca3af;\">modifiez vos pr\u00e9f\u00e9rences de notification</a> dans votre profil.</p>"
             + "<hr style=\"border:1px solid #e5e7eb;margin-top:30px;\"/>"
             + "<p style=\"color:#6b7280;font-size:12px;\">Système de réservation — " + siteName + "</p>"
             + "</body></html>";
@@ -242,7 +242,7 @@ public class WaitingListMailer {
             + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Niveau :</td><td style=\"padding:4px 8px;\">" + entry.level + "</td></tr>"
             + "</table>"
             + "<p style=\"color:#6b7280;font-size:13px;\">Pensez \u00e0 v\u00e9rifier l'organisation de la sortie.</p>"
-            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, <a href=\"" + config.baseUrl() + "/profile\" style=\"color:#9ca3af;\">modifiez vos pr\u00e9f\u00e9rences de notification</a> dans votre profil.</p>"
+            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, <a href=\"" + config.baseUrl() + "/?goto=profile#notifications\" style=\"color:#9ca3af;\">modifiez vos pr\u00e9f\u00e9rences de notification</a> dans votre profil.</p>"
             + "<hr style=\"border:1px solid #e5e7eb;margin-top:30px;\"/>"
             + "<p style=\"color:#6b7280;font-size:12px;\">Syst\u00e8me de r\u00e9servation \u2014 " + siteName + "</p>"
             + "</body></html>";
@@ -281,7 +281,7 @@ public class WaitingListMailer {
             + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Date :</td><td style=\"padding:4px 8px;\">" + slot.slotDate + "</td></tr>"
             + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Horaire :</td><td style=\"padding:4px 8px;\">" + slot.startTime + " \u2013 " + slot.endTime + "</td></tr>"
             + "</table>"
-            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, <a href=\"" + config.baseUrl() + "/profile\" style=\"color:#9ca3af;\">modifiez vos pr\u00e9f\u00e9rences de notification</a> dans votre profil.</p>"
+            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, <a href=\"" + config.baseUrl() + "/?goto=profile#notifications\" style=\"color:#9ca3af;\">modifiez vos pr\u00e9f\u00e9rences de notification</a> dans votre profil.</p>"
             + "<hr style=\"border:1px solid #e5e7eb;margin-top:30px;\"/>"
             + "<p style=\"color:#6b7280;font-size:12px;\">Syst\u00e8me de r\u00e9servation \u2014 " + siteName + "</p>"
             + "</body></html>";
@@ -346,7 +346,7 @@ public class WaitingListMailer {
     }
 
     private void sendSingle(String to, String subject, String body) {
-        String profileUrl = config.baseUrl() + "/profile";
+        String profileUrl = config.baseUrl() + "/?goto=profile#notifications";
         try {
             mailer.send(Mail.withHtml(to, subject, body)
                     .addHeader("List-Unsubscribe", "<" + profileUrl + ">")

@@ -87,7 +87,7 @@ class WaitingListMailerTest {
 
         var mail = mailbox.getMailsSentTo(DIVER_EMAIL).get(0);
         assertTrue(mail.getHeaders().get("List-Unsubscribe").stream()
-                .anyMatch(v -> v.contains(BASE_URL + "/profile")),
+                .anyMatch(v -> v.contains(BASE_URL + "/?goto=profile")),
                 "Le header List-Unsubscribe doit pointer vers /profile");
     }
 
@@ -96,7 +96,7 @@ class WaitingListMailerTest {
         mailer.sendWaitingListConfirmation(buildEntry(), buildSlot());
 
         String html = mailbox.getMailsSentTo(DIVER_EMAIL).get(0).getHtml();
-        assertTrue(html.contains(BASE_URL + "/profile"),
+        assertTrue(html.contains(BASE_URL + "/?goto=profile"),
                 "Le lien vers les préférences de notification doit figurer dans le corps");
     }
 
@@ -125,7 +125,7 @@ class WaitingListMailerTest {
 
         var mail = mailbox.getMailsSentTo(DIVER_EMAIL).get(0);
         assertTrue(mail.getHeaders().get("List-Unsubscribe").stream()
-                .anyMatch(v -> v.contains(BASE_URL + "/profile")),
+                .anyMatch(v -> v.contains(BASE_URL + "/?goto=profile")),
                 "Le header List-Unsubscribe doit pointer vers /profile");
     }
 
@@ -144,7 +144,7 @@ class WaitingListMailerTest {
         mailer.sendCancellationToDiver(DIVER_EMAIL, "Alice", "Martin", buildSlot());
 
         String html = mailbox.getMailsSentTo(DIVER_EMAIL).get(0).getHtml();
-        assertTrue(html.contains(BASE_URL + "/profile"),
+        assertTrue(html.contains(BASE_URL + "/?goto=profile"),
                 "Le lien vers /profile doit figurer dans le corps du mail d'annulation");
     }
 
@@ -164,7 +164,7 @@ class WaitingListMailerTest {
 
         var mail = mailbox.getMailsSentTo(DP_EMAIL).get(0);
         assertTrue(mail.getHeaders().get("List-Unsubscribe").stream()
-                .anyMatch(v -> v.contains(BASE_URL + "/profile")),
+                .anyMatch(v -> v.contains(BASE_URL + "/?goto=profile")),
                 "Le header List-Unsubscribe du mail DP doit pointer vers /profile");
     }
 }

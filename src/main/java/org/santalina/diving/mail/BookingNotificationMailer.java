@@ -85,7 +85,7 @@ public class BookingNotificationMailer {
                 typeInfo,
                 clubInfo,
                 notesInfo,
-                config.baseUrl() + "/config"
+                config.baseUrl() + "/?goto=admin"
         );
 
         String siteName = configService.getSiteName();
@@ -163,7 +163,7 @@ public class BookingNotificationMailer {
                 typeInfo, clubInfo, notesInfo,
                 slots.size(),
                 dateListHtml.toString(),
-                config.baseUrl() + "/config"
+                config.baseUrl() + "/?goto=admin"
         );
 
         String siteName = configService.getSiteName();
@@ -176,7 +176,7 @@ public class BookingNotificationMailer {
     // -------------------------------------------------------------------------
 
     private void sendToAll(String notifEmail, String subject, String body) {
-        String configUrl = config.baseUrl() + "/config";
+        String configUrl = config.baseUrl() + "/?goto=admin";
         String[] recipients = notifEmail.split(",");
         for (String recipient : recipients) {
             String email = recipient.trim();

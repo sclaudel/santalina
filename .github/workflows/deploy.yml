@@ -6,41 +6,44 @@ on:
     workflows: ["Release — Build & Push Docker Image"]
     types: [completed]
 
-  # Possibilité de déclencher manuellement (pour rollback ou redéploiement forcé)
+  # Déclenchement manuel : redéploiement forcé ou déploiement sur un VPS secondaire
   workflow_dispatch:
     inputs:
       image_tag:
         description: "Tag de l'image à déployer (ex: 1.2.0 ou latest)"
         required: false
         default: "latest"
+      target:
+        description: "VPS cible"
+        required: true
+        default: "vps1"
+        type: choice
+        options:
+          - vps1
+          - vps2
+          - both
 
 jobs:
-  deploy:
-    name: Deploy new image on VPS
+  # ── VPS principal (auto après release OU manuel avec target=vps1/both) ──────
+  deploy-vps1:
+    name: Deploy → VPS principal
     runs-on: ubuntu-latest
-
-    # Désactivé temporairement — VPS non encore provisionné.
-    # Pour réactiver : remplacer `if: false` par la condition commentée ci-dessous.
-    #if: false
     if: >
-       github.event_name == 'workflow_dispatch' ||
-       github.event.workflow_run.conclusion == 'success'
+      github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' ||
+      github.event_name == 'workflow_dispatch' && (inputs.target == 'vps1' || inputs.target == 'both')
 
     steps:
-      # ── Récupérer le tag de la version depuis le workflow de release ─────
       - name: Résoudre le tag à déployer
         id: tag
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "TAG=${{ github.event.inputs.image_tag }}" >> "$GITHUB_OUTPUT"
           else
-            # Extraire le tag depuis le nom de la ref du workflow parent
             REF="${{ github.event.workflow_run.head_branch }}"
             VERSION="${REF#v}"
             echo "TAG=${VERSION}" >> "$GITHUB_OUTPUT"
           fi
 
-      # ── Déploiement via SSH ───────────────────────────────────────────────
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
@@ -53,27 +56,61 @@ jobs:
 
             echo "==> Mise à jour de l'image vers le tag : ${{ steps.tag.outputs.TAG }}"
 
-            # Mettre à jour le tag dans docker-compose.yml si nécessaire
             TAG="${{ steps.tag.outputs.TAG }}"
             if [ "$TAG" != "latest" ]; then
               sed -i "s|/santalina:.*|/santalina:${TAG}|" docker-compose.yml
             fi
 
-            # Télécharger la nouvelle image de l'application uniquement
             docker compose pull app
-
-            # Redémarrer uniquement le conteneur app (sans toucher db ou nginx)
             docker compose up -d --no-deps --force-recreate app
-
-            # Supprimer les anciennes images inutilisées pour libérer de l'espace
             docker image prune -f
 
-            echo "==> Déploiement terminé"
+            echo "==> Déploiement terminé (VPS principal)"
 
-      # ── Notification en cas d'échec ───────────────────────────────────────
       - name: Notifier en cas d'échec
         if: failure()
         run: |
-          echo "::error::Le déploiement sur le VPS a échoué."
+          echo "::error::Le déploiement sur le VPS principal a échoué."
           echo "Vérifiez les secrets VPS_HOST, VPS_USER et VPS_SSH_KEY."
-          echo "Assurez-vous que le VPS est accessible et que Docker est installé."
+
+  # ── VPS secondaire (manuel uniquement avec target=vps2/both) ────────────────
+  deploy-vps2:
+    name: Deploy → VPS secondaire
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' && (inputs.target == 'vps2' || inputs.target == 'both')
+
+    steps:
+      - name: Résoudre le tag à déployer
+        id: tag
+        run: |
+          echo "TAG=${{ github.event.inputs.image_tag }}" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host:     ${{ secrets.VPS2_HOST }}
+          username: ${{ secrets.VPS2_USER }}
+          key:      ${{ secrets.VPS2_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/santalina
+
+            echo "==> Mise à jour de l'image vers le tag : ${{ steps.tag.outputs.TAG }}"
+
+            TAG="${{ steps.tag.outputs.TAG }}"
+            if [ "$TAG" != "latest" ]; then
+              sed -i "s|/santalina:.*|/santalina:${TAG}|" docker-compose.yml
+            fi
+
+            docker compose pull app
+            docker compose up -d --no-deps --force-recreate app
+            docker image prune -f
+
+            echo "==> Déploiement terminé (VPS secondaire)"
+
+      - name: Notifier en cas d'échec
+        if: failure()
+        run: |
+          echo "::error::Le déploiement sur le VPS secondaire a échoué."
+          echo "Vérifiez les secrets VPS2_HOST, VPS2_USER et VPS2_SSH_KEY."
