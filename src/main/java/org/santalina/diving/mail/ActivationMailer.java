@@ -21,7 +21,12 @@ public class ActivationMailer {
     public void sendActivationEmail(String email, String name, String token) {
         String activationUrl = config.baseUrl() + "/activate?token=" + token;
         String body = """
-                <html>
+                <!DOCTYPE html>
+                <html lang="fr">
+                <head>
+                  <meta charset="UTF-8" />
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                </head>
                 <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                   <h2 style="color: #1e40af;">🌊 Activez votre compte</h2>
                   <p>Bonjour <strong>%s</strong>,</p>

@@ -412,7 +412,7 @@ export function HelpPage() {
       roles: ['ADMIN'],
       content: (
         <>
-          <p>La section <strong>💾 Sauvegarde</strong> est accessible via le menu utilisateur → <strong>⚙️ Administration → onglet Sauvegarde</strong>.</p>
+          <p>La section <strong>💾 Sauvegarde</strong> est accessible via le menu utilisateur → <strong>⚙️ Administration → onglet 🛠️ Opérations</strong>.</p>
 
           <h4>Exporter une sauvegarde complète</h4>
           <p>Exporte l'intégralité des données : configuration, utilisateurs, créneaux, plongeurs, palanquées et listes d'attente.</p>
@@ -502,7 +502,8 @@ export function HelpPage() {
       roles: ['ADMIN'],
       content: (
         <>
-          <p>La gestion des utilisateurs est accessible via le menu utilisateur → <strong>⚙️ Administration → section Utilisateurs</strong>.</p>
+          <p>La gestion des utilisateurs est accessible via le menu utilisateur → <strong>⚙️ Administration → onglet 👥 Utilisateurs</strong>.</p>
+          <p>La page d'administration est organisée en onglets : <strong>⚙️ Général</strong>, <strong>📚 Référentiels</strong>, <strong>👥 Utilisateurs</strong> et <strong>🛠️ Opérations</strong>.</p>
 
           <h4>Créer un utilisateur</h4>
           <ol>
@@ -786,7 +787,8 @@ export function HelpPage() {
       {
         icon: '👥', title: 'Gérer les utilisateurs',
         items: [
-          { type: 'paragraph' as const, text: 'La gestion des utilisateurs est accessible dans Administration → section Utilisateurs.' },
+          { type: 'paragraph' as const, text: 'La gestion des utilisateurs est accessible dans Administration → onglet 👥 Utilisateurs.' },
+          { type: 'paragraph' as const, text: 'La page Administration est organisée en onglets : ⚙️ Général, 📚 Référentiels, 👥 Utilisateurs et 🛠️ Opérations.' },
           { type: 'h4' as const, text: 'Créer un utilisateur' },
           { type: 'ol' as const, items: ['Cliquez sur + Nouvel utilisateur.', 'Renseignez l\'email, le nom, le téléphone et le mot de passe provisoire.', 'Attribuez un ou plusieurs rôles : Plongeur, Directeur de plongée, ou Administrateur.', 'Cliquez sur Créer.'] },
           { type: 'h4' as const, text: 'Modifier un utilisateur' },
@@ -822,7 +824,7 @@ export function HelpPage() {
       {
         icon: '💾', title: 'Sauvegarde et restauration',
         items: [
-          { type: 'paragraph' as const, text: 'Section accessible dans Administration → onglet Sauvegarde.' },
+          { type: 'paragraph' as const, text: 'Section accessible dans Administration → onglet 🛠️ Opérations.' },
           { type: 'h4' as const, text: 'Exporter une sauvegarde complète' },
           { type: 'paragraph' as const, text: 'Exporte tout : configuration, utilisateurs, créneaux, plongeurs, palanquées et listes d\'attente.' },
           { type: 'ol' as const, items: ['Cliquez sur Exporter une sauvegarde complète.', 'Le fichier santalina-full-AAAA-MM-JJ.json est téléchargé.'] },

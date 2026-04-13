@@ -638,6 +638,31 @@ body {
 .profile-section h3 { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
 
 /* ========== ADMIN PAGE ========== */
+.admin-tabs {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin-bottom: 16px;
+}
+.admin-tab {
+  border: 1px solid var(--gray-300);
+  background: var(--white);
+  color: var(--gray-700);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.admin-tab:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-light);
+}
+.admin-tab-active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--white);
+}
 .admin-section {
   background: var(--white); border-radius: var(--radius-lg); padding: 24px;
   box-shadow: var(--shadow); margin-bottom: 24px;
@@ -896,6 +921,12 @@ body {
   .form-actions .btn { width: 100%; justify-content: center; min-height: 44px; }
 
   /* Admin */
+  .admin-tabs { gap: 6px; }
+  .admin-tab {
+    flex: 1 1 calc(50% - 6px);
+    min-height: 42px;
+    text-align: center;
+  }
   .admin-section { padding: 16px; }
   .config-grid { grid-template-columns: repeat(2, 1fr); }
   .admin-section-header { flex-direction: column; align-items: flex-start; gap: 10px; }

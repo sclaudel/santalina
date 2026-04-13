@@ -73,6 +73,34 @@ Une fois les enregistrements DNS propagés (quelques minutes à 48h selon le TTL
 - **DKIM** : https://mxtoolbox.com/dkim.aspx (sélecteur : `mail`)
 - **Test d'envoi complet** : https://www.mail-tester.com
 
+### Points à vérifier spécifiquement dans Mail-Tester
+
+Pour éviter les alertes de type *"Too many ... are not ..."* et améliorer la délivrabilité :
+
+- Les emails HTML doivent inclure une structure minimale valide :
+	- `<!DOCTYPE html>`
+	- `<html lang="fr">`
+	- `<head>` avec `meta charset="UTF-8"`
+	- `<body>`
+- Les emails de notification (non transactionnels) doivent exposer un mécanisme de désinscription :
+	- Header SMTP `List-Unsubscribe`
+	- Optionnel mais recommandé : `List-Unsubscribe-Post: List-Unsubscribe=One-Click`
+	- Un lien visible dans le corps du mail vers la page de préférences
+
+Dans Santalina :
+
+- Notifications de réservation admin/créneau : lien vers la page `.../config`
+- Notifications utilisateur/DP liées aux inscriptions : lien vers la page `.../profile`
+
+Les emails strictement transactionnels (activation de compte, reset mot de passe) n'ont pas besoin de lien de désinscription, mais doivent conserver un HTML valide.
+
+### Désactivation par type de notification
+
+Le désabonnement n'est pas global : chaque catégorie peut être activée/désactivée séparément.
+
+- Côté utilisateur (`/profile`) : préférences de notifications personnelles
+- Côté admin (`/config`) : activation/désactivation globale de certaines notifications système
+
 ---
 
 ## 4. Option "mail désactivé"
