@@ -64,6 +64,10 @@ public class ConfigDto {
             @NotNull @Min(1) @jakarta.validation.constraints.Max(24) Integer defaultSlotHours
     ) {}
 
+    public record UpdateSlotMaxHoursRequest(
+            @NotNull @Min(1) @jakarta.validation.constraints.Max(24) Integer slotMaxHours
+    ) {}
+
     public record UpdateNotificationEmailRequest(
             String email
     ) {}

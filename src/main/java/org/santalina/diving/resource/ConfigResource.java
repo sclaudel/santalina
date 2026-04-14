@@ -96,6 +96,13 @@ public class ConfigResource {
     }
 
     @PUT
+    @Path("/slot-max-hours")
+    @RolesAllowed("ADMIN")
+    public ConfigResponse updateSlotMaxHours(@Valid UpdateSlotMaxHoursRequest request) {
+        return configService.updateSlotMaxHours(request.slotMaxHours());
+    }
+
+    @PUT
     @Path("/notification-email")
     @RolesAllowed("ADMIN")
     public ConfigResponse updateNotificationEmail(UpdateNotificationEmailRequest request) {

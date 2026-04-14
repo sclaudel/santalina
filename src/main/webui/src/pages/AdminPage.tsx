@@ -29,6 +29,7 @@ export function AdminPage() {
   const [newMax, setNewMax]                       = useState('');
   const [newSiteName, setNewSiteName]             = useState('');
   const [newDefaultSlotHours, setNewDefaultSlotHours] = useState('2');
+  const [newSlotMaxHours, setNewSlotMaxHours] = useState('10');
   const [msg, setMsg]                       = useState('');
   const [error, setError]                   = useState('');
   const [loading, setLoading]               = useState(false);
@@ -110,6 +111,7 @@ export function AdminPage() {
       setNewMax(String(c.maxDivers));
       setNewSiteName(c.siteName ?? '');
       setNewDefaultSlotHours(String(c.defaultSlotHours ?? 2));
+      setNewSlotMaxHours(String(c.slotMaxHours ?? 10));
       setNewMaxRecurringMonths(String(c.maxRecurringMonths ?? 4));
       setSlotTypesText((c.slotTypes ?? []).join('\n'));
       setExclusiveSlotTypes(c.exclusiveSlotTypes ?? []);
@@ -161,6 +163,18 @@ export function AdminPage() {
       setConfig(updated);
       setNewDefaultSlotHours(String(updated.defaultSlotHours));
       setMsg(`Durée par défaut mise à jour : ${updated.defaultSlotHours}h`);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
+    } finally { setLoading(false); }
+  };
+
+  const handleUpdateSlotMaxHours = async (e: React.FormEvent) => {
+    e.preventDefault(); setMsg(''); setError(''); setLoading(true);
+    try {
+      const updated = await adminService.updateSlotMaxHours(Number(newSlotMaxHours));
+      setConfig(updated);
+      setNewSlotMaxHours(String(updated.slotMaxHours));
+      setMsg(`Durée maximale mise à jour : ${updated.slotMaxHours}h`);
     } catch (err: unknown) {
       setError(getErrorMessage(err));
     } finally { setLoading(false); }
@@ -506,6 +520,17 @@ export function AdminPage() {
               <label>Durée par défaut d'un créneau</label>
               <select value={newDefaultSlotHours} onChange={e => setNewDefaultSlotHours(e.target.value)}>
                 {Array.from({ length: 12 }, (_, i) => i + 1).map(h => (
+                  <option key={h} value={h}>{h}h</option>
+                ))}
+              </select>
+            </div>
+            <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? '...' : 'Mettre à jour'}</button>
+          </form>
+          <form onSubmit={handleUpdateSlotMaxHours} className="form form-inline" style={{ flex: 1, minWidth: 260 }}>
+            <div className="form-group">
+              <label>Durée maximale d'un créneau</label>
+              <select value={newSlotMaxHours} onChange={e => setNewSlotMaxHours(e.target.value)}>
+                {Array.from({ length: 24 }, (_, i) => i + 1).map(h => (
                   <option key={h} value={h}>{h}h</option>
                 ))}
               </select>

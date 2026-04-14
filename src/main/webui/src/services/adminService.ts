@@ -91,6 +91,11 @@ export const adminService = {
     return res.data;
   },
 
+  async updateSlotMaxHours(slotMaxHours: number): Promise<AppConfig> {
+    const res = await api.put<AppConfig>('/config/slot-max-hours', { slotMaxHours });
+    return res.data;
+  },
+
   async updateNotificationEmail(email: string): Promise<AppConfig> {
     const res = await api.put<AppConfig>('/config/notification-email', { email });
     return res.data;

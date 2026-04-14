@@ -617,7 +617,9 @@ export function HelpPage() {
           <ul>
             <li><strong>Nom du site</strong> — affiché dans la barre de navigation et les exports.</li>
             <li><strong>Capacité max de plongeurs</strong> — valeur par défaut à la création d'un créneau.</li>
-            <li><strong>Durée min / max d'un créneau</strong> — en heures.</li>
+            <li><strong>Durée maximale d'un créneau</strong> — modifiable via le formulaire dédié (1–24h). Doit être supérieure ou égale à la durée minimale.</li>
+            <li><strong>Durée par défaut d'un créneau</strong> — pré-sélectionnée à la création d'un créneau (1–12h).</li>
+            <li><strong>Durée min d'un créneau</strong> — fixée dans la configuration applicative (non modifiable via l'interface).</li>
             <li><strong>Résolution de la grille horaire</strong> — en minutes (15, 30 ou 60).</li>
           </ul>
 
