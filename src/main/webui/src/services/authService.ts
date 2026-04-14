@@ -12,8 +12,8 @@ export const authService = {
     return res.data;
   },
 
-  async register(email: string, firstName: string, lastName: string, phone: string, consentGiven: boolean, captchaId: string, captchaAnswer: string): Promise<{ message: string }> {
-    const res = await api.post<{ message: string }>('/auth/register', { email, firstName, lastName, phone, consentGiven, captchaId, captchaAnswer });
+  async register(email: string, firstName: string, lastName: string, phone: string, consentGiven: boolean, captchaId: string, captchaAnswer: string, club?: string): Promise<{ message: string }> {
+    const res = await api.post<{ message: string }>('/auth/register', { email, firstName, lastName, phone, consentGiven, captchaId, captchaAnswer, club: club || null });
     return res.data;
   },
 
@@ -39,8 +39,8 @@ export const authService = {
     return res.data;
   },
 
-  async updateProfile(firstName: string, lastName: string, phone?: string, licenseNumber?: string): Promise<User> {
-    const res = await api.put<User>('/users/me', { firstName, lastName, phone: phone || null, licenseNumber: licenseNumber || null });
+  async updateProfile(firstName: string, lastName: string, phone?: string, licenseNumber?: string, club?: string): Promise<User> {
+    const res = await api.put<User>('/users/me', { firstName, lastName, phone: phone || null, licenseNumber: licenseNumber || null, club: club || null });
     return res.data;
   },
 

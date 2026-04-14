@@ -100,10 +100,27 @@ class AuthResourceIT {
                 .statusCode(400);
     }
 
+    @Test
+    @Order(5)
+    void register_withClub_shouldReturn200() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                      {"email":"club.user@test.com","firstName":"Club","lastName":"User",
+                       "phone":"+33600000002","consentGiven":true,
+                       "captchaId":"test-id","captchaAnswer":"ABCDE",
+                       "club":"Club Santalina"}
+                      """)
+                .when().post(REGISTER_URL)
+                .then()
+                .statusCode(200)
+                .body("message", notNullValue());
+    }
+
     /* ── Connexion ── */
 
     @Test
-    @Order(5)
+    @Order(6)
     void login_shouldReturn200AndToken_whenValidCredentials() {
         // L'admin est créé automatiquement au démarrage par ensureAdminExists()
         // avec les credentials par défaut (config non surchargée en test)
@@ -120,7 +137,7 @@ class AuthResourceIT {
     }
 
     @Test
-    @Order(6)
+    @Order(7)
     void login_shouldReturn401_whenWrongPassword() {
         given()
                 .contentType(ContentType.JSON)
@@ -133,7 +150,7 @@ class AuthResourceIT {
     }
 
     @Test
-    @Order(7)
+    @Order(8)
     void login_shouldReturn401_whenUserDoesNotExist() {
         given()
                 .contentType(ContentType.JSON)
@@ -148,7 +165,7 @@ class AuthResourceIT {
     /* ── Réinitialisation de mot de passe ── */
 
     @Test
-    @Order(8)
+    @Order(9)
     void passwordResetRequest_shouldReturn200_forAnyEmail() {
         // La réponse est identique qu'un compte existe ou non (pour éviter l'énumération)
         given()

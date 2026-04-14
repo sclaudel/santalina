@@ -40,6 +40,7 @@ public class UserService {
         user.lastName      = request.lastName().trim().toUpperCase();
         user.phone         = normalizePhone(request.phone());
         user.licenseNumber = request.licenseNumber() != null ? request.licenseNumber().trim() : null;
+        user.club          = request.club() != null && !request.club().isBlank() ? request.club().trim() : null;
         user.persist();
         return UserResponse.from(user);
     }
@@ -119,6 +120,7 @@ public class UserService {
         user.lastName     = request.lastName().trim().toUpperCase();
         user.phone        = normalizePhone(request.phone());
         user.licenseNumber = request.licenseNumber() != null ? request.licenseNumber().trim() : null;
+        user.club          = request.club() != null && !request.club().isBlank() ? request.club().trim() : null;
         user.passwordHash = PasswordUtil.hash(request.password());
         user.roles        = new HashSet<>(request.roles());
         user.role         = user.primaryRole();
@@ -154,6 +156,7 @@ public class UserService {
         user.lastName  = request.lastName().trim().toUpperCase();
         user.phone     = normalizePhone(request.phone());
         user.licenseNumber = request.licenseNumber() != null ? request.licenseNumber().trim() : null;
+        user.club          = request.club() != null && !request.club().isBlank() ? request.club().trim() : null;
         user.persist();
         return UserResponse.from(user);
     }

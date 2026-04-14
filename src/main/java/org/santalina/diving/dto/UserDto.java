@@ -16,6 +16,7 @@ public class UserDto {
             String name,
             String phone,
             String licenseNumber,
+            String club,
             UserRole role,
             Set<UserRole> roles,
             boolean notifOnRegistration,
@@ -29,7 +30,7 @@ public class UserDto {
         public static UserResponse from(User user) {
             return new UserResponse(
                     user.id, user.email, user.firstName, user.lastName,
-                    user.fullName(), user.phone, user.licenseNumber,
+                    user.fullName(), user.phone, user.licenseNumber, user.club,
                     user.primaryRole(),
                     user.roles != null ? user.roles : Set.of(user.role),
                     user.notifOnRegistration,
@@ -49,7 +50,8 @@ public class UserDto {
             @Pattern(regexp = "^(0[1-9][0-9]{8}|\\+33[1-9][0-9]{8})$", message = "Numéro de téléphone français invalide (ex: 0612345678 ou +33612345678)")
             String phone,
             @Pattern(regexp = "^[A-Z]-\\d{2}-\\d{6,10}$", message = "Format invalide (ex: A-14-1223422222)")
-            @Size(max = 20) String licenseNumber
+            @Size(max = 20) String licenseNumber,
+            String club
     ) {}
 
     /** Mise à jour de l'email de l'utilisateur connecté. Retourne un nouveau token JWT. */
@@ -82,6 +84,7 @@ public class UserDto {
             String phone,
             @Pattern(regexp = "^[A-Z]-\\d{2}-\\d{6,10}$", message = "Format invalide (ex: A-14-1223422222)")
             @Size(max = 20) String licenseNumber,
+            String club,
             @NotNull @Size(min = 1) Set<UserRole> roles
     ) {}
 
@@ -92,7 +95,8 @@ public class UserDto {
             @Pattern(regexp = "^(0[1-9][0-9]{8}|\\+33[1-9][0-9]{8})$", message = "Numéro de téléphone français invalide (ex: 0612345678 ou +33612345678)")
             String phone,
             @Pattern(regexp = "^[A-Z]-\\d{2}-\\d{6,10}$", message = "Format invalide (ex: A-14-1223422222)")
-            @Size(max = 20) String licenseNumber
+            @Size(max = 20) String licenseNumber,
+            String club
     ) {}
 
     public record UserSearchResult(

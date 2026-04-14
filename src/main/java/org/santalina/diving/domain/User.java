@@ -42,6 +42,9 @@ public class User extends PanacheEntityBase {
     @Column(name = "license_number")
     public String licenseNumber;
 
+    @Column
+    public String club;
+
     /** Rôle principal (compatibilité ascendante) */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

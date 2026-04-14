@@ -10,6 +10,7 @@ export interface User {
   name: string;
   phone?: string;
   licenseNumber?: string;
+  club?: string;
   role: UserRole;
   roles: UserRole[];
   notifOnRegistration?: boolean;
@@ -39,6 +40,7 @@ export interface CreateUserRequest {
   password: string;
   phone?: string;
   licenseNumber?: string;
+  club?: string;
   roles: UserRole[];
 }
 
@@ -48,6 +50,7 @@ export interface UpdateUserAdminRequest {
   lastName: string;
   phone?: string;
   licenseNumber?: string;
+  club?: string;
 }
 
 export interface UserSearchResult {

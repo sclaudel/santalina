@@ -241,7 +241,7 @@ export function HelpPage() {
             <li><strong>Niveau</strong> — niveau de certification.</li>
             <li><strong>Email</strong> — adresse e-mail si renseignée.</li>
             <li><strong>Directeur de plongée</strong> — « Oui » si le plongeur est le directeur du créneau.</li>
-            <li><strong>Club</strong> — club d'appartenance fourni lors de l'inscription libre (vide si le plongeur a été ajouté manuellement par un DP).</li>
+            <li><strong>Club</strong> — club d'appartenance repris depuis le profil du plongeur lors de l'inscription libre (vide si le plongeur a été ajouté manuellement par un DP).</li>
             <li><strong>Date certificat médical</strong> — date fournie lors de l'inscription libre (vide si le plongeur a été ajouté manuellement par un DP).</li>
             <li><strong>Commentaire</strong> — commentaire laissé par le plongeur lors de l'inscription libre (vide si ajout manuel).</li>
           </ul>
@@ -320,7 +320,7 @@ export function HelpPage() {
                 <li><strong>Prénom / Nom</strong> — champs obligatoires.</li>
                 <li><strong>E-mail</strong> (double saisie obligatoire pour éviter les erreurs)</li>
                 <li><strong>Niveau de certification</strong> — sélectionner parmi : N1, N2, N3, N4, N5, E2, E3, E4, PE12, PE40, PE60, MF1, MF2.</li>
-                <li><strong>Club d'appartenance</strong> — optionnel, sélectionner votre club dans la liste configurée par l'administrateur. Affiché dans la liste d'attente pour aider le DP à identifier les plongeurs.</li>
+                <li><strong>Club d'appartenance</strong> — repris automatiquement depuis votre profil utilisateur. Pour modifier votre club, rendez-vous sur la page <strong>Mon profil</strong>.</li>
                 <li><strong>Nombre de plongées effectuées</strong> — champ obligatoire.</li>
                 <li><strong>Date de la dernière plongée</strong> — champ obligatoire.</li>
                 <li><strong>Niveau en préparation</strong> — optionnel (vaste liste disponible).</li>
@@ -371,7 +371,7 @@ export function HelpPage() {
           <ol>
             <li>Les inscriptions apparaissent dans l'ordre d'arrivée (#1 = le premier inscrit).</li>
             <li>
-              Pour chaque entrée, vous voyez : nom, niveau, club d'appartenance (si renseigné), e-mail, nombre de plongées, date de la dernière plongée, niveau en préparation et commentaire éventuel.
+              Pour chaque entrée, vous voyez : nom, niveau, club d'appartenance (repris depuis le profil du plongeur), e-mail, nombre de plongées, date de la dernière plongée, niveau en préparation et commentaire éventuel.
             </li>
             <li>
               Cliquez sur <strong>✓ Valider</strong> pour accepter la demande :
@@ -458,7 +458,7 @@ export function HelpPage() {
           <h4>S'inscrire (si activé)</h4>
           <ol>
             <li>Cliquez sur <strong>🔐 Connexion</strong>, puis sur <strong>Pas encore de compte ? S'inscrire</strong>.</li>
-            <li>Remplissez votre <strong>prénom</strong>, <strong>nom</strong>, <strong>email</strong> et <strong>téléphone</strong>, puis acceptez la politique de confidentialité.</li>
+            <li>Remplissez votre <strong>prénom</strong>, <strong>nom</strong>, <strong>email</strong> et <strong>téléphone</strong>, puis sélectionnez optionnellement votre <strong>club d'appartenance</strong>, et acceptez la politique de confidentialité.</li>
             <li>Un <strong>email de confirmation</strong> vous est envoyé. Aucun mot de passe n'est demandé à ce stade.</li>
             <li>Cliquez sur le lien reçu par email pour accéder à la page d'activation.</li>
             <li>Définissez votre mot de passe&nbsp;: vous êtes automatiquement connecté.</li>
@@ -487,6 +487,7 @@ export function HelpPage() {
             <li><strong>Email</strong> — identifiant de connexion.</li>
             <li><strong>Téléphone</strong> — utilisé pour contacter le directeur de plongée.</li>
             <li><strong>N° de licence fédérale</strong> — champ <em>optionnel</em>. S'il est renseigné, il sera automatiquement repris lorsque vous êtes sélectionné comme directeur de plongée sur un créneau, et apparaîtra dans la fiche de sécurité Excel.</li>
+            <li><strong>Club d'appartenance</strong> — champ <em>optionnel</em>. Votre club est automatiquement repris lors de votre inscription en liste d'attente sur un créneau ouvert aux inscriptions libres.</li>
             <li><strong>Mot de passe</strong> — modifiable depuis cette page (champ optionnel, laissez vide pour ne pas le changer).</li>
           </ul>
           <p>Accès : cliquez sur votre nom dans la barre de navigation → <strong>👤 Mon profil</strong>.</p>
@@ -508,7 +509,7 @@ export function HelpPage() {
           <h4>Créer un utilisateur</h4>
           <ol>
             <li>Cliquez sur <strong>+ Nouvel utilisateur</strong>.</li>
-            <li>Renseignez le prénom, le nom, l'email, le téléphone et le mot de passe provisoire.</li>
+            <li>Renseignez le prénom, le nom, l'email, le téléphone, le club d'appartenance (optionnel) et le mot de passe provisoire.</li>
             <li>Attribuez un ou plusieurs rôles :
               <ul>
                 <li><strong>🏊 Plongeur</strong> — peut consulter le calendrier et ses créneaux.</li>
@@ -522,7 +523,7 @@ export function HelpPage() {
           <h4>Modifier un utilisateur</h4>
           <ol>
             <li>Dans le tableau des utilisateurs, cliquez sur <strong>✏️ Modifier</strong> sur la ligne concernée.</li>
-            <li>Modifiez l'email, le nom ou le téléphone.</li>
+            <li>Modifiez l'email, le nom, le téléphone ou le club d'appartenance.</li>
             <li>Cliquez sur <strong>Enregistrer</strong>.</li>
           </ol>
 

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/authService';
+import { adminService } from '../services/adminService';
 
 export function ProfilePage() {
   const { user } = useAuth();
@@ -9,6 +10,8 @@ export function ProfilePage() {
   const [lastName, setLastName]   = useState(user?.lastName  || '');
   const [phone, setPhone]         = useState(user?.phone || '');
   const [licenseNumber, setLicenseNumber] = useState(user?.licenseNumber || '');
+  const [club, setClub]           = useState(user?.club || '');
+  const [clubs, setClubs]         = useState<string[]>([]);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [msg, setMsg] = useState('');
@@ -37,6 +40,7 @@ export function ProfilePage() {
       setLastName(profile.lastName   || '');
       setPhone(profile.phone || '');
       setLicenseNumber(profile.licenseNumber || '');
+      setClub(profile.club || '');
       setNotifOnRegistration(profile.notifOnRegistration ?? true);
       setNotifOnApproved(profile.notifOnApproved ?? true);
       setNotifOnCancelled(profile.notifOnCancelled ?? true);
@@ -50,7 +54,9 @@ export function ProfilePage() {
       setLastName(user?.lastName   || '');
       setPhone(user?.phone || '');
       setLicenseNumber(user?.licenseNumber || '');
+      setClub(user?.club || '');
     });
+    adminService.getConfig().then(cfg => setClubs(cfg.clubs ?? [])).catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -64,7 +70,7 @@ export function ProfilePage() {
     e.preventDefault();
     setMsg(''); setError(''); setLoading(true);
     try {
-      const updated = await authService.updateProfile(firstName, lastName, phone || undefined, licenseNumber || undefined);
+      const updated = await authService.updateProfile(firstName, lastName, phone || undefined, licenseNumber || undefined, club || undefined);
       setMsg('Profil mis à jour avec succès !');
       if (user) {
         const stored = { ...user, ...updated };
@@ -119,6 +125,7 @@ export function ProfilePage() {
             <p className="profile-email">📧 {user.email}</p>
             {user.phone && <p className="profile-email">📞 {user.phone}</p>}
             {user.licenseNumber && <p className="profile-email">🏅 Licence : {user.licenseNumber}</p>}
+            {user.club && <p className="profile-email">🤿 Club : {user.club}</p>}
             <span className="role-badge-large">{ROLE_LABELS[user.role]}</span>
           </div>
         </div>
@@ -157,6 +164,15 @@ export function ProfilePage() {
                 placeholder="Ex : A-14-1223422222"
                 maxLength={20}
               />
+            </div>
+            <div className="form-group">
+              <label>Club d'appartenance <span style={{ fontWeight: 400, color: 'var(--gray-500)' }}>(optionnel)</span></label>
+              <select value={club} onChange={e => setClub(e.target.value)}>
+                <option value="">— Aucun / Non affilié —</option>
+                {clubs.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
             </div>
             <button type="submit" className="btn btn-primary" disabled={loading}>
               {loading ? 'Enregistrement...' : 'Enregistrer'}

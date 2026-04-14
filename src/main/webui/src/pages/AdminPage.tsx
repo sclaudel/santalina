@@ -11,7 +11,7 @@ const ALL_ROLES: { value: UserRole; label: string }[] = [
 ];
 
 const EMPTY_FORM: CreateUserRequest = {
-  email: '', firstName: '', lastName: '', password: '', phone: '', licenseNumber: '', roles: ['DIVER'],
+  email: '', firstName: '', lastName: '', password: '', phone: '', licenseNumber: '', club: '', roles: ['DIVER'],
 };
 
 type AdminTabId = 'general' | 'catalog' | 'users' | 'operations';
@@ -37,7 +37,7 @@ export function AdminPage() {
   const [createError, setCreateError]       = useState('');
   const [createLoading, setCreateLoading]   = useState(false);
   const [editingUserId, setEditingUserId]   = useState<number | null>(null);
-  const [editForm, setEditForm]             = useState<UpdateUserAdminRequest>({ email: '', firstName: '', lastName: '', phone: '', licenseNumber: '' });
+  const [editForm, setEditForm]             = useState<UpdateUserAdminRequest>({ email: '', firstName: '', lastName: '', phone: '', licenseNumber: '', club: '' });
   const [editError, setEditError]           = useState('');
   const [editLoading, setEditLoading]       = useState(false);
 
@@ -326,7 +326,7 @@ export function AdminPage() {
   const startEditUser = (user: User) => {
     setShowCreateForm(false);
     setEditingUserId(user.id);
-    setEditForm({ email: user.email, firstName: user.firstName, lastName: user.lastName, phone: user.phone ?? '', licenseNumber: user.licenseNumber ?? '' });
+    setEditForm({ email: user.email, firstName: user.firstName, lastName: user.lastName, phone: user.phone ?? '', licenseNumber: user.licenseNumber ?? '', club: user.club ?? '' });
     setEditError('');
   };
 
@@ -340,7 +340,7 @@ export function AdminPage() {
 
   const cancelEditUser = () => {
     setEditingUserId(null);
-    setEditForm({ email: '', firstName: '', lastName: '', phone: '', licenseNumber: '' });
+    setEditForm({ email: '', firstName: '', lastName: '', phone: '', licenseNumber: '', club: '' });
     setEditError('');
   };
 
@@ -1046,6 +1046,15 @@ export function AdminPage() {
               </div>
             </div>
             <div className="form-group">
+              <label>Club d'appartenance</label>
+              <select value={createForm.club ?? ''} onChange={e => setCreateForm(f => ({ ...f, club: e.target.value }))}>
+                <option value="">— Aucun / Non affilié —</option>
+                {(config?.clubs ?? []).map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+            <div className="form-group">
               <label>Rôles * (au moins un)</label>
               <div className="roles-checkboxes">
                 {ALL_ROLES.map(r => (
@@ -1099,6 +1108,15 @@ export function AdminPage() {
               <label>N° de licence fédérale</label>
               <input type="text" placeholder="Ex : A-14-1223422222" value={editForm.licenseNumber ?? ''}
                 onChange={e => setEditForm(f => ({ ...f, licenseNumber: e.target.value }))} maxLength={20} />
+            </div>
+            <div className="form-group">
+              <label>Club d'appartenance</label>
+              <select value={editForm.club ?? ''} onChange={e => setEditForm(f => ({ ...f, club: e.target.value }))}>
+                <option value="">— Aucun / Non affilié —</option>
+                {(config?.clubs ?? []).map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
             </div>
             <div className="form-actions">
               <button type="button" className="btn btn-outline" onClick={cancelEditUser}>Annuler</button>

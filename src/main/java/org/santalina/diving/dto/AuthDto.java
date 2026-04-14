@@ -21,7 +21,8 @@ public class AuthDto {
             String phone,
             boolean consentGiven,
             @NotBlank String captchaId,
-            @NotBlank String captchaAnswer
+            @NotBlank String captchaAnswer,
+            String club
     ) {}
 
     public record RegisterResponse(String message) {}

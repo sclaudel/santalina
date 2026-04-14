@@ -137,6 +137,52 @@ class UserResourceIT {
         }
     }
 
+    @Test
+    @TestSecurity(user = "diver_club@test.com", roles = {"DIVER"})
+    void updateProfile_withClub_shouldPersistClub() {
+        createTestUser("diver_club@test.com");
+        try {
+            given()
+                    .contentType(ContentType.JSON)
+                    .body("""
+                          {"firstName":"Club","lastName":"Tester",
+                           "phone":null,"licenseNumber":null,
+                           "club":"Club Santalina"}
+                          """)
+                    .when().put("/api/users/me")
+                    .then()
+                    .statusCode(200)
+                    .body("club", equalTo("Club Santalina"));
+        } finally {
+            deleteTestUser("diver_club@test.com");
+        }
+    }
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void createUser_withClub_shouldReturnClubInResponse() {
+        String testEmail = "create_club_test@test.com";
+        // Ensure clean state
+        deleteTestUser(testEmail);
+        try {
+            given()
+                    .contentType(ContentType.JSON)
+                    .body("""
+                          {"email":"%s","password":"Password1",
+                           "firstName":"Club","lastName":"Admin",
+                           "phone":"+33600000099","licenseNumber":null,
+                           "club":"Club Santalina",
+                           "roles":["DIVER"]}
+                          """.formatted(testEmail))
+                    .when().post("/api/users")
+                    .then()
+                    .statusCode(200)
+                    .body("club", equalTo("Club Santalina"));
+        } finally {
+            deleteTestUser(testEmail);
+        }
+    }
+
     @jakarta.transaction.Transactional
     void createTestUser(String email) {
         org.santalina.diving.domain.User u = new org.santalina.diving.domain.User();
