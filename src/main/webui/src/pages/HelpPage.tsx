@@ -539,6 +539,22 @@ export function HelpPage() {
             <li>La suppression est immédiate et irréversible.</li>
           </ol>
           <div className="help-warning">⚠️ La suppression d'un utilisateur ne supprime pas ses inscriptions sur les créneaux existants.</div>
+
+          <h4>Exporter la liste des utilisateurs (CSV)</h4>
+          <p>Cliquez sur <strong>📥 Exporter CSV</strong> pour télécharger un fichier CSV contenant tous les comptes, triés par club.
+            Le fichier est encodé en UTF-8 avec le séparateur point-virgule (compatible Excel).</p>
+          <p>Colonnes exportées : <code>club</code>, <code>nom</code>, <code>prénom</code>, <code>email</code>, <code>téléphone</code>, <code>licence</code>.</p>
+
+          <h4>Importer des utilisateurs depuis un CSV</h4>
+          <ol>
+            <li>Préparez un fichier CSV UTF-8 avec la ligne d'en-tête : <code>club;nom;prenom;email;telephone;licence</code>.</li>
+            <li>Cliquez sur <strong>📤 Importer CSV</strong> pour afficher le panneau d'import.</li>
+            <li>Sélectionnez le fichier CSV.</li>
+            <li>Saisissez un mot de passe provisoire qui sera assigné à tous les comptes importés (minimum 6 caractères).</li>
+            <li>Cliquez sur <strong>Importer</strong>.</li>
+          </ol>
+          <p>Les utilisateurs dont l'adresse e-mail est déjà présente dans la base sont automatiquement ignorés (aucune modification du compte existant). Le résultat affiche le nombre de comptes importés, ignorés et les éventuelles erreurs de format.</p>
+          <div className="help-tip">💡 Le fichier CSV exporté peut servir de modèle pour préparer un import.</div>
         </>
       ),
     },

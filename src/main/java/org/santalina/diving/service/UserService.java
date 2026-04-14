@@ -15,6 +15,9 @@ import jakarta.ws.rs.NotFoundException;
 import org.jboss.logging.Logger;
 
 import java.text.Normalizer;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 
@@ -177,4 +180,110 @@ public class UserService {
         user.notifOnCancelled       = request.notifOnCancelled();
         user.notifOnMovedToWaitlist = request.notifOnMovedToWaitlist();        user.notifOnDpRegistration  = request.notifOnDpRegistration();        user.notifOnCreatorRegistration = request.notifOnCreatorRegistration();        user.notifOnSafetyReminder = request.notifOnSafetyReminder();        user.persist();
         return UserResponse.from(user);
-    }}
+    }
+
+    /** Exporte tous les utilisateurs au format CSV (séparateur point-virgule), triés par club. */
+    public String exportUsersCsv() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("club;nom;prenom;email;telephone;licence\n");
+        User.<User>listAll().stream()
+            .sorted(Comparator.comparing(
+                (User u) -> u.club != null ? u.club : "\uFFFF",
+                String::compareTo))
+            .forEach(u -> sb
+                .append(csvEscape(u.club)).append(";")
+                .append(csvEscape(u.lastName)).append(";")
+                .append(csvEscape(u.firstName)).append(";")
+                .append(csvEscape(u.email)).append(";")
+                .append(csvEscape(u.phone)).append(";")
+                .append(csvEscape(u.licenseNumber)).append("\n"));
+        return sb.toString();
+    }
+
+    /** Importe des utilisateurs depuis un CSV (séparateur ;). Ignore les emails déjà existants. */
+    @Transactional
+    public CsvImportResult importUsersCsv(CsvImportRequest request) {
+        int imported = 0, skipped = 0, errors = 0;
+        List<String> messages = new ArrayList<>();
+        String[] lines = request.csvContent().split("\\r?\\n");
+        for (int i = 1; i < lines.length; i++) {
+            String line = lines[i].trim();
+            if (line.isEmpty()) continue;
+            String[] cols = parseCsvLine(line);
+            if (cols.length < 4) {
+                errors++;
+                messages.add("Ligne " + (i + 1) + " ignorée (format invalide, moins de 4 colonnes)");
+                continue;
+            }
+            String club       = cols[0].trim();
+            String lastName   = cols[1].trim();
+            String firstName  = cols[2].trim();
+            String email      = cols[3].trim().toLowerCase();
+            String phone      = cols.length > 4 ? cols[4].trim() : "";
+            String licenseNum = cols.length > 5 ? cols[5].trim() : "";
+            if (email.isEmpty()) {
+                errors++;
+                messages.add("Ligne " + (i + 1) + " ignorée (email manquant)");
+                continue;
+            }
+            if (User.findByEmail(email) != null) {
+                skipped++;
+                messages.add("Ignoré (email déjà existant) : " + email);
+                continue;
+            }
+            User user = new User();
+            user.email         = email;
+            user.firstName     = firstName.isEmpty() ? "" : firstName;
+            user.lastName      = lastName.isEmpty() ? "" : lastName;
+            user.phone         = normalizePhone(phone.isEmpty() ? null : phone);
+            user.licenseNumber = licenseNum.isEmpty() ? null : licenseNum;
+            user.club          = club.isEmpty() ? null : club;
+            user.passwordHash  = PasswordUtil.hash(request.password());
+            user.roles         = new HashSet<>(java.util.Set.of(UserRole.DIVER));
+            user.activated     = true;
+            user.persist();
+            imported++;
+            LOG.infof("Utilisateur importé via CSV : %s", email);
+        }
+        LOG.infof("Import CSV terminé : %d importés, %d ignorés, %d erreurs", imported, skipped, errors);
+        return new CsvImportResult(imported, skipped, errors, messages);
+    }
+
+    private static String[] parseCsvLine(String line) {
+        List<String> result = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean inQuotes = false;
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+            if (inQuotes) {
+                if (c == '"') {
+                    if (i + 1 < line.length() && line.charAt(i + 1) == '"') {
+                        current.append('"');
+                        i++;
+                    } else {
+                        inQuotes = false;
+                    }
+                } else {
+                    current.append(c);
+                }
+            } else if (c == '"') {
+                inQuotes = true;
+            } else if (c == ';') {
+                result.add(current.toString());
+                current = new StringBuilder();
+            } else {
+                current.append(c);
+            }
+        }
+        result.add(current.toString());
+        return result.toArray(new String[0]);
+    }
+
+    private static String csvEscape(String value) {
+        if (value == null || value.isEmpty()) return "";
+        if (value.contains(";") || value.contains("\"") || value.contains("\n")) {
+            return "\"" + value.replace("\"", "\"\"") + "\"";
+        }
+        return value;
+    }
+}

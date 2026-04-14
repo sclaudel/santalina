@@ -34,21 +34,21 @@ public class UserResource {
     @Path("/me")
     @RolesAllowed({"ADMIN", "DIVE_DIRECTOR", "DIVER"})
     public UserResponse getProfile() {
-        return userService.getProfile(jwt.getName());
+        return userService.getProfile(identity.getPrincipal().getName());
     }
 
     @PUT
     @Path("/me")
     @RolesAllowed({"ADMIN", "DIVE_DIRECTOR", "DIVER"})
     public UserResponse updateProfile(@Valid UpdateProfileRequest request) {
-        return userService.updateProfile(jwt.getName(), request);
+        return userService.updateProfile(identity.getPrincipal().getName(), request);
     }
 
     @PATCH
     @Path("/me/email")
     @RolesAllowed({"ADMIN", "DIVE_DIRECTOR", "DIVER"})
     public LoginResponse updateEmail(@Valid UpdateEmailRequest request) {
-        return userService.updateEmail(jwt.getName(), request);
+        return userService.updateEmail(identity.getPrincipal().getName(), request);
     }
 
     @GET
@@ -98,5 +98,25 @@ public class UserResource {
     @RolesAllowed({"DIVER", "DIVE_DIRECTOR", "ADMIN"})
     public UserResponse updateMyNotifPrefs(@Valid UpdateNotifPrefsRequest request) {
         return userService.updateNotifPrefs(identity.getPrincipal().getName(), request);
+    }
+
+    @GET
+    @Path("/export/csv")
+    @RolesAllowed("ADMIN")
+    @Produces("text/csv;charset=UTF-8")
+    public Response exportUsersCsv() {
+        String csv = userService.exportUsersCsv();
+        return Response.ok(csv)
+                .header("Content-Disposition", "attachment; filename=\"utilisateurs.csv\"")
+                .build();
+    }
+
+    @POST
+    @Path("/import/csv")
+    @RolesAllowed("ADMIN")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public CsvImportResult importUsersCsv(@Valid CsvImportRequest request) {
+        return userService.importUsersCsv(request);
     }
 }

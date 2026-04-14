@@ -115,4 +115,19 @@ public class UserDto {
             );
         }
     }
+
+    /** Résultat d'un import CSV d'utilisateurs. */
+    public record CsvImportResult(
+            int imported,
+            int skipped,
+            int errors,
+            java.util.List<String> messages
+    ) {}
+
+    /** Requête d'import CSV d'utilisateurs (corps JSON). */
+    public record CsvImportRequest(
+            @jakarta.validation.constraints.NotBlank String csvContent,
+            @jakarta.validation.constraints.NotBlank
+            @jakarta.validation.constraints.Size(min = 6, max = 100) String password
+    ) {}
 }

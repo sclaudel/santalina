@@ -178,6 +178,14 @@ export interface ImportResult {
   waitingListRestored: number;
 }
 
+// CSV import/export
+export interface CsvImportResult {
+  imported: number;
+  skipped: number;
+  errors: number;
+  messages: string[];
+}
+
 export interface PeriodStat {
   label: string;
   slots: number;

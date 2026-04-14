@@ -308,3 +308,4 @@ class BackupResourceIT {
         User u = User.findByEmail(email);
         return u != null ? u.club : null;
     }
+}
