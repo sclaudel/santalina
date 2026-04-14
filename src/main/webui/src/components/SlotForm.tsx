@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import type { AppConfig, SlotRequest } from '../types';
+import { useEffect, useState } from 'react';
+import type { AppConfig, SlotRequest, UserSearchResult } from '../types';
 import { slotService } from '../services/slotService';
+import { adminService } from '../services/adminService';
 
 interface Props {
   date: string;
@@ -9,6 +10,8 @@ interface Props {
   onCancel: () => void;
   /** Heure de début pré-remplie (ex: issu d'un clic sur la grille) */
   initialStartTime?: string;
+  /** Indique si l'utilisateur courant est ADMIN (affiche le sélecteur de DP) */
+  isAdmin?: boolean;
 }
 
 function timeOptions(resolutionMinutes: number): string[] {
@@ -44,7 +47,7 @@ function addMonths(dateStr: string, months: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-export function SlotForm({ date, config, onCreated, onCancel, initialStartTime }: Props) {
+export function SlotForm({ date, config, onCreated, onCancel, initialStartTime, isAdmin }: Props) {
   const safeConfig = {
     maxDivers: config?.maxDivers > 0 ? config.maxDivers : 25,
     slotResolutionMinutes: config?.slotResolutionMinutes > 0 ? config.slotResolutionMinutes : 15,
@@ -85,6 +88,16 @@ export function SlotForm({ date, config, onCreated, onCancel, initialStartTime }
   const [recurring, setRecurring]         = useState(false);
   const [recurringDays, setRecurringDays] = useState<number[]>([]);
   const [recurringUntil, setRecurringUntil] = useState(() => addMonths(date, 1));
+
+  // Création pour le compte d'un autre DP (ADMIN uniquement)
+  const [diveDirectors, setDiveDirectors]     = useState<UserSearchResult[]>([]);
+  const [createdByUserId, setCreatedByUserId] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    if (isAdmin) {
+      adminService.getDiveDirectors().then(setDiveDirectors).catch(() => {});
+    }
+  }, [isAdmin]);
 
   const maxUntilDate = addMonths(slotDate, safeConfig.maxRecurringMonths);
 
@@ -146,6 +159,7 @@ export function SlotForm({ date, config, onCreated, onCancel, initialStartTime }
         recurring: recurring || undefined,
         recurringDays: recurring ? recurringDays : undefined,
         recurringUntil: recurring ? recurringUntil : undefined,
+        createdByUserId: isAdmin ? createdByUserId : undefined,
       };
       const result = await slotService.create(req);
       if (result.created > 1) {
@@ -241,6 +255,26 @@ export function SlotForm({ date, config, onCreated, onCancel, initialStartTime }
             <label>Notes (optionnel)</label>
             <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Informations supplémentaires..." />
           </div>
+
+          {/* ── Créer pour le compte d'un DP (ADMIN uniquement) ── */}
+          {isAdmin && diveDirectors.length > 0 && (
+            <div className="form-group" style={{ borderTop: '1px solid #e5e7eb', paddingTop: 12, marginTop: 4 }}>
+              <label style={{ fontWeight: 600 }}>👤 Créer pour le compte de…</label>
+              <select
+                value={createdByUserId ?? ''}
+                onChange={e => setCreatedByUserId(e.target.value ? Number(e.target.value) : undefined)}
+                style={{ marginTop: 4 }}
+              >
+                <option value="">— Moi-même —</option>
+                {diveDirectors.map(dp => (
+                  <option key={dp.id} value={dp.id}>{dp.name}</option>
+                ))}
+              </select>
+              <p style={{ color: '#6b7280', fontSize: 12, marginTop: 4 }}>
+                Le créneau sera attribué au directeur de plongée sélectionné.
+              </p>
+            </div>
+          )}
 
           {/* ── Récurrence ── */}
           <div className="form-group" style={{ borderTop: '1px solid #e5e7eb', paddingTop: 12, marginTop: 4 }}>

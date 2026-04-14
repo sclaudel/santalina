@@ -172,6 +172,7 @@ export function CalendarPage({ onNavigate, returnContext, onReturnConsumed }: {
             initialStartTime={formStartTime}
             onCreated={handleCreated}
             onCancel={closeForm}
+            isAdmin={user?.role === 'ADMIN'}
           />
         )}
       </main>

@@ -12,6 +12,11 @@ export const adminService = {
     return res.data;
   },
 
+  async getDiveDirectors(): Promise<UserSearchResult[]> {
+    const res = await api.get<UserSearchResult[]>('/users/dive-directors');
+    return res.data;
+  },
+
   async createUser(req: CreateUserRequest): Promise<User> {
     const res = await api.post<User>('/users', req);
     return res.data;

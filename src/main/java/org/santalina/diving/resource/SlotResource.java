@@ -5,6 +5,7 @@ import org.santalina.diving.domain.UserRole;
 import org.santalina.diving.dto.SlotDto.*;
 import org.santalina.diving.dto.WaitingListDto.UpdateRegistrationRequest;
 import org.santalina.diving.service.SlotService;
+import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -12,7 +13,6 @@ import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.time.LocalDate;
@@ -28,7 +28,7 @@ public class SlotResource {
     SlotService slotService;
 
     @Inject
-    JsonWebToken jwt;
+    SecurityIdentity identity;
 
     @GET
     @PermitAll
@@ -64,9 +64,17 @@ public class SlotResource {
     @POST
     @RolesAllowed({"ADMIN", "DIVE_DIRECTOR"})
     public Response create(@Valid SlotRequest request) {
-        User currentUser = User.findByEmail(jwt.getName());
+        User currentUser = User.findByEmail(identity.getPrincipal().getName());
         if (currentUser == null) throw new NotAuthorizedException("Utilisateur non trouvé");
-        BatchSlotResponse batch = slotService.createSlots(request, currentUser);
+        User creatorUser = currentUser;
+        if (request.createdByUserId() != null && currentUser.roles.contains(UserRole.ADMIN)) {
+            User target = User.findById(request.createdByUserId());
+            if (target == null) throw new NotFoundException("Directeur de plongée cible non trouvé");
+            if (!target.roles.contains(UserRole.DIVE_DIRECTOR))
+                throw new BadRequestException("L'utilisateur cible n'est pas directeur de plongée");
+            creatorUser = target;
+        }
+        BatchSlotResponse batch = slotService.createSlots(request, creatorUser);
         return Response.status(201).entity(batch).build();
     }
 
@@ -74,7 +82,7 @@ public class SlotResource {
     @Path("/{id}")
     @RolesAllowed({"ADMIN", "DIVE_DIRECTOR"})
     public Response delete(@PathParam("id") Long id) {
-        User currentUser = User.findByEmail(jwt.getName());
+        User currentUser = User.findByEmail(identity.getPrincipal().getName());
         if (currentUser == null) throw new NotAuthorizedException("Utilisateur non trouvé");
         slotService.deleteSlot(id, currentUser);
         return Response.noContent().build();
@@ -85,7 +93,7 @@ public class SlotResource {
     @RolesAllowed({"ADMIN", "DIVE_DIRECTOR"})
     public SlotResponse updateDiverCount(@PathParam("id") Long id,
                                          @Valid UpdateDiverCountRequest request) {
-        User currentUser = User.findByEmail(jwt.getName());
+        User currentUser = User.findByEmail(identity.getPrincipal().getName());
         if (currentUser == null) throw new NotAuthorizedException("Utilisateur non trouvé");
         return slotService.updateDiverCount(id, request.diverCount(), currentUser);
     }
@@ -95,7 +103,7 @@ public class SlotResource {
     @RolesAllowed({"ADMIN", "DIVE_DIRECTOR"})
     public SlotResponse updateSlotInfo(@PathParam("id") Long id,
                                        UpdateSlotInfoRequest request) {
-        User currentUser = User.findByEmail(jwt.getName());
+        User currentUser = User.findByEmail(identity.getPrincipal().getName());
         if (currentUser == null) throw new NotAuthorizedException("Utilisateur non trouvé");
         return slotService.updateSlotInfo(id, request, currentUser);
     }
@@ -105,7 +113,7 @@ public class SlotResource {
     @RolesAllowed({"ADMIN", "DIVE_DIRECTOR"})
     public SlotResponse updateRegistration(@PathParam("id") Long id,
                                            UpdateRegistrationRequest request) {
-        User currentUser = User.findByEmail(jwt.getName());
+        User currentUser = User.findByEmail(identity.getPrincipal().getName());
         if (currentUser == null) throw new NotAuthorizedException("Utilisateur non trouvé");
         return slotService.updateRegistration(id, request, currentUser);
     }

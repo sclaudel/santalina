@@ -124,6 +124,8 @@ export interface SlotRequest {
   recurring?: boolean;
   recurringDays?: number[];   // 1=Lun … 7=Dim (ISO)
   recurringUntil?: string;    // YYYY-MM-DD
+  // Création pour le compte d'un autre DP (ADMIN uniquement)
+  createdByUserId?: number;
 }
 
 export interface BatchSlotResponse {
