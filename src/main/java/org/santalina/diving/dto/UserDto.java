@@ -47,9 +47,9 @@ public class UserDto {
     public record UpdateProfileRequest(
             @NotBlank @Size(min = 2, max = 100) String firstName,
             @NotBlank @Size(min = 2, max = 100) String lastName,
-            @Pattern(regexp = "^(0[1-9][0-9]{8}|\\+33[1-9][0-9]{8})$", message = "Numéro de téléphone français invalide (ex: 0612345678 ou +33612345678)")
+            @Pattern(regexp = "^(0[1-9][0-9]{8}|\\+33[1-9][0-9]{8})?$", message = "Numéro de téléphone français invalide (ex: 0612345678 ou +33612345678)")
             String phone,
-            @Pattern(regexp = "^[A-Z]-\\d{2}-\\d{6,10}$", message = "Format invalide (ex: A-14-1223422222)")
+            @Pattern(regexp = "^([A-Z]-\\d{2}-\\d{6,10})?$", message = "Format invalide (ex: A-14-1223422222)")
             @Size(max = 20) String licenseNumber,
             String club
     ) {}
@@ -80,9 +80,9 @@ public class UserDto {
             @NotBlank(message = "Le prénom est obligatoire") @Size(min = 2, max = 100) String firstName,
             @NotBlank(message = "Le nom est obligatoire") @Size(min = 2, max = 100) String lastName,
             @NotBlank(message = "Le mot de passe est obligatoire") @Size(min = 6, max = 100, message = "Le mot de passe doit faire au moins 6 caractères") String password,
-            @Pattern(regexp = "^(0[1-9][0-9]{8}|\\+33[1-9][0-9]{8})$", message = "Numéro de téléphone français invalide (ex: 0612345678 ou +33612345678)")
+            @Pattern(regexp = "^(0[1-9][0-9]{8}|\\+33[1-9][0-9]{8})?$", message = "Numéro de téléphone français invalide (ex: 0612345678 ou +33612345678)")
             String phone,
-            @Pattern(regexp = "^[A-Z]-\\d{2}-\\d{6,10}$", message = "Format invalide (ex: A-14-1223422222)")
+            @Pattern(regexp = "^([A-Z]-\\d{2}-\\d{6,10})?$", message = "Format invalide (ex: A-14-1223422222)")
             @Size(max = 20) String licenseNumber,
             String club,
             @NotNull @Size(min = 1) Set<UserRole> roles
@@ -92,9 +92,9 @@ public class UserDto {
             @NotBlank(message = "L'email est obligatoire") @Email(message = "Format email invalide") String email,
             @NotBlank(message = "Le prénom est obligatoire") @Size(min = 2, max = 100) String firstName,
             @NotBlank(message = "Le nom est obligatoire") @Size(min = 2, max = 100) String lastName,
-            @Pattern(regexp = "^(0[1-9][0-9]{8}|\\+33[1-9][0-9]{8})$", message = "Numéro de téléphone français invalide (ex: 0612345678 ou +33612345678)")
+            @Pattern(regexp = "^(0[1-9][0-9]{8}|\\+33[1-9][0-9]{8})?$", message = "Numéro de téléphone français invalide (ex: 0612345678 ou +33612345678)")
             String phone,
-            @Pattern(regexp = "^[A-Z]-\\d{2}-\\d{6,10}$", message = "Format invalide (ex: A-14-1223422222)")
+            @Pattern(regexp = "^([A-Z]-\\d{2}-\\d{6,10})?$", message = "Format invalide (ex: A-14-1223422222)")
             @Size(max = 20) String licenseNumber,
             String club
     ) {}

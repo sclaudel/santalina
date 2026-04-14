@@ -31,6 +31,8 @@ export interface LoginResponse {
   userId: number;
   roles?: UserRole[];
   phone?: string;
+  licenseNumber?: string;
+  club?: string;
 }
 
 export interface CreateUserRequest {

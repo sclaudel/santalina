@@ -42,7 +42,7 @@ public class UserService {
         user.firstName     = request.firstName().trim();
         user.lastName      = request.lastName().trim().toUpperCase();
         user.phone         = normalizePhone(request.phone());
-        user.licenseNumber = request.licenseNumber() != null ? request.licenseNumber().trim() : null;
+        user.licenseNumber = (request.licenseNumber() != null && !request.licenseNumber().isBlank()) ? request.licenseNumber().trim() : null;
         user.club          = request.club() != null && !request.club().isBlank() ? request.club().trim() : null;
         user.persist();
         return UserResponse.from(user);
@@ -65,7 +65,7 @@ public class UserService {
         LOG.infof("Email mis à jour : %s → %s", currentEmail, newEmail);
         String token = jwtUtil.generateToken(user);
         return new LoginResponse(token, user.email, user.firstName, user.lastName,
-                user.primaryRole(), user.id, user.roles, user.phone);
+                user.primaryRole(), user.id, user.roles, user.phone, user.licenseNumber, user.club);
     }
 
     public List<UserResponse> getAllUsers() {
@@ -122,7 +122,7 @@ public class UserService {
         user.firstName    = request.firstName().trim();
         user.lastName     = request.lastName().trim().toUpperCase();
         user.phone        = normalizePhone(request.phone());
-        user.licenseNumber = request.licenseNumber() != null ? request.licenseNumber().trim() : null;
+        user.licenseNumber = (request.licenseNumber() != null && !request.licenseNumber().isBlank()) ? request.licenseNumber().trim() : null;
         user.club          = request.club() != null && !request.club().isBlank() ? request.club().trim() : null;
         user.passwordHash = PasswordUtil.hash(request.password());
         user.roles        = new HashSet<>(request.roles());
@@ -158,7 +158,7 @@ public class UserService {
         user.firstName = request.firstName().trim();
         user.lastName  = request.lastName().trim().toUpperCase();
         user.phone     = normalizePhone(request.phone());
-        user.licenseNumber = request.licenseNumber() != null ? request.licenseNumber().trim() : null;
+        user.licenseNumber = (request.licenseNumber() != null && !request.licenseNumber().isBlank()) ? request.licenseNumber().trim() : null;
         user.club          = request.club() != null && !request.club().isBlank() ? request.club().trim() : null;
         user.persist();
         return UserResponse.from(user);

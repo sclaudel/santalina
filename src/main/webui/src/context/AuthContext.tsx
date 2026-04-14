@@ -42,6 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     role: data.role,
     roles: data.roles && data.roles.length > 0 ? data.roles : [data.role],
     phone: data.phone,
+    licenseNumber: data.licenseNumber,
+    club: data.club,
   });
 
   const login = async (email: string, password: string) => {

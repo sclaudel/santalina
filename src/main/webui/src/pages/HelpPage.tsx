@@ -485,9 +485,9 @@ export function HelpPage() {
           <ul>
             <li><strong>Prénom</strong> et <strong>Nom</strong> — affichés dans le menu et les listes de plongeurs.</li>
             <li><strong>Email</strong> — identifiant de connexion.</li>
-            <li><strong>Téléphone</strong> — utilisé pour contacter le directeur de plongée.</li>
-            <li><strong>N° de licence fédérale</strong> — champ <em>optionnel</em>. S'il est renseigné, il sera automatiquement repris lorsque vous êtes sélectionné comme directeur de plongée sur un créneau, et apparaîtra dans la fiche de sécurité Excel.</li>
-            <li><strong>Club d'appartenance</strong> — champ <em>optionnel</em>. Votre club est automatiquement repris lors de votre inscription en liste d'attente sur un créneau ouvert aux inscriptions libres.</li>
+            <li><strong>Téléphone</strong> — champ <em>optionnel</em>. Format attendu : <code>0612345678</code> ou <code>+33612345678</code>. Utilisé pour contacter le directeur de plongée.</li>
+            <li><strong>N° de licence fédérale</strong> — champ <em>optionnel</em>. Format attendu : <code>A-14-1234567890</code> (lettre, tiret, 2 chiffres, tiret, 6 à 10 chiffres). S'il est renseigné, il sera automatiquement repris lorsque vous êtes sélectionné comme directeur de plongée sur un créneau, et apparaîtra dans la fiche de sécurité Excel.</li>
+            <li><strong>Club d'appartenance</strong> — champ <em>optionnel</em>. Votre club est automatiquement repris lors de votre inscription en liste d'attente sur un créneau ouvert aux inscriptions libres, et apparaît dans la liste d'attente visible par le directeur de plongée.</li>
             <li><strong>Mot de passe</strong> — modifiable depuis cette page (champ optionnel, laissez vide pour ne pas le changer).</li>
           </ul>
           <p>Accès : cliquez sur votre nom dans la barre de navigation → <strong>👤 Mon profil</strong>.</p>
@@ -509,7 +509,8 @@ export function HelpPage() {
           <h4>Créer un utilisateur</h4>
           <ol>
             <li>Cliquez sur <strong>+ Nouvel utilisateur</strong>.</li>
-            <li>Renseignez le prénom, le nom, l'email, le téléphone, le club d'appartenance (optionnel) et le mot de passe provisoire.</li>
+            <li>Renseignez le prénom, le nom, l'email et le mot de passe provisoire.</li>
+            <li>Renseignez optionnellement le téléphone (format <code>0612345678</code> ou <code>+33612345678</code>), le N° de licence fédérale (format <code>A-14-1234567</code>) et le club d'appartenance.</li>
             <li>Attribuez un ou plusieurs rôles :
               <ul>
                 <li><strong>🏊 Plongeur</strong> — peut consulter le calendrier et ses créneaux.</li>
@@ -523,7 +524,7 @@ export function HelpPage() {
           <h4>Modifier un utilisateur</h4>
           <ol>
             <li>Dans le tableau des utilisateurs, cliquez sur <strong>✏️ Modifier</strong> sur la ligne concernée.</li>
-            <li>Modifiez l'email, le nom, le téléphone ou le club d'appartenance.</li>
+            <li>Modifiez l'email, le nom, le téléphone (optionnel), le N° de licence (optionnel) ou le club d'appartenance (optionnel).</li>
             <li>Cliquez sur <strong>Enregistrer</strong>.</li>
           </ol>
 

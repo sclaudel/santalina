@@ -97,7 +97,60 @@ class UserResourceIT {
                 .statusCode(400);
     }
 
-    /* ── Notification prefs ── */
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void createUser_shouldReturn201_whenPhoneAndLicenseAreEmpty() {
+        String testEmail = "no_phone_license@test.com";
+        deleteTestUser(testEmail);
+        try {
+            given()
+                    .contentType(ContentType.JSON)
+                    .body("""
+                          {"email":"%s","password":"Password1",
+                           "firstName":"Sans","lastName":"Telephone",
+                           "phone":"","licenseNumber":"","club":"",
+                           "roles":["DIVER"]}
+                          """.formatted(testEmail))
+                    .when().post("/api/users")
+                    .then()
+                    .statusCode(201);
+        } finally {
+            deleteTestUser(testEmail);
+        }
+    }
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void createUser_shouldReturn400_whenPhoneFormatIsInvalid() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                      {"email":"bad_phone@test.com","password":"Password1",
+                       "firstName":"Bad","lastName":"Phone",
+                       "phone":"12345","licenseNumber":"",
+                       "roles":["DIVER"]}
+                      """)
+                .when().post("/api/users")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void createUser_shouldReturn400_whenLicenseFormatIsInvalid() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                      {"email":"bad_license@test.com","password":"Password1",
+                       "firstName":"Bad","lastName":"License",
+                       "phone":"","licenseNumber":"INVALID-FORMAT",
+                       "roles":["DIVER"]}
+                      """)
+                .when().post("/api/users")
+                .then()
+                .statusCode(400);
+    }
+
 
     @Test
     void updateNotifPrefs_shouldReturn401_withoutAuthentication() {

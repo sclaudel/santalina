@@ -137,6 +137,24 @@ class AuthResourceIT {
     }
 
     @Test
+    @Order(6)
+    void login_shouldReturnClubAndLicenseInResponse() {
+        // Vérifie que la réponse de connexion contient bien les clés club et licenseNumber
+        // (elles peuvent être null pour l'admin, mais les champs doivent être présents)
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                      {"email":"admin@santalina.com","password":"Admin1234"}
+                      """)
+                .when().post(LOGIN_URL)
+                .then()
+                .statusCode(200)
+                .body("token", notNullValue())
+                .body("$", hasKey("club"))
+                .body("$", hasKey("licenseNumber"));
+    }
+
+    @Test
     @Order(7)
     void login_shouldReturn401_whenWrongPassword() {
         given()
