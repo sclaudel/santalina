@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/authService';
+import { adminService } from '../services/adminService';
 
 interface Props {
   onClose: () => void;
@@ -15,6 +16,8 @@ export function LoginModal({ onClose, selfRegistration = true }: Props) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
+  const [club, setClub] = useState('');
+  const [clubs, setClubs] = useState<string[]>([]);
   const [gdprAccepted, setGdprAccepted] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -44,9 +47,11 @@ export function LoginModal({ onClose, selfRegistration = true }: Props) {
   useEffect(() => {
     if (mode === 'register') {
       setFirstName(''); setLastName('');
+      setClub('');
       setGdprAccepted(false);
       setRegisterDone(false);
       loadCaptcha();
+      adminService.getConfig().then(cfg => setClubs(cfg.clubs ?? [])).catch(() => {});
     }
   }, [mode, loadCaptcha]);
 
@@ -58,7 +63,7 @@ export function LoginModal({ onClose, selfRegistration = true }: Props) {
         await login(email, password);
         onClose();
       } else if (mode === 'register') {
-        const msg = await register(email, firstName, lastName, phone, gdprAccepted, captchaId, captchaAnswer);
+        const msg = await register(email, firstName, lastName, phone, gdprAccepted, captchaId, captchaAnswer, club || undefined);
         setRegisterDone(true);
         setSuccess(msg);
       } else {
@@ -131,6 +136,18 @@ export function LoginModal({ onClose, selfRegistration = true }: Props) {
                 required placeholder="0612345678"
                 pattern="^(0[1-9][0-9]{8}|\+33[1-9][0-9]{8})$"
                 title="Numéro de téléphone français valide (ex: 0612345678 ou +33612345678)" />
+            </div>
+          )}
+
+          {mode === 'register' && clubs.length > 0 && (
+            <div className="form-group">
+              <label>Club d'appartenance</label>
+              <select value={club} onChange={e => setClub(e.target.value)}>
+                <option value="">— Aucun / Non affilié —</option>
+                {clubs.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
             </div>
           )}
 

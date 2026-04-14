@@ -10,6 +10,7 @@ export interface User {
   name: string;
   phone?: string;
   licenseNumber?: string;
+  club?: string;
   role: UserRole;
   roles: UserRole[];
   notifOnRegistration?: boolean;
@@ -30,6 +31,8 @@ export interface LoginResponse {
   userId: number;
   roles?: UserRole[];
   phone?: string;
+  licenseNumber?: string;
+  club?: string;
 }
 
 export interface CreateUserRequest {
@@ -39,6 +42,7 @@ export interface CreateUserRequest {
   password: string;
   phone?: string;
   licenseNumber?: string;
+  club?: string;
   roles: UserRole[];
 }
 
@@ -48,6 +52,7 @@ export interface UpdateUserAdminRequest {
   lastName: string;
   phone?: string;
   licenseNumber?: string;
+  club?: string;
 }
 
 export interface UserSearchResult {
@@ -173,6 +178,14 @@ export interface ImportResult {
   diversRestored: number;
   palanqueesRestored: number;
   waitingListRestored: number;
+}
+
+// CSV import/export
+export interface CsvImportResult {
+  imported: number;
+  skipped: number;
+  errors: number;
+  messages: string[];
 }
 
 export interface PeriodStat {

@@ -21,7 +21,8 @@ public class AuthDto {
             String phone,
             boolean consentGiven,
             @NotBlank String captchaId,
-            @NotBlank String captchaAnswer
+            @NotBlank String captchaAnswer,
+            String club
     ) {}
 
     public record RegisterResponse(String message) {}
@@ -39,7 +40,9 @@ public class AuthDto {
             UserRole role,
             Long userId,
             java.util.Set<UserRole> roles,
-            String phone
+            String phone,
+            String licenseNumber,
+            String club
     ) {}
 
     public record PasswordResetRequest(

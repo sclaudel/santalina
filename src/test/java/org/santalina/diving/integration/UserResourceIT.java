@@ -97,7 +97,60 @@ class UserResourceIT {
                 .statusCode(400);
     }
 
-    /* ── Notification prefs ── */
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void createUser_shouldReturn201_whenPhoneAndLicenseAreEmpty() {
+        String testEmail = "no_phone_license@test.com";
+        deleteTestUser(testEmail);
+        try {
+            given()
+                    .contentType(ContentType.JSON)
+                    .body("""
+                          {"email":"%s","password":"Password1",
+                           "firstName":"Sans","lastName":"Telephone",
+                           "phone":"","licenseNumber":"","club":"",
+                           "roles":["DIVER"]}
+                          """.formatted(testEmail))
+                    .when().post("/api/users")
+                    .then()
+                    .statusCode(201);
+        } finally {
+            deleteTestUser(testEmail);
+        }
+    }
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void createUser_shouldReturn400_whenPhoneFormatIsInvalid() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                      {"email":"bad_phone@test.com","password":"Password1",
+                       "firstName":"Bad","lastName":"Phone",
+                       "phone":"12345","licenseNumber":"",
+                       "roles":["DIVER"]}
+                      """)
+                .when().post("/api/users")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void createUser_shouldReturn400_whenLicenseFormatIsInvalid() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                      {"email":"bad_license@test.com","password":"Password1",
+                       "firstName":"Bad","lastName":"License",
+                       "phone":"","licenseNumber":"INVALID-FORMAT",
+                       "roles":["DIVER"]}
+                      """)
+                .when().post("/api/users")
+                .then()
+                .statusCode(400);
+    }
+
 
     @Test
     void updateNotifPrefs_shouldReturn401_withoutAuthentication() {
@@ -135,6 +188,143 @@ class UserResourceIT {
         } finally {
             deleteTestUser("diver_notif@test.com");
         }
+    }
+
+    @Test
+    @TestSecurity(user = "diver_club@test.com", roles = {"DIVER"})
+    void updateProfile_withClub_shouldPersistClub() {
+        createTestUser("diver_club@test.com");
+        try {
+            given()
+                    .contentType(ContentType.JSON)
+                    .body("""
+                          {"firstName":"Club","lastName":"Tester",
+                           "phone":null,"licenseNumber":null,
+                           "club":"Club Santalina"}
+                          """)
+                    .when().put("/api/users/me")
+                    .then()
+                    .statusCode(200)
+                    .body("club", equalTo("Club Santalina"));
+        } finally {
+            deleteTestUser("diver_club@test.com");
+        }
+    }
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void createUser_withClub_shouldReturnClubInResponse() {
+        String testEmail = "create_club_test@test.com";
+        // Ensure clean state
+        deleteTestUser(testEmail);
+        try {
+            given()
+                    .contentType(ContentType.JSON)
+                    .body("""
+                          {"email":"%s","password":"Password1",
+                           "firstName":"Club","lastName":"Admin",
+                           "phone":"+33600000099","licenseNumber":null,
+                           "club":"Club Santalina",
+                           "roles":["DIVER"]}
+                          """.formatted(testEmail))
+                    .when().post("/api/users")
+                    .then()
+                    .statusCode(201)
+                    .body("club", equalTo("Club Santalina"));
+        } finally {
+            deleteTestUser(testEmail);
+        }
+    }
+
+    /* ── Export / Import CSV ── */
+
+    @Test
+    void exportUsersCsv_shouldReturn401_withoutAuthentication() {
+        given()
+                .when().get("/api/users/export/csv")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    @TestSecurity(user = "diver@test.com", roles = {"DIVER"})
+    void exportUsersCsv_shouldReturn403_whenDiver() {
+        given()
+                .when().get("/api/users/export/csv")
+                .then()
+                .statusCode(403);
+    }
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void exportUsersCsv_shouldReturn200_withCsvHeader_whenAdmin() {
+        given()
+                .when().get("/api/users/export/csv")
+                .then()
+                .statusCode(200)
+                .contentType(containsString("text/csv"))
+                .body(startsWith("club;nom;prenom;email;telephone;licence"));
+    }
+
+    @Test
+    void importUsersCsv_shouldReturn401_withoutAuthentication() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                      {"csvContent":"club;nom;prenom;email;telephone;licence","password":"Pass123"}
+                      """)
+                .when().post("/api/users/import/csv")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void importUsersCsv_shouldSkipExistingUser_whenAdmin() {
+        String testEmail = "csv_existing@test.com";
+        createTestUser(testEmail);
+        try {
+            String csv = "club;nom;prenom;email;telephone;licence\n"
+                    + "Club Test;DUPONT;Jean;" + testEmail + ";0600000001;LIC001\n";
+            given()
+                    .contentType(ContentType.JSON)
+                    .body("{\"csvContent\":" + jsonString(csv) + ",\"password\":\"Pass123\"}")
+                    .when().post("/api/users/import/csv")
+                    .then()
+                    .statusCode(200)
+                    .body("imported", equalTo(0))
+                    .body("skipped", equalTo(1))
+                    .body("errors", equalTo(0));
+        } finally {
+            deleteTestUser(testEmail);
+        }
+    }
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void importUsersCsv_shouldImportNewUser_whenAdmin() {
+        String testEmail = "csv_new_import@test.com";
+        deleteTestUser(testEmail);
+        try {
+            String csv = "club;nom;prenom;email;telephone;licence\n"
+                    + "Club Import;MARTIN;Sophie;" + testEmail + ";0600000002;LIC002\n";
+            given()
+                    .contentType(ContentType.JSON)
+                    .body("{\"csvContent\":" + jsonString(csv) + ",\"password\":\"Pass1234\"}")
+                    .when().post("/api/users/import/csv")
+                    .then()
+                    .statusCode(200)
+                    .body("imported", equalTo(1))
+                    .body("skipped", equalTo(0))
+                    .body("errors", equalTo(0));
+        } finally {
+            deleteTestUser(testEmail);
+        }
+    }
+
+    /** Encode une chaîne Java en littéral JSON (guillemets et retours à la ligne échappés). */
+    private static String jsonString(String s) {
+        return "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r") + "\"";
     }
 
     @jakarta.transaction.Transactional

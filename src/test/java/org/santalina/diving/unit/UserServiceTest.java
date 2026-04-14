@@ -34,7 +34,7 @@ class UserServiceTest {
     void updateProfile_shouldThrowNotFoundException_whenUserDoesNotExist() {
         assertThrows(NotFoundException.class,
                 () -> userService.updateProfile("inexistant@test.com",
-                        new UpdateProfileRequest("Nouveau", "Nom", "+33600000000", null)));
+                        new UpdateProfileRequest("Nouveau", "Nom", "+33600000000", null, null)));
     }
 
     @Test

@@ -65,6 +65,7 @@ public class AuthService {
         user.firstName             = NameUtil.capitalize(request.firstName().trim());
         user.lastName              = request.lastName().trim().toUpperCase();
         user.phone                 = request.phone();
+        user.club                  = request.club() != null && !request.club().isBlank() ? request.club().trim() : null;
         user.consentGiven          = request.consentGiven();
         user.consentDate           = request.consentGiven() ? LocalDateTime.now() : null;
         user.passwordHash          = null;
@@ -100,7 +101,7 @@ public class AuthService {
         LOG.infof("Compte activé : %s", user.email);
         String token = jwtUtil.generateToken(user);
         return new LoginResponse(token, user.email, user.firstName, user.lastName,
-                user.primaryRole(), user.id, user.roles, user.phone);
+                user.primaryRole(), user.id, user.roles, user.phone, user.licenseNumber, user.club);
     }
 
     @Transactional
@@ -125,7 +126,7 @@ public class AuthService {
         LOG.infof("Connexion réussie pour : %s", user.email);
         String token = jwtUtil.generateToken(user);
         return new LoginResponse(token, user.email, user.firstName, user.lastName,
-                user.primaryRole(), user.id, user.roles, user.phone);
+                user.primaryRole(), user.id, user.roles, user.phone, user.licenseNumber, user.club);
     }
 
     @Transactional

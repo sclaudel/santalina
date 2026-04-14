@@ -122,6 +122,7 @@ public class BackupService {
                 user.lastName       = u.lastName() != null ? u.lastName().trim().toUpperCase() : null;
                 user.phone          = u.phone();
                 user.licenseNumber  = u.licenseNumber();
+                user.club           = u.club();
                 user.activated      = u.activated();
                 user.consentGiven   = u.consentGiven();
                 user.consentDate    = u.consentDate();
@@ -320,7 +321,7 @@ public class BackupService {
     private UserEntry toUserEntry(User u) {
         List<String> roles = u.roles.stream().map(Enum::name).collect(Collectors.toList());
         return new UserEntry(u.id, u.email, u.passwordHash,
-                u.firstName, u.lastName, u.phone, u.licenseNumber,
+                u.firstName, u.lastName, u.phone, u.licenseNumber, u.club,
                 u.activated, u.consentGiven, u.consentDate, roles,
                 u.notifOnRegistration, u.notifOnApproved, u.notifOnCancelled,
                 u.notifOnMovedToWaitlist, u.notifOnDpRegistration, u.notifOnCreatorRegistration,

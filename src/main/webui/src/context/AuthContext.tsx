@@ -6,7 +6,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, firstName: string, lastName: string, phone: string, gdprAccepted: boolean, captchaId: string, captchaAnswer: string) => Promise<string>;
+  register: (email: string, firstName: string, lastName: string, phone: string, gdprAccepted: boolean, captchaId: string, captchaAnswer: string, club?: string) => Promise<string>;
   activateAccount: (token: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
@@ -42,6 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     role: data.role,
     roles: data.roles && data.roles.length > 0 ? data.roles : [data.role],
     phone: data.phone,
+    licenseNumber: data.licenseNumber,
+    club: data.club,
   });
 
   const login = async (email: string, password: string) => {
@@ -53,8 +55,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(userData);
   };
 
-  const register = async (email: string, firstName: string, lastName: string, phone: string, gdprAccepted: boolean, captchaId: string, captchaAnswer: string): Promise<string> => {
-    const data = await authService.register(email, firstName, lastName, phone, gdprAccepted, captchaId, captchaAnswer);
+  const register = async (email: string, firstName: string, lastName: string, phone: string, gdprAccepted: boolean, captchaId: string, captchaAnswer: string, club?: string): Promise<string> => {
+    const data = await authService.register(email, firstName, lastName, phone, gdprAccepted, captchaId, captchaAnswer, club);
     return data.message;
   };
 

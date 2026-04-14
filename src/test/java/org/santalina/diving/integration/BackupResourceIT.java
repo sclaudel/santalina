@@ -246,4 +246,66 @@ class BackupResourceIT {
                 .body("diversRestored", equalTo(0))
                 .body("waitingListRestored", equalTo(1));
     }
+
+    /**
+     * Vérifie que l'import d'un utilisateur avec club fonctionne correctement.
+     */
+    @Test
+    @Order(8)
+    @TestSecurity(user = "admin@test.com", roles = {"ADMIN"})
+    void importBackup_withUserWithClub_shouldRestoreClub() {
+        String payload = """
+                {
+                    "version": "1.0",
+                    "type": "config-users",
+                    "exportedAt": "2099-01-01T00:00:00",
+                    "config": [],
+                    "users": [
+                        {
+                            "id": 9999,
+                            "email": "club.import@test.com",
+                            "passwordHash": "$2a$10$test",
+                            "firstName": "Club",
+                            "lastName": "IMPORT",
+                            "phone": null,
+                            "licenseNumber": null,
+                            "club": "Club Santalina",
+                            "activated": true,
+                            "consentGiven": false,
+                            "consentDate": null,
+                            "roles": ["DIVER"],
+                            "notifOnRegistration": true,
+                            "notifOnApproved": true,
+                            "notifOnCancelled": true,
+                            "notifOnMovedToWaitlist": true,
+                            "notifOnDpRegistration": true,
+                            "notifOnCreatorRegistration": false,
+                            "notifOnSafetyReminder": true
+                        }
+                    ],
+                    "slots": null,
+                    "divers": null,
+                    "palanquees": null,
+                    "waitingListEntries": null
+                }
+                """;
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(payload)
+                .when().post("/api/admin/backup/import")
+                .then()
+                .statusCode(200)
+                .body("success", equalTo(true))
+                .body("usersRestored", equalTo(1));
+
+        // Vérifier que le club est bien persisté
+        org.junit.jupiter.api.Assertions.assertEquals("Club Santalina", findUserClub("club.import@test.com"));
+    }
+
+    @Transactional
+    String findUserClub(String email) {
+        User u = User.findByEmail(email);
+        return u != null ? u.club : null;
+    }
 }

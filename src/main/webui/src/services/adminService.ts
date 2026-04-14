@@ -1,5 +1,5 @@
 import api from './api';
-import type { User, AppConfig, CreateUserRequest, UpdateUserAdminRequest, UserRole, UserSearchResult, LogInfo, ImportResult } from '../types';
+import type { User, AppConfig, CreateUserRequest, UpdateUserAdminRequest, UserRole, UserSearchResult, LogInfo, ImportResult, CsvImportResult } from '../types';
 
 export const adminService = {
   async getAllUsers(): Promise<User[]> {
@@ -169,6 +169,26 @@ export const adminService = {
 
   async importBackup(data: unknown): Promise<ImportResult> {
     const res = await api.post<ImportResult>('/admin/backup/import', data);
+    return res.data;
+  },
+
+  // ---- CSV utilisateurs ----
+
+  async exportUsersCsv(): Promise<void> {
+    const res = await api.get('/users/export/csv', { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/csv;charset=UTF-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    const today = new Date().toISOString().slice(0, 10);
+    link.setAttribute('download', `utilisateurs-${today}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
+  async importUsersCsv(csvContent: string, password: string): Promise<CsvImportResult> {
+    const res = await api.post<CsvImportResult>('/users/import/csv', { csvContent, password });
     return res.data;
   },
 };

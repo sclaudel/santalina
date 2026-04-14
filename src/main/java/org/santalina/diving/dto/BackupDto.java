@@ -34,6 +34,7 @@ public class BackupDto {
             String lastName,
             String phone,
             String licenseNumber,
+            String club,
             boolean activated,
             boolean consentGiven,
             LocalDateTime consentDate,

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { adminService } from '../services/adminService';
-import type { User, AppConfig, CreateUserRequest, UpdateUserAdminRequest, UserRole, LogInfo, ImportResult } from '../types';
+import type { User, AppConfig, CreateUserRequest, UpdateUserAdminRequest, UserRole, LogInfo, ImportResult, CsvImportResult } from '../types';
 import { getErrorMessage } from '../utils/errorUtils';
 
 
@@ -11,7 +11,7 @@ const ALL_ROLES: { value: UserRole; label: string }[] = [
 ];
 
 const EMPTY_FORM: CreateUserRequest = {
-  email: '', firstName: '', lastName: '', password: '', phone: '', licenseNumber: '', roles: ['DIVER'],
+  email: '', firstName: '', lastName: '', password: '', phone: '', licenseNumber: '', club: '', roles: ['DIVER'],
 };
 
 type AdminTabId = 'general' | 'catalog' | 'users' | 'operations';
@@ -37,7 +37,7 @@ export function AdminPage() {
   const [createError, setCreateError]       = useState('');
   const [createLoading, setCreateLoading]   = useState(false);
   const [editingUserId, setEditingUserId]   = useState<number | null>(null);
-  const [editForm, setEditForm]             = useState<UpdateUserAdminRequest>({ email: '', firstName: '', lastName: '', phone: '', licenseNumber: '' });
+  const [editForm, setEditForm]             = useState<UpdateUserAdminRequest>({ email: '', firstName: '', lastName: '', phone: '', licenseNumber: '', club: '' });
   const [editError, setEditError]           = useState('');
   const [editLoading, setEditLoading]       = useState(false);
 
@@ -93,6 +93,14 @@ export function AdminPage() {
   const [importResult, setImportResult]     = useState<ImportResult | null>(null);
   const [activeTab, setActiveTab]           = useState<AdminTabId>('general');
   const importFileRef = useRef<HTMLInputElement>(null);
+
+  // CSV utilisateurs
+  const [showCsvImport, setShowCsvImport]       = useState(false);
+  const [csvPassword, setCsvPassword]           = useState('');
+  const [csvImportLoading, setCsvImportLoading] = useState(false);
+  const [csvImportResult, setCsvImportResult]   = useState<CsvImportResult | null>(null);
+  const [csvImportError, setCsvImportError]     = useState('');
+  const csvFileRef = useRef<HTMLInputElement>(null);
 
   const loadData = async () => {
     try {
@@ -326,7 +334,7 @@ export function AdminPage() {
   const startEditUser = (user: User) => {
     setShowCreateForm(false);
     setEditingUserId(user.id);
-    setEditForm({ email: user.email, firstName: user.firstName, lastName: user.lastName, phone: user.phone ?? '', licenseNumber: user.licenseNumber ?? '' });
+    setEditForm({ email: user.email, firstName: user.firstName, lastName: user.lastName, phone: user.phone ?? '', licenseNumber: user.licenseNumber ?? '', club: user.club ?? '' });
     setEditError('');
   };
 
@@ -340,7 +348,7 @@ export function AdminPage() {
 
   const cancelEditUser = () => {
     setEditingUserId(null);
-    setEditForm({ email: '', firstName: '', lastName: '', phone: '', licenseNumber: '' });
+    setEditForm({ email: '', firstName: '', lastName: '', phone: '', licenseNumber: '', club: '' });
     setEditError('');
   };
 
@@ -404,6 +412,33 @@ export function AdminPage() {
     } finally {
       setImportLoading(false);
       if (importFileRef.current) importFileRef.current.value = '';
+    }
+  };
+
+  const handleExportUsersCsv = async () => {
+    try {
+      await adminService.exportUsersCsv();
+    } catch (err: unknown) {
+      setError('Erreur lors de l\'export CSV : ' + getErrorMessage(err));
+    }
+  };
+
+  const handleImportUsersCsv = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const file = csvFileRef.current?.files?.[0];
+    if (!file) return;
+    setCsvImportLoading(true); setCsvImportResult(null); setCsvImportError('');
+    try {
+      const content = await file.text();
+      const result = await adminService.importUsersCsv(content, csvPassword);
+      setCsvImportResult(result);
+      await loadData();
+    } catch (err: unknown) {
+      setCsvImportError('Erreur lors de l\'import CSV : ' + getErrorMessage(err));
+    } finally {
+      setCsvImportLoading(false);
+      if (csvFileRef.current) csvFileRef.current.value = '';
+      setCsvPassword('');
     }
   };
 
@@ -986,11 +1021,57 @@ export function AdminPage() {
       {/* Gestion des utilisateurs */}
       <div className="admin-section">        <div className="admin-section-header">
           <h2>👥 Gestion des utilisateurs ({users.length})</h2>
-          <button className="btn btn-primary"
-            onClick={() => { setShowCreateForm(v => !v); setCreateError(''); }}>
-            {showCreateForm ? '✕ Annuler' : '+ Nouvel utilisateur'}
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <button className="btn btn-secondary" onClick={handleExportUsersCsv} type="button">
+              📥 Exporter CSV
+            </button>
+            <button className="btn btn-secondary" type="button"
+              onClick={() => { setShowCsvImport(v => !v); setCsvImportResult(null); setCsvImportError(''); }}>
+              {showCsvImport ? '✕ Annuler import' : '📤 Importer CSV'}
+            </button>
+            <button className="btn btn-primary"
+              onClick={() => { setShowCreateForm(v => !v); setCreateError(''); }}>
+              {showCreateForm ? '✕ Annuler' : '+ Nouvel utilisateur'}
+            </button>
+          </div>
         </div>
+
+        {/* Panneau d'import CSV */}
+        {showCsvImport && (
+          <form onSubmit={handleImportUsersCsv} className="create-user-form">
+            <h3>Importer des utilisateurs via CSV</h3>
+            <p className="form-hint">
+              Format attendu : <code>club;nom;prenom;email;telephone;licence</code> (séparateur point-virgule, encodage UTF-8).
+              Les utilisateurs dont l'e-mail existe déjà seront ignorés.
+            </p>
+            {csvImportError && <div className="alert alert-error">{csvImportError}</div>}
+            {csvImportResult && (
+              <div className={`alert ${csvImportResult.errors > 0 ? 'alert-warning' : 'alert-success'}`}>
+                <strong>Import terminé</strong> — {csvImportResult.imported} importé(s), {csvImportResult.skipped} ignoré(s), {csvImportResult.errors} erreur(s).
+                {csvImportResult.messages.length > 0 && (
+                  <ul style={{ marginTop: '0.5rem', paddingLeft: '1.2rem' }}>
+                    {csvImportResult.messages.map((m, i) => <li key={i}>{m}</li>)}
+                  </ul>
+                )}
+              </div>
+            )}
+            <div className="form-row">
+              <div className="form-group">
+                <label>Fichier CSV *</label>
+                <input type="file" accept=".csv,text/csv" ref={csvFileRef} required />
+              </div>
+              <div className="form-group">
+                <label>Mot de passe pour tous les comptes importés *</label>
+                <input type="password" value={csvPassword} minLength={6} required
+                  onChange={e => setCsvPassword(e.target.value)}
+                  placeholder="Minimum 6 caractères" />
+              </div>
+            </div>
+            <button type="submit" className="btn btn-primary" disabled={csvImportLoading}>
+              {csvImportLoading ? 'Import en cours…' : 'Importer'}
+            </button>
+          </form>
+        )}
 
         {/* Barre de recherche */}
         <div className="users-search-bar">
@@ -1046,6 +1127,15 @@ export function AdminPage() {
               </div>
             </div>
             <div className="form-group">
+              <label>Club d'appartenance</label>
+              <select value={createForm.club ?? ''} onChange={e => setCreateForm(f => ({ ...f, club: e.target.value }))}>
+                <option value="">— Aucun / Non affilié —</option>
+                {(config?.clubs ?? []).map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+            <div className="form-group">
               <label>Rôles * (au moins un)</label>
               <div className="roles-checkboxes">
                 {ALL_ROLES.map(r => (
@@ -1099,6 +1189,15 @@ export function AdminPage() {
               <label>N° de licence fédérale</label>
               <input type="text" placeholder="Ex : A-14-1223422222" value={editForm.licenseNumber ?? ''}
                 onChange={e => setEditForm(f => ({ ...f, licenseNumber: e.target.value }))} maxLength={20} />
+            </div>
+            <div className="form-group">
+              <label>Club d'appartenance</label>
+              <select value={editForm.club ?? ''} onChange={e => setEditForm(f => ({ ...f, club: e.target.value }))}>
+                <option value="">— Aucun / Non affilié —</option>
+                {(config?.clubs ?? []).map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
             </div>
             <div className="form-actions">
               <button type="button" className="btn btn-outline" onClick={cancelEditUser}>Annuler</button>

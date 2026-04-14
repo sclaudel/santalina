@@ -10,10 +10,9 @@ interface Props {
   slot: DiveSlot;
   onClose: () => void;
   onSuccess: (newEmail?: string) => void;
-  clubs?: string[];
 }
 
-export function SelfRegistrationModal({ slot, onClose, onSuccess, clubs = [] }: Props) {
+export function SelfRegistrationModal({ slot, onClose, onSuccess }: Props) {
   const storedUser = authService.getStoredUser();
   const isDP = storedUser?.role === 'DIVE_DIRECTOR';
   const availableLevels: readonly string[] = isDP ? DP_LEVELS : DIVER_LEVELS;
@@ -22,7 +21,6 @@ export function SelfRegistrationModal({ slot, onClose, onSuccess, clubs = [] }: 
   const [email, setEmail]               = useState(originalEmail);
   const [emailConfirm, setEmailConfirm] = useState(originalEmail);
   const [level, setLevel]               = useState('');
-  const [club, setClub]                 = useState('');
   const [preparedLevel, setPreparedLevel] = useState('Aucun');
   const [comment, setComment]           = useState('');
   const [medicalCertDate, setMedicalCertDate] = useState('');
@@ -92,7 +90,7 @@ export function SelfRegistrationModal({ slot, onClose, onSuccess, clubs = [] }: 
         comment: comment.trim() || undefined,
         medicalCertDate,
         licenseConfirmed,
-        club: club || undefined,
+        club: storedUser?.club || undefined,
       });
       onSuccess(emailChanged ? trimmedEmail : undefined);
     } catch (err) {
@@ -178,18 +176,6 @@ export function SelfRegistrationModal({ slot, onClose, onSuccess, clubs = [] }: 
               </select>
             </div>
           </div>
-
-          {clubs.length > 0 && (
-            <div className="form-group" style={{ marginTop: 12 }}>
-              <label>Votre club d'appartenance</label>
-              <select value={club} onChange={e => setClub(e.target.value)}>
-                <option value="">— Aucun / Non affilié —</option>
-                {clubs.map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-          )}
 
           <div className="form-group" style={{ marginTop: 12 }}>
             <label>Message pour le DP (optionnel)</label>
