@@ -266,9 +266,11 @@ export function SlotForm({ date, config, onCreated, onCancel, initialStartTime, 
                 style={{ marginTop: 4 }}
               >
                 <option value="">— Moi-même —</option>
-                {diveDirectors.map(dp => (
-                  <option key={dp.id} value={dp.id}>{dp.name}</option>
-                ))}
+                {[...diveDirectors]
+                  .sort((a, b) => a.lastName.localeCompare(b.lastName, 'fr', { sensitivity: 'base' }))
+                  .map(dp => (
+                    <option key={dp.id} value={dp.id}>{dp.lastName} {dp.firstName}</option>
+                  ))}
               </select>
               <p style={{ color: '#6b7280', fontSize: 12, marginTop: 4 }}>
                 Le créneau sera attribué au directeur de plongée sélectionné.

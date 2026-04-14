@@ -227,6 +227,15 @@ public class ConfigService {
     }
 
     @Transactional
+    public ConfigResponse updateSlotMaxHours(int hours) {
+        if (hours < getSlotMinHours())
+            throw new jakarta.ws.rs.BadRequestException(
+                    "La durée maximale doit être supérieure ou égale à la durée minimale (" + getSlotMinHours() + "h)");
+        forceUpsert(KEY_MAX_HOURS, String.valueOf(hours));
+        return getConfig();
+    }
+
+    @Transactional
     public ConfigResponse updateNotificationBookingEmail(String email) {
         forceUpsert(KEY_NOTIFICATION_BOOKING_EMAIL, email != null ? email.trim() : "");
         return getConfig();

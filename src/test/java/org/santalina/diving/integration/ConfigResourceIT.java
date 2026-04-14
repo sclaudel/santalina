@@ -139,4 +139,50 @@ class ConfigResourceIT {
                 .body("safetyReminderDelayDays", equalTo(5))
                 .body("safetyReminderEmailBody", containsString("Rappel test"));
     }
+
+    /* ── Durée maximale d'un créneau ── */
+
+    @Test
+    void updateSlotMaxHours_shouldReturn401_withoutAuthentication() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"slotMaxHours\":8}")
+                .when().put("/api/config/slot-max-hours")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void updateSlotMaxHours_shouldReturn200_whenAdmin() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"slotMaxHours\":8}")
+                .when().put("/api/config/slot-max-hours")
+                .then()
+                .statusCode(200)
+                .body("slotMaxHours", equalTo(8));
+    }
+
+    @Test
+    @TestSecurity(user = "diver@test.com", roles = {"DIVER"})
+    void updateSlotMaxHours_shouldReturn403_whenDiver() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"slotMaxHours\":8}")
+                .when().put("/api/config/slot-max-hours")
+                .then()
+                .statusCode(403);
+    }
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void updateSlotMaxHours_shouldReturn400_whenInvalidValue() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"slotMaxHours\":0}")
+                .when().put("/api/config/slot-max-hours")
+                .then()
+                .statusCode(400);
+    }
 }
