@@ -78,6 +78,19 @@ export function HelpPage() {
             <li>Cliquez sur le bouton <strong>+</strong> qui apparaît en bas à droite de la cellule.</li>
           </ol>
 
+          {role === 'ADMIN' && (
+            <>
+              <h4>👤 Créer un créneau pour le compte d'un autre DP (administrateurs)</h4>
+              <p>En tant qu'administrateur, vous pouvez créer un créneau qui sera attribué à un autre directeur de plongée. Cela est utile pour pré-créer les créneaux de DP externes ou migrer des créneaux depuis une autre application.</p>
+              <ol>
+                <li>Ouvrez le formulaire de création de créneau.</li>
+                <li>En bas du formulaire, le champ <strong>Créer pour le compte de…</strong> affiche la liste des directeurs de plongée actifs.</li>
+                <li>Sélectionnez le DP pour qui créer le créneau. Laissez sur <em>Moi-même</em> pour créer un créneau en votre propre nom.</li>
+                <li>Validez normalement — le créneau apparaît avec le nom du DP sélectionné comme créateur.</li>
+              </ol>
+            </>
+          )}
+
           <div className="help-tip">💡 La date proposée dans le formulaire correspond à votre sélection dans le calendrier. Vous pouvez la modifier avant de valider pour créer un créneau à une autre date.</div>
         </>
       ),
@@ -703,6 +716,10 @@ export function HelpPage() {
           { type: 'ol' as const, items: ['Survolez (sur ordinateur uniquement) ou appuyez sur l\'en-tête d\'une colonne de jour dans la grille.', 'Cliquez sur le bouton + qui apparaît dans l\'en-tête.'] },
           { type: 'h4' as const, text: 'Depuis la vue Mois' },
           { type: 'ol' as const, items: ['Survolez (sur ordinateur uniquement) ou appuyez sur une cellule de jour.', 'Cliquez sur le bouton + qui apparaît en bas à droite de la cellule.'] },
+          ...(role === 'ADMIN' ? [
+            { type: 'h4' as const, text: '👤 Créer pour le compte d\'un autre DP (administrateurs)' },
+            { type: 'paragraph' as const, text: 'En bas du formulaire de création, le champ « Créer pour le compte de… » liste les directeurs de plongée actifs. Sélectionnez un DP pour lui attribuer le créneau. Utile pour migrer des créneaux depuis une autre application ou pré-créer les créneaux de DP externes.' },
+          ] : []),
           { type: 'tip' as const, text: 'La date proposée dans le formulaire correspond à votre sélection dans le calendrier. Vous pouvez la modifier avant de valider pour créer un créneau à une autre date.' },
         ],
       },

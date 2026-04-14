@@ -87,6 +87,16 @@ public class UserService {
                 .toList();
     }
 
+    public List<UserSearchResult> getDiveDirectors() {
+        return User.<User>listAll()
+                .stream()
+                .filter(u -> u.activated && u.roles.contains(UserRole.DIVE_DIRECTOR))
+                .sorted(Comparator.comparing((User u) -> u.lastName)
+                                  .thenComparing(u -> u.firstName))
+                .map(UserSearchResult::from)
+                .toList();
+    }
+
     /** Supprime les diacritiques (accents) d'une chaîne */
     private static String stripAccents(String s) {
         if (s == null) return "";

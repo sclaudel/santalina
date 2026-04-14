@@ -26,7 +26,9 @@ public class SlotDto {
             // Champs récurrence
             Boolean recurring,
             List<Integer> recurringDays,   // 1=Lun … 7=Dim (ISO DayOfWeek)
-            LocalDate recurringUntil
+            LocalDate recurringUntil,
+            // Création pour le compte d'un autre utilisateur (ADMIN uniquement)
+            Long createdByUserId
     ) {}
 
     public record UpdateDiverCountRequest(

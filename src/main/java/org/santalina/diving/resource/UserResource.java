@@ -64,6 +64,13 @@ public class UserResource {
         return userService.searchUsers(q);
     }
 
+    @GET
+    @Path("/dive-directors")
+    @RolesAllowed("ADMIN")
+    public List<UserSearchResult> getDiveDirectors() {
+        return userService.getDiveDirectors();
+    }
+
     @POST
     @RolesAllowed("ADMIN")
     public Response createUser(@Valid CreateUserRequest request) {

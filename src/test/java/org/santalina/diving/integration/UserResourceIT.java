@@ -327,6 +327,64 @@ class UserResourceIT {
         return "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r") + "\"";
     }
 
+    /* ── GET /api/users/dive-directors ── */
+
+    @Test
+    void getDiveDirectors_shouldReturn401_withoutAuthentication() {
+        given()
+                .when().get("/api/users/dive-directors")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    @TestSecurity(user = "diver@test.com", roles = {"DIVER"})
+    void getDiveDirectors_shouldReturn403_whenDiver() {
+        given()
+                .when().get("/api/users/dive-directors")
+                .then()
+                .statusCode(403);
+    }
+
+    @Test
+    @TestSecurity(user = "dp@test.com", roles = {"DIVE_DIRECTOR"})
+    void getDiveDirectors_shouldReturn403_whenDiveDirector() {
+        given()
+                .when().get("/api/users/dive-directors")
+                .then()
+                .statusCode(403);
+    }
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void getDiveDirectors_shouldReturn200AndListDps_whenAdmin() {
+        String dpEmail = "dp_list_test@test.com";
+        createTestDiveDirector(dpEmail);
+        try {
+            given()
+                    .when().get("/api/users/dive-directors")
+                    .then()
+                    .statusCode(200)
+                    .body("$", instanceOf(java.util.List.class))
+                    .body("email", hasItem(dpEmail));
+        } finally {
+            deleteTestUser(dpEmail);
+        }
+    }
+
+    @jakarta.transaction.Transactional
+    void createTestDiveDirector(String email) {
+        org.santalina.diving.domain.User u = new org.santalina.diving.domain.User();
+        u.email        = email;
+        u.firstName    = "DP";
+        u.lastName     = "List Test";
+        u.passwordHash = "x";
+        u.activated    = true;
+        u.role         = org.santalina.diving.domain.UserRole.DIVE_DIRECTOR;
+        u.roles        = java.util.Set.of(org.santalina.diving.domain.UserRole.DIVE_DIRECTOR);
+        u.persist();
+    }
+
     @jakarta.transaction.Transactional
     void createTestUser(String email) {
         org.santalina.diving.domain.User u = new org.santalina.diving.domain.User();

@@ -775,7 +775,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                           🏊 {entry.club}
                         </span>
                       )}
-                      {entry.numberOfDives !== undefined && (
+                      {entry.numberOfDives !== undefined && entry.numberOfDives > 0 && (
                         <span className="palanquee-wl-chip" title="Nombre de plongées">
                           🤿 {entry.numberOfDives} plongée{entry.numberOfDives > 1 ? 's' : ''}
                         </span>
