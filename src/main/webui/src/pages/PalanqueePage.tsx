@@ -3,6 +3,7 @@ import { slotDiverService } from '../services/slotDiverService';
 import { palanqueeService } from '../services/palanqueeService';
 import { slotService } from '../services/slotService';
 import { waitingListService } from '../services/waitingListService';
+import { adminService } from '../services/adminService';
 import { exportDiverListCsv } from '../utils/exportDiverList';
 import type { DiveSlot, SlotDiver, Palanquee, WaitingListEntry } from '../types';
 
@@ -42,13 +43,15 @@ interface DiverCardProps {
   isPicked?: boolean;
   onMoveToWaitingList?: (diverId: number) => void;
   movingToWlId?: number | null;
+  aptitudesOptions?: string[];
 }
 
 const APTITUDES_OPTIONS = ['PE12','PE20','PE40','PE60','PA12','PA20','PA40','PA60','E1','E2','E3','E4','GP'];
+// ↑ liste de repli — remplacée par la config au chargement
 const DEPTH_OPTIONS = ['6m', '12m', '20m', '30m', '40m', '50m', '60m'];
 const DURATION_OPTIONS = Array.from({ length: 24 }, (_, i) => `${(i + 1) * 10}'`);
 
-function DiverCard({ diver, onDragStart, onDragEnter, isDragging, onLevelChange, onAptitudesChange, onTap, isPicked, onMoveToWaitingList, movingToWlId }: DiverCardProps) {
+function DiverCard({ diver, onDragStart, onDragEnter, isDragging, onLevelChange, onAptitudesChange, onTap, isPicked, onMoveToWaitingList, movingToWlId, aptitudesOptions }: DiverCardProps) {
   const [editingLevel, setEditingLevel] = useState(false);
   const [editingAptitudes, setEditingAptitudes] = useState(false);
   const color = getLevelColor(diver.level);
@@ -109,7 +112,7 @@ function DiverCard({ diver, onDragStart, onDragEnter, isDragging, onLevelChange,
           onClick={e => e.stopPropagation()}
         >
           <option value="">— aucune —</option>
-          {APTITUDES_OPTIONS.map(a => <option key={a} value={a}>{a}</option>)}
+          {(aptitudesOptions ?? APTITUDES_OPTIONS).map(a => <option key={a} value={a}>{a}</option>)}
         </select>
       ) : (
         <div
@@ -160,6 +163,7 @@ interface DropZoneProps {
   mobilePickedId?: number | null;      // mobile: highlight picked diver
   onMoveToWaitingList?: (diverId: number) => void;
   movingToWlId?: number | null;
+  aptitudesOptions?: string[];
 }
 
 function DropZone({
@@ -167,7 +171,7 @@ function DropZone({
   onDragEnterCard, onDragEnterEnd, insertBeforeId,
   label, labelIcon, isUnassigned = false, isPool = false, palanqueeIndex,
   onLevelChange, onAptitudesChange, onTapDiver, mobilePickedId,
-  onMoveToWaitingList, movingToWlId,
+  onMoveToWaitingList, movingToWlId, aptitudesOptions,
 }: DropZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -222,6 +226,7 @@ function DropZone({
               isPicked={mobilePickedId === d.id}
               onMoveToWaitingList={onMoveToWaitingList}
               movingToWlId={movingToWlId}
+              aptitudesOptions={aptitudesOptions}
             />
           </>
         ))}
@@ -283,6 +288,9 @@ export function PalanqueePage({ slotId, onBack }: Props) {
   // référence sur le board pour l'auto-scroll horizontal pendant le drag
   const boardRef = useRef<HTMLDivElement>(null);
 
+  // aptitudes configurables
+  const [aptitudesOptions, setAptitudesOptions] = useState<string[]>(APTITUDES_OPTIONS);
+
   // insertTarget: quel plongeur on va insérer AVANT (null = fin de liste)
   const [insertTarget, setInsertTarget] = useState<{
     palanqueeId: number | null;
@@ -318,6 +326,13 @@ export function PalanqueePage({ slotId, onBack }: Props) {
   }, [slotId]);
 
   useEffect(() => { loadAll(); }, [loadAll]);
+
+  // Charger les aptitudes configurées
+  useEffect(() => {
+    adminService.getConfig().then(cfg => {
+      if (cfg.aptitudes?.length) setAptitudesOptions(cfg.aptitudes);
+    }).catch(() => { /* utiliser la liste de repli */ });
+  }, []);
 
   // Suivi responsive
   useEffect(() => {
@@ -854,6 +869,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
           mobilePickedId={isMobile ? mobilePickedId : undefined}
           onMoveToWaitingList={isRegistrationCurrentlyActive(slot) ? handleMoveToWaitingList : undefined}
           movingToWlId={movingToWlId}
+          aptitudesOptions={aptitudesOptions}
         />
       </div>
 
@@ -963,6 +979,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                       mobilePickedId={mobilePickedId}
                       onMoveToWaitingList={isRegistrationCurrentlyActive(slot) ? handleMoveToWaitingList : undefined}
                       movingToWlId={movingToWlId}
+                      aptitudesOptions={aptitudesOptions}
                     />
                   </div>
                 );
@@ -1045,6 +1062,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                 onAptitudesChange={handleAptitudesChange}
                 onMoveToWaitingList={isRegistrationCurrentlyActive(slot) ? handleMoveToWaitingList : undefined}
                 movingToWlId={movingToWlId}
+                aptitudesOptions={aptitudesOptions}
               />
             </div>
           ))}

@@ -631,11 +631,12 @@ export function HelpPage() {
           </ul>
 
           <h4>Niveaux d'inscription libre</h4>
-          <p>Dans l'onglet <strong>📚 Référentiels</strong>, la section <strong>🎓 Niveaux d'inscription libre</strong> permet de configurer trois listes de niveaux indépendantes :</p>
+          <p>Dans l'onglet <strong>📚 Référentiels</strong>, la section <strong>🎓 Niveaux d'inscription libre</strong> permet de configurer quatre listes indépendantes :</p>
           <ul>
             <li><strong>Niveaux plongeurs</strong> — niveaux proposés aux plongeurs lors de l'inscription libre (par défaut : N1 à MF2).</li>
             <li><strong>Niveaux directeur de plongée</strong> — niveaux proposés aux DP lors de leur auto-inscription (par défaut : N5, E3, E4, MF1, MF2).</li>
             <li><strong>Niveaux en préparation</strong> — liste optionnelle proposée dans le formulaire d'inscription libre (par défaut : Aucun, N1 à PV2).</li>
+            <li><strong>Aptitudes</strong> — aptitudes proposées dans la vue palanquées (ex. PE40, PA60, E4…). Utilisées pour qualifier les plongeurs dans l'organisation des palanquées.</li>
           </ul>
           <p>Chaque liste est modifiable : un niveau par ligne. Les modifications sont prises en compte immédiatement.</p>
 

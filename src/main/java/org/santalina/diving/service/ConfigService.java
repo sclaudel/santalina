@@ -26,6 +26,7 @@ public class ConfigService {
     private static final String KEY_DIVER_LEVELS       = "diver.levels.registration";
     private static final String KEY_DP_LEVELS          = "diver.levels.dp";
     private static final String KEY_PREPARED_LEVELS    = "diver.levels.prepared";
+    private static final String KEY_APTITUDES          = "diver.aptitudes";
     private static final String KEY_PUBLIC_ACCESS     = "public.access";
     private static final String KEY_SELF_REGISTRATION = "self.registration";
     private static final String KEY_BOOKING_OPEN_HOUR    = "booking.open.hour";
@@ -68,6 +69,8 @@ public class ConfigService {
     private static final String DEFAULT_PREPARED_LEVELS =
         "Aucun|N1|N2|N3|N4|N5|MF1|MF2|E1|E2|E3|E4|PE12|PE40|PE60" +
         "|PA20|PA40|PA60|PN|PNC|PB1|PB2|PV1|PV2";
+    private static final String DEFAULT_APTITUDES =
+        "PE12|PE20|PE40|PE60|PA12|PA20|PA40|PA60|E1|E2|E3|E4|GP";
 
     @Inject
     DivingConfig divingConfig;
@@ -108,6 +111,9 @@ public class ConfigService {
     }
     public List<String> getPreparedLevels() {
         return parseList(getStringValue(KEY_PREPARED_LEVELS, DEFAULT_PREPARED_LEVELS));
+    }
+    public List<String> getAptitudes() {
+        return parseList(getStringValue(KEY_APTITUDES, DEFAULT_APTITUDES));
     }
     public boolean isPublicAccess() {
         return Boolean.parseBoolean(getStringValue(KEY_PUBLIC_ACCESS, "true"));
@@ -179,6 +185,7 @@ public class ConfigService {
                 getSlotResolutionMinutes(), getSiteName(),
                 getSlotTypes(), getClubs(), getLevels(),
                 getDiverLevels(), getDpLevels(), getPreparedLevels(),
+                getAptitudes(),
                 isPublicAccess(), isSelfRegistration(),
                 getBookingOpenHour(), getBookingCloseHour(),
                 getExclusiveSlotTypes(), getDefaultSlotHours(),
@@ -236,6 +243,11 @@ public class ConfigService {
     @Transactional
     public ConfigResponse updatePreparedLevels(List<String> levels) {
         forceUpsert(KEY_PREPARED_LEVELS, serializeList(levels));
+        return getConfig();
+    }
+    @Transactional
+    public ConfigResponse updateAptitudes(List<String> aptitudes) {
+        forceUpsert(KEY_APTITUDES, serializeList(aptitudes));
         return getConfig();
     }
     @Transactional
@@ -335,6 +347,7 @@ public class ConfigService {
         upsertIfMissing(KEY_DIVER_LEVELS,      DEFAULT_DIVER_LEVELS);
         upsertIfMissing(KEY_DP_LEVELS,         DEFAULT_DP_LEVELS);
         upsertIfMissing(KEY_PREPARED_LEVELS,   DEFAULT_PREPARED_LEVELS);
+        upsertIfMissing(KEY_APTITUDES,         DEFAULT_APTITUDES);
         upsertIfMissing(KEY_PUBLIC_ACCESS,     "true");
         upsertIfMissing(KEY_SELF_REGISTRATION, "true");
         upsertIfMissing(KEY_BOOKING_OPEN_HOUR,    "-1");

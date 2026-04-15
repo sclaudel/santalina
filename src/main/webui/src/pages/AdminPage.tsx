@@ -50,6 +50,7 @@ export function AdminPage() {
   const [diverLevelsText, setDiverLevelsText]     = useState('');
   const [dpLevelsText, setDpLevelsText]           = useState('');
   const [preparedLevelsText, setPreparedLevelsText] = useState('');
+  const [aptitudesText, setAptitudesText]           = useState('');
   const [listLoading, setListLoading]       = useState(false);
   const [exclusiveLoading, setExclusiveLoading] = useState(false);
 
@@ -123,6 +124,7 @@ export function AdminPage() {
       setDiverLevelsText((c.diverLevels ?? []).join('\n'));
       setDpLevelsText((c.dpLevels ?? []).join('\n'));
       setPreparedLevelsText((c.preparedLevels ?? []).join('\n'));
+      setAptitudesText((c.aptitudes ?? []).join('\n'));
       setBookingOpenHour(c.bookingOpenHour ?? -1);
       setBookingCloseHour(c.bookingCloseHour ?? -1);
       setNotificationEmail(c.notificationBookingEmail ?? '');
@@ -331,6 +333,18 @@ export function AdminPage() {
       setConfig(updated);
       setPreparedLevelsText((updated.preparedLevels ?? []).join('\n'));
       setMsg('Niveaux en préparation mis à jour');
+    } catch (err: unknown) { setError(getErrorMessage(err)); }
+    finally { setListLoading(false); }
+  };
+
+  const handleUpdateAptitudes = async (e: React.FormEvent) => {
+    e.preventDefault(); setMsg(''); setError(''); setListLoading(true);
+    const items = aptitudesText.split('\n').map(s => s.trim()).filter(Boolean);
+    try {
+      const updated = await adminService.updateAptitudes(items);
+      setConfig(updated);
+      setAptitudesText((updated.aptitudes ?? []).join('\n'));
+      setMsg('Aptitudes mis à jour');
     } catch (err: unknown) { setError(getErrorMessage(err)); }
     finally { setListLoading(false); }
   };
@@ -1086,6 +1100,20 @@ export function AdminPage() {
               <textarea rows={8} value={preparedLevelsText}
                 onChange={e => setPreparedLevelsText(e.target.value)}
                 placeholder={"Aucun\nN1\nN2\n..."}
+                style={{ fontFamily: 'monospace', fontSize: 13 }} />
+            </div>
+            <button type="submit" className="btn btn-primary" disabled={listLoading}>
+              {listLoading ? '...' : '💾 Enregistrer'}
+            </button>
+          </form>
+
+          <form onSubmit={handleUpdateAptitudes} style={{ flex: 1, minWidth: 250 }}>
+            <div className="form-group">
+              <label style={{ fontWeight: 700 }}>Aptitudes</label>
+              <p style={{ color: '#6b7280', fontSize: 11, margin: '2px 0 6px' }}>Liste des aptitudes proposées dans la vue palanquées (ex. PE40, PA60, E4…).</p>
+              <textarea rows={8} value={aptitudesText}
+                onChange={e => setAptitudesText(e.target.value)}
+                placeholder={"PE12\nPE40\nPE60\nPA40\nE4\n..."}
                 style={{ fontFamily: 'monospace', fontSize: 13 }} />
             </div>
             <button type="submit" className="btn btn-primary" disabled={listLoading}>

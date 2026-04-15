@@ -146,6 +146,7 @@ export interface AppConfig {
   diverLevels: string[];
   dpLevels: string[];
   preparedLevels: string[];
+  aptitudes: string[];
   publicAccess: boolean;
   selfRegistration: boolean;
   bookingOpenHour: number;

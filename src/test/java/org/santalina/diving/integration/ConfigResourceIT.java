@@ -338,6 +338,43 @@ class ConfigResourceIT {
                 .body("levels", not(empty()))
                 .body("diverLevels", not(empty()))
                 .body("dpLevels", not(empty()))
-                .body("preparedLevels", not(empty()));
+                .body("preparedLevels", not(empty()))
+                .body("aptitudes", not(empty()));
+    }
+
+    /* ── Aptitudes ── */
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void updateAptitudes_shouldReturn200_whenAdmin() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"items\":[\"PE40\",\"PA60\",\"E4\",\"GP\"]}")
+                .when().put("/api/config/aptitudes")
+                .then()
+                .statusCode(200)
+                .body("aptitudes", hasItems("PE40", "PA60", "E4", "GP"))
+                .body("aptitudes", hasSize(4));
+    }
+
+    @Test
+    @TestSecurity(user = "diver@test.com", roles = {"DIVER"})
+    void updateAptitudes_shouldReturn403_whenDiver() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"items\":[\"PE40\"]}")
+                .when().put("/api/config/aptitudes")
+                .then()
+                .statusCode(403);
+    }
+
+    @Test
+    void updateAptitudes_shouldReturn401_withoutAuthentication() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"items\":[\"PE40\"]}")
+                .when().put("/api/config/aptitudes")
+                .then()
+                .statusCode(401);
     }
 }
