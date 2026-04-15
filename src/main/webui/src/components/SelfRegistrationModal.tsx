@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import type { DiveSlot } from '../types';
+import type { AppConfig, DiveSlot } from '../types';
 import { DIVER_LEVELS, DP_LEVELS, PREPARED_LEVELS } from '../types';
 import { waitingListService } from '../services/waitingListService';
 import { authService } from '../services/authService';
@@ -10,12 +10,16 @@ interface Props {
   slot: DiveSlot;
   onClose: () => void;
   onSuccess: (newEmail?: string) => void;
+  config?: AppConfig;
 }
 
-export function SelfRegistrationModal({ slot, onClose, onSuccess }: Props) {
+export function SelfRegistrationModal({ slot, onClose, onSuccess, config }: Props) {
   const storedUser = authService.getStoredUser();
   const isDP = storedUser?.role === 'DIVE_DIRECTOR';
-  const availableLevels: readonly string[] = isDP ? DP_LEVELS : DIVER_LEVELS;
+  const availableLevels: readonly string[] = isDP
+    ? (config?.dpLevels?.length ? config.dpLevels : [...DP_LEVELS])
+    : (config?.diverLevels?.length ? config.diverLevels : [...DIVER_LEVELS]);
+  const preparedLevelsList: readonly string[] = config?.preparedLevels?.length ? config.preparedLevels : [...PREPARED_LEVELS];
 
   const originalEmail = storedUser?.email ?? '';
   const [email, setEmail]               = useState(originalEmail);
@@ -170,7 +174,7 @@ export function SelfRegistrationModal({ slot, onClose, onSuccess }: Props) {
             <div className="form-group">
               <label>Niveau en préparation</label>
               <select value={preparedLevel} onChange={e => setPreparedLevel(e.target.value)}>
-                {PREPARED_LEVELS.map(l => (
+                {preparedLevelsList.map(l => (
                   <option key={l} value={l}>{l}</option>
                 ))}
               </select>

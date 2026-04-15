@@ -238,4 +238,106 @@ class ConfigResourceIT {
                 .statusCode(200)
                 .body("maintenanceMode", equalTo(false));
     }
+
+    /* ── Niveaux plongeurs (inscription libre) ── */
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void updateDiverLevels_shouldReturn200_whenAdmin() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"items\":[\"N1\",\"N2\",\"N3\"]}")
+                .when().put("/api/config/diver-levels")
+                .then()
+                .statusCode(200)
+                .body("diverLevels", hasItems("N1", "N2", "N3"))
+                .body("diverLevels", hasSize(3));
+    }
+
+    @Test
+    @TestSecurity(user = "diver@test.com", roles = {"DIVER"})
+    void updateDiverLevels_shouldReturn403_whenDiver() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"items\":[\"N1\"]}")
+                .when().put("/api/config/diver-levels")
+                .then()
+                .statusCode(403);
+    }
+
+    @Test
+    void updateDiverLevels_shouldReturn401_withoutAuthentication() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"items\":[\"N1\"]}")
+                .when().put("/api/config/diver-levels")
+                .then()
+                .statusCode(401);
+    }
+
+    /* ── Niveaux DP (inscription libre) ── */
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void updateDpLevels_shouldReturn200_whenAdmin() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"items\":[\"N5\",\"MF1\",\"MF2\"]}")
+                .when().put("/api/config/dp-levels")
+                .then()
+                .statusCode(200)
+                .body("dpLevels", hasItems("N5", "MF1", "MF2"))
+                .body("dpLevels", hasSize(3));
+    }
+
+    @Test
+    @TestSecurity(user = "diver@test.com", roles = {"DIVER"})
+    void updateDpLevels_shouldReturn403_whenDiver() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"items\":[\"N5\"]}")
+                .when().put("/api/config/dp-levels")
+                .then()
+                .statusCode(403);
+    }
+
+    /* ── Niveaux en préparation ── */
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void updatePreparedLevels_shouldReturn200_whenAdmin() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"items\":[\"Aucun\",\"N1\",\"N2\",\"PA20\"]}")
+                .when().put("/api/config/prepared-levels")
+                .then()
+                .statusCode(200)
+                .body("preparedLevels", hasItems("Aucun", "N1", "N2", "PA20"))
+                .body("preparedLevels", hasSize(4));
+    }
+
+    @Test
+    @TestSecurity(user = "diver@test.com", roles = {"DIVER"})
+    void updatePreparedLevels_shouldReturn403_whenDiver() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"items\":[\"N1\"]}")
+                .when().put("/api/config/prepared-levels")
+                .then()
+                .statusCode(403);
+    }
+
+    /* ── GET /api/config inclut les nouvelles listes de niveaux ── */
+
+    @Test
+    void getConfig_shouldContainLevelLists() {
+        given()
+                .when().get("/api/config")
+                .then()
+                .statusCode(200)
+                .body("levels", not(empty()))
+                .body("diverLevels", not(empty()))
+                .body("dpLevels", not(empty()))
+                .body("preparedLevels", not(empty()));
+    }
 }
