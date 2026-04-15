@@ -1054,6 +1054,20 @@ export function AdminPage() {
               {listLoading ? '...' : '💾 Enregistrer les niveaux'}
             </button>
           </form>
+
+          <form onSubmit={handleUpdateAptitudes} style={{ flex: 1, minWidth: 280 }}>
+            <div className="form-group">
+              <label style={{ fontWeight: 700 }}>Aptitudes</label>
+              <p style={{ color: '#6b7280', fontSize: 11, margin: '2px 0 6px' }}>Liste des aptitudes proposées dans la vue palanquées (ex. PE40, PA60, E4…).</p>
+              <textarea rows={8} value={aptitudesText}
+                onChange={e => setAptitudesText(e.target.value)}
+                placeholder={"PE12\nPE40\nPE60\nPA40\nE4\n..."}
+                style={{ fontFamily: 'monospace', fontSize: 13 }} />
+            </div>
+            <button type="submit" className="btn btn-primary" disabled={listLoading}>
+              {listLoading ? '...' : '💾 Enregistrer les aptitudes'}
+            </button>
+          </form>
         </div>
       </div>
 
@@ -1100,20 +1114,6 @@ export function AdminPage() {
               <textarea rows={8} value={preparedLevelsText}
                 onChange={e => setPreparedLevelsText(e.target.value)}
                 placeholder={"Aucun\nN1\nN2\n..."}
-                style={{ fontFamily: 'monospace', fontSize: 13 }} />
-            </div>
-            <button type="submit" className="btn btn-primary" disabled={listLoading}>
-              {listLoading ? '...' : '💾 Enregistrer'}
-            </button>
-          </form>
-
-          <form onSubmit={handleUpdateAptitudes} style={{ flex: 1, minWidth: 250 }}>
-            <div className="form-group">
-              <label style={{ fontWeight: 700 }}>Aptitudes</label>
-              <p style={{ color: '#6b7280', fontSize: 11, margin: '2px 0 6px' }}>Liste des aptitudes proposées dans la vue palanquées (ex. PE40, PA60, E4…).</p>
-              <textarea rows={8} value={aptitudesText}
-                onChange={e => setAptitudesText(e.target.value)}
-                placeholder={"PE12\nPE40\nPE60\nPA40\nE4\n..."}
                 style={{ fontFamily: 'monospace', fontSize: 13 }} />
             </div>
             <button type="submit" className="btn btn-primary" disabled={listLoading}>
