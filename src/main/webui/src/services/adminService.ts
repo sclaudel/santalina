@@ -81,6 +81,11 @@ export const adminService = {
     return res.data;
   },
 
+  async updateAptitudes(items: string[]): Promise<AppConfig> {
+    const res = await api.put<AppConfig>('/config/aptitudes', { items });
+    return res.data;
+  },
+
   async updatePublicAccess(value: boolean): Promise<AppConfig> {
     const res = await api.put<AppConfig>('/config/public-access', { value });
     return res.data;

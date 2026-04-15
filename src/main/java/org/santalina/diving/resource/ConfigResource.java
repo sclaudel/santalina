@@ -82,6 +82,13 @@ public class ConfigResource {
     }
 
     @PUT
+    @Path("/aptitudes")
+    @RolesAllowed("ADMIN")
+    public ConfigResponse updateAptitudes(@Valid UpdateListRequest request) {
+        return configService.updateAptitudes(request.items());
+    }
+
+    @PUT
     @Path("/public-access")
     @RolesAllowed("ADMIN")
     public ConfigResponse updatePublicAccess(@Valid UpdateBooleanRequest request) {

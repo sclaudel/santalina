@@ -20,6 +20,7 @@ public class ConfigDto {
             List<String> diverLevels,
             List<String> dpLevels,
             List<String> preparedLevels,
+            List<String> aptitudes,
             boolean publicAccess,
             boolean selfRegistration,
             int bookingOpenHour,
