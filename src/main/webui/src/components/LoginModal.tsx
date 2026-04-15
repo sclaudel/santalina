@@ -6,9 +6,10 @@ import { adminService } from '../services/adminService';
 interface Props {
   onClose: () => void;
   selfRegistration?: boolean;
+  maintenanceMode?: boolean;
 }
 
-export function LoginModal({ onClose, selfRegistration = true }: Props) {
+export function LoginModal({ onClose, selfRegistration = true, maintenanceMode = false }: Props) {
   const { login, register } = useAuth();
   const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
   const [email, setEmail] = useState('');
@@ -97,6 +98,13 @@ export function LoginModal({ onClose, selfRegistration = true }: Props) {
 
         {error   && <div className="alert alert-error">{error}</div>}
         {success && <div className="alert alert-success">{success}</div>}
+
+        {/* Bannière maintenance */}
+        {maintenanceMode && mode === 'login' && (
+          <div className="alert alert-error" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            🚧 <span>Le site est en maintenance. Seuls les administrateurs peuvent se connecter.</span>
+          </div>
+        )}
 
         {/* Succès inscription */}
         {registerDone ? (

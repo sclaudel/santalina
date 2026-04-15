@@ -185,4 +185,57 @@ class ConfigResourceIT {
                 .then()
                 .statusCode(400);
     }
+
+    /* ── Mode maintenance ── */
+
+    @Test
+    void getConfig_shouldContainMaintenanceModeField() {
+        given()
+                .when().get("/api/config")
+                .then()
+                .statusCode(200)
+                .body("maintenanceMode", notNullValue());
+    }
+
+    @Test
+    void updateMaintenanceMode_shouldReturn401_withoutAuthentication() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"value\":true}")
+                .when().put("/api/config/maintenance-mode")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    @TestSecurity(user = "diver@test.com", roles = {"DIVER"})
+    void updateMaintenanceMode_shouldReturn403_whenDiver() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"value\":true}")
+                .when().put("/api/config/maintenance-mode")
+                .then()
+                .statusCode(403);
+    }
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void updateMaintenanceMode_shouldReturn200_whenAdmin() {
+        // Activer
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"value\":true}")
+                .when().put("/api/config/maintenance-mode")
+                .then()
+                .statusCode(200)
+                .body("maintenanceMode", equalTo(true));
+        // Remettre à false pour ne pas affecter les autres tests
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"value\":false}")
+                .when().put("/api/config/maintenance-mode")
+                .then()
+                .statusCode(200)
+                .body("maintenanceMode", equalTo(false));
+    }
 }

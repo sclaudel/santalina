@@ -34,6 +34,10 @@ public class GlobalExceptionMapper implements ExceptionMapper<Exception> {
             LOG.warnf("403 Forbidden: %s", e.getMessage());
             return error(403, e.getMessage());
         }
+        if (exception instanceof ServiceUnavailableException e) {
+            LOG.warnf("503 Service Unavailable: %s", e.getMessage());
+            return error(503, e.getMessage());
+        }
         if (exception instanceof ConstraintViolationException e) {
             String msg = e.getConstraintViolations().stream()
                     .map(v -> v.getPropertyPath() + ": " + v.getMessage())

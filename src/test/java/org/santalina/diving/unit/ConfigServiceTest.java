@@ -1,5 +1,6 @@
 package org.santalina.diving.unit;
 
+import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
@@ -76,5 +77,39 @@ class ConfigServiceTest {
     @Test
     void isSelfRegistration_shouldReturnBoolean() {
         assertDoesNotThrow(() -> configService.isSelfRegistration());
+    }
+
+    @Test
+    void isMaintenanceMode_shouldReturnBoolean() {
+        // Vérifie que la méthode ne lève pas d'exception (valeur dépend de l'état de la base)
+        assertDoesNotThrow(() -> configService.isMaintenanceMode());
+    }
+
+    @Test
+    @TestTransaction
+    void updateMaintenanceMode_shouldToggleAndReturnUpdatedConfig() {
+        boolean initial = configService.isMaintenanceMode();
+
+        // Activer la maintenance
+        configService.updateMaintenanceMode(true);
+        assertTrue(configService.isMaintenanceMode(),
+                "Le mode maintenance doit être actif après activation");
+
+        // Désactiver la maintenance
+        configService.updateMaintenanceMode(false);
+        assertFalse(configService.isMaintenanceMode(),
+                "Le mode maintenance doit être inactif après désactivation");
+
+        // Restaurer l'état initial
+        configService.updateMaintenanceMode(initial);
+    }
+
+    @Test
+    void getConfig_shouldIncludeMaintenanceMode() {
+        var config = configService.getConfig();
+        // maintenanceMode est un booléen — juste vérifier qu'il est présent sans exception
+        assertNotNull(config);
+        // La valeur retournée doit être cohérente avec le getter direct
+        assertEquals(configService.isMaintenanceMode(), config.maintenanceMode());
     }
 }

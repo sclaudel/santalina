@@ -159,6 +159,7 @@ export interface AppConfig {
   notifSafetyReminderEnabled: boolean;
   safetyReminderDelayDays: number;
   safetyReminderEmailBody: string;
+  maintenanceMode: boolean;
 }
 
 // Logs

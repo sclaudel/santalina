@@ -20,6 +20,9 @@ function AppContent() {
   const urlParams = new URLSearchParams(window.location.search);
   const token = urlParams.get('token');
   const gotoParam = urlParams.get('goto');
+  const dateParam = urlParams.get('date');   // lien direct vers une date
+  const viewParam = urlParams.get('view');   // lien direct vers une vue (day/week/month)
+  const slotParam = urlParams.get('slot');   // lien direct vers un créneau
   const isResetPage = window.location.pathname === '/reset-password' && token;
   const isActivatePage = window.location.pathname === '/activate' && token;
 
@@ -73,6 +76,7 @@ function AppContent() {
   // Accès public désactivé : afficher un écran de connexion si non connecté
   const publicAccess = appConfig === null || appConfig.publicAccess;
   const selfRegistration = appConfig === null || appConfig.selfRegistration;
+  const maintenanceMode = appConfig?.maintenanceMode ?? false;
 
   if (!publicAccess && !isAuthenticated) {
     return (
@@ -81,7 +85,7 @@ function AppContent() {
           <div style={{ fontSize: 48 }}>🔒</div>
           <h2 style={{ fontSize: 22, fontWeight: 700 }}>Accès réservé aux membres</h2>
           <p style={{ color: '#6b7280' }}>Connectez-vous pour accéder au calendrier de réservation.</p>
-          <NavBar onNavigate={navigate} currentPage={currentPage} selfRegistration={selfRegistration} />
+          <NavBar onNavigate={navigate} currentPage={currentPage} selfRegistration={selfRegistration} maintenanceMode={maintenanceMode} />
         </div>
       </div>
     );
@@ -89,13 +93,16 @@ function AppContent() {
 
   return (
     <div className="app">
-      <NavBar onNavigate={navigate} currentPage={currentPage} selfRegistration={selfRegistration} />
+      <NavBar onNavigate={navigate} currentPage={currentPage} selfRegistration={selfRegistration} maintenanceMode={maintenanceMode} />
       <div className="app-content">
         {currentPage === 'calendar' && (
           <CalendarPage
             onNavigate={navigate}
             returnContext={calendarReturnRef.current}
             onReturnConsumed={() => { calendarReturnRef.current = null; }}
+            initialDate={dateParam ?? undefined}
+            initialView={(viewParam === 'day' || viewParam === 'week' || viewParam === 'month') ? viewParam : undefined}
+            initialSlotId={slotParam ? parseInt(slotParam, 10) : undefined}
           />
         )}
         {currentPage === 'profile' && isAuthenticated && <ProfilePage />}

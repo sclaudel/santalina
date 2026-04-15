@@ -32,7 +32,8 @@ public class ConfigDto {
             boolean notifDpNewRegEnabled,
             boolean notifSafetyReminderEnabled,
             int safetyReminderDelayDays,
-            String safetyReminderEmailBody
+            String safetyReminderEmailBody,
+            boolean maintenanceMode
     ) {}
 
     public record UpdateMaxRecurringMonthsRequest(

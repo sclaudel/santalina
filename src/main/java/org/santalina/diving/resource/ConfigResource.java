@@ -131,4 +131,11 @@ public class ConfigResource {
                 request.safetyReminderEmailBody()
         );
     }
+
+    @PUT
+    @Path("/maintenance-mode")
+    @RolesAllowed("ADMIN")
+    public ConfigResponse updateMaintenanceMode(@Valid UpdateBooleanRequest request) {
+        return configService.updateMaintenanceMode(request.value());
+    }
 }

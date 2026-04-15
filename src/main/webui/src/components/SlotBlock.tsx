@@ -33,6 +33,8 @@ interface Props {
   canEdit: boolean;
   currentUserId?: number;
   currentUserRole?: string;
+  /** Si vrai, ouvre automatiquement le panneau de détails au montage (lien direct) */
+  initialOpen?: boolean;
 }
 
 const LEVEL_COLORS: Record<string, string> = {
@@ -95,7 +97,7 @@ function timeOptions(resolutionMinutes: number): string[] {
 
 export function SlotBlock({
   slot, height, onDelete, onRefresh, onOpenPalanquees,
-  canEdit, currentUserId, currentUserRole, maxDivers = 25, config,
+  canEdit, currentUserId, currentUserRole, maxDivers = 25, config, initialOpen = false,
 }: Props) {
   const { user: currentUser } = useAuth();
   const [showTooltip, setShowTooltip]         = useState(false);
@@ -171,6 +173,7 @@ export function SlotBlock({
 
   const blockRef   = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const autoOpenedRef = useRef(false);
 
   const canEditThisSlot = canEdit && (
     currentUserRole === 'ADMIN' ||
@@ -239,8 +242,36 @@ export function SlotBlock({
     }
   }, []);
 
+  // Ouverture automatique si initialOpen=true (lien direct vers un créneau)
+  useEffect(() => {
+    if (!initialOpen || autoOpenedRef.current) return;
+    autoOpenedRef.current = true;
+    // Délai pour laisser le DOM se stabiliser
+    const t = setTimeout(() => {
+      computePos();
+      setShowTooltip(true);
+      setLoading(true);
+      const isCanRegister = currentUserRole === 'DIVER' || (currentUserRole === 'DIVE_DIRECTOR' && !canEditThisSlot);
+      if (isCanRegister) setMyWaitingEntry(null);
+      Promise.all([
+        slotDiverService.getBySlot(slot.id),
+        palanqueeService.getBySlot(slot.id),
+      ]).then(([fresh, pals]) => {
+        setDivers(fresh);
+        setPalanquees(pals);
+      }).catch(() => {}).finally(() => setLoading(false));
+      if (isCanRegister) {
+        waitingListService.getMyEntry(slot.id)
+          .then(e => setMyWaitingEntry(e ?? null))
+          .catch(() => setMyWaitingEntry(null));
+      }
+      blockRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleMouseEnter = useCallback(() => {
-    if (showTooltip) return;
     if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
     computeHoverPos();
     setShowHoverTooltip(true);
@@ -562,6 +593,17 @@ export function SlotBlock({
         <span className="slot-tooltip-title">{currentTitle || 'Créneau de plongée'}</span>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
           <span className="slot-tooltip-time">{slot.startTime}–{slot.endTime}</span>
+          <button
+            className="slot-tooltip-close"
+            title="Copier le lien vers ce créneau"
+            onClick={() => {
+              const url = `${window.location.origin}${window.location.pathname}?slot=${slot.id}`;
+              navigator.clipboard.writeText(url).then(() => {
+                setAddSuccess('🔗 Lien copié !');
+                setTimeout(() => setAddSuccess(''), 2500);
+              }).catch(() => {});
+            }}
+          >🔗</button>
           <button className="slot-tooltip-close" onClick={closeTooltip} title="Fermer">✕</button>
         </div>
       </div>

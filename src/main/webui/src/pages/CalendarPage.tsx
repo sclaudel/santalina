@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import 'dayjs/locale/fr';
@@ -8,6 +8,7 @@ import { WeekView } from '../components/WeekView';
 import { MonthView } from '../components/MonthView';
 import { SlotForm } from '../components/SlotForm';
 import { adminService } from '../services/adminService';
+import { slotService } from '../services/slotService';
 import { useAuth } from '../context/AuthContext';
 import type { AppConfig } from '../types';
 
@@ -20,17 +21,24 @@ function isMobile(): boolean {
   return window.innerWidth < 768;
 }
 
-export function CalendarPage({ onNavigate, returnContext, onReturnConsumed }: {
+export function CalendarPage({ onNavigate, returnContext, onReturnConsumed, initialDate, initialView, initialSlotId }: {
   onNavigate?: (page: string) => void;
   returnContext?: { date: string; viewMode: string } | null;
   onReturnConsumed?: () => void;
+  /** Date initiale au format YYYY-MM-DD (lien direct) */
+  initialDate?: string;
+  /** Vue initiale : day | week | month (lien direct) */
+  initialView?: 'day' | 'week' | 'month';
+  /** ID du créneau à ouvrir automatiquement (lien direct) */
+  initialSlotId?: number;
 } = {}) {
   const { user, isAuthenticated }   = useAuth();
   const [viewMode, setViewMode]     = useState<ViewMode>(() => {
+    if (initialView) return initialView;
     if (returnContext?.viewMode === 'day' || returnContext?.viewMode === 'week' || returnContext?.viewMode === 'month') return returnContext.viewMode;
     return isMobile() ? 'day' : 'week';
   });
-  const [selectedDate, setSelectedDate] = useState(returnContext?.date || dayjs().format('YYYY-MM-DD'));
+  const [selectedDate, setSelectedDate] = useState(initialDate || returnContext?.date || dayjs().format('YYYY-MM-DD'));
   const [config, setConfig] = useState<AppConfig>({
     maxDivers: 25, slotMinHours: 1, slotMaxHours: 10, slotResolutionMinutes: 15,
     siteName: 'Carrière de Saint-Lin', slotTypes: [], clubs: [], levels: [],
@@ -41,11 +49,17 @@ export function CalendarPage({ onNavigate, returnContext, onReturnConsumed }: {
     notifRegistrationEnabled: true, notifApprovedEnabled: true,
     notifCancelledEnabled: true, notifMovedToWlEnabled: true, notifDpNewRegEnabled: true,
     notifSafetyReminderEnabled: false, safetyReminderDelayDays: 3, safetyReminderEmailBody: '',
+    maintenanceMode: false,
   });
   // Date pour laquelle on ouvre le formulaire (null = fermé)
   const [formDate, setFormDate]           = useState<string | null>(null);
   const [formStartTime, setFormStartTime] = useState<string | undefined>(undefined);
   const [childKey, setChildKey] = useState(0); // force reload des vues
+  // ID du créneau à ouvrir automatiquement (lien direct ?slot=ID)
+  const [openSlotId, setOpenSlotId] = useState<number | undefined>(undefined);
+  // Copie du lien : message de confirmation
+  const [linkCopied, setLinkCopied] = useState(false);
+  const linkCopyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const canEdit = isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'DIVE_DIRECTOR');
   const [showSidebar, setShowSidebar] = useState(false);
@@ -58,6 +72,17 @@ export function CalendarPage({ onNavigate, returnContext, onReturnConsumed }: {
   useEffect(() => {
     if (returnContext) onReturnConsumed?.();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Lien direct vers un créneau : charger la date du créneau
+  useEffect(() => {
+    if (!initialSlotId) return;
+    slotService.getById(initialSlotId).then(slot => {
+      setSelectedDate(slot.slotDate);
+      setViewMode('day');
+      setOpenSlotId(initialSlotId);
+    }).catch(() => {}); // créneau introuvable : on reste sur la date courante
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const weekStart = dayjs(selectedDate).startOf('isoWeek').format('YYYY-MM-DD');
   const selDay    = dayjs(selectedDate);
@@ -137,6 +162,22 @@ export function CalendarPage({ onNavigate, returnContext, onReturnConsumed }: {
               <button className={`btn btn-small ${viewMode === 'week'  ? 'btn-primary' : 'btn-outline'}`} onClick={() => setViewMode('week')}>🗓️ Semaine</button>
               <button className={`btn btn-small ${viewMode === 'month' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setViewMode('month')}>📆 Mois</button>
             </div>
+            {/* Bouton copier le lien vers la période courante */}
+            <button
+              className="btn btn-outline btn-small"
+              title="Copier le lien vers cette période"
+              onClick={() => {
+                const params = new URLSearchParams({ date: selectedDate, view: viewMode });
+                const url = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+                navigator.clipboard.writeText(url).then(() => {
+                  setLinkCopied(true);
+                  if (linkCopyTimerRef.current) clearTimeout(linkCopyTimerRef.current);
+                  linkCopyTimerRef.current = setTimeout(() => setLinkCopied(false), 2500);
+                }).catch(() => {});
+              }}
+            >
+              {linkCopied ? '✅ Copié !' : '🔗 Partager'}
+            </button>
             {canEdit && (
               <button className="btn btn-primary btn-small" onClick={() => openForm()}>
                 + Nouveau créneau
@@ -148,6 +189,7 @@ export function CalendarPage({ onNavigate, returnContext, onReturnConsumed }: {
         {viewMode === 'day' && (
           <DayView key={`day-${childKey}`} date={selectedDate} config={config} onAdd={openFormWithDate}
             onOpenPalanquees={onNavigate ? (id) => onNavigate(`palanquee-${id}-day`) : undefined}
+            openSlotId={openSlotId}
           />
         )}
         {viewMode === 'week' && (
