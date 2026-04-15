@@ -580,6 +580,25 @@ export function AdminPage() {
               {config?.selfRegistration ? '✅ Activée' : '🔴 Désactivée'}
             </button>
           </label>
+          <label className="toggle-setting">
+            <div className="toggle-setting-info">
+              <strong>🚧 Mode maintenance</strong>
+              <span>Si activé, seuls les administrateurs peuvent se connecter. Les autres utilisateurs reçoivent un message de maintenance.</span>
+            </div>
+            <button
+              type="button"
+              className={`toggle-btn ${config?.maintenanceMode ? 'toggle-on' : 'toggle-off'}`}
+              style={config?.maintenanceMode ? { background: '#f59e0b', borderColor: '#f59e0b' } : {}}
+              onClick={async () => {
+                if (!config) return;
+                const updated = await adminService.updateMaintenanceMode(!config.maintenanceMode);
+                setConfig(updated);
+                setMsg(`Mode maintenance ${updated.maintenanceMode ? 'activé — connexions non-admin désactivées' : 'désactivé'}`);
+              }}
+            >
+              {config?.maintenanceMode ? '🚧 Activé' : '✅ Désactivé'}
+            </button>
+          </label>
 
           {/* Fenêtre horaire de réservation */}
           <div className="toggle-setting" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 12 }}>

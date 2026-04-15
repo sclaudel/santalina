@@ -28,6 +28,8 @@ Application de réservation de créneaux de plongée en lac, développée avec *
 - 🗄️ **Double base de données** : H2 fichier (dev) / PostgreSQL (prod) — couche d'abstraction Panache
 - 📊 **Statistiques** (ADMIN) : tableau de bord avec camemberts, histogrammes et tableaux
 - 💾 **Sauvegarde / restauration** : export JSON complet ou config+utilisateurs, import avec normalisation automatique
+- 🚧 **Mode maintenance** (ADMIN) : désactivation des connexions non-admin en un clic — les utilisateurs reçoivent un message de maintenance à la connexion
+- 🔗 **Liens directs** : partage d'un lien vers une date précise (`?date=YYYY-MM-DD&view=day|week|month`) ou directement vers un créneau (`?slot=ID`) — les utilisateurs non connectés sont redirigés vers le bon contenu après authentification
 
 ---
 
@@ -125,9 +127,45 @@ docker compose up --build
 | `GET` | `/api/config` | Public | Config du site |
 | `PUT` | `/api/config/max-divers` | ADMIN | Max plongeurs |
 | `PUT` | `/api/config/site-name` | ADMIN | Nom du site |
+| `PUT` | `/api/config/maintenance-mode` | ADMIN | Activer/désactiver le mode maintenance |
 | `GET` | `/api/stats?from=YYYY-MM-DD&to=YYYY-MM-DD` | ADMIN | Statistiques agrégées (période optionnelle) |
 
 Documentation Swagger : **http://localhost:8085/q/swagger-ui**
+
+---
+
+## 🚧 Mode maintenance (ADMIN)
+
+Le mode maintenance permet de **bloquer temporairement les connexions non-admin** (par ex. pour une opération de migration ou de sauvegarde) tout en laissant les administrateurs accéder normalement au site.
+
+### Activation
+Dans l'onglet **⚙️ Général → 🔒 Accès & inscriptions**, activer le toggle **🚧 Mode maintenance**.
+
+### Comportement
+- Les utilisateurs qui tentent de se connecter (`DIVER`, `DIVE_DIRECTOR`) reçoivent un message 503 : *"Le site est actuellement en maintenance. Seuls les administrateurs peuvent se connecter."*
+- Une bannière d'avertissement 🚧 est affichée dans la fenêtre de connexion.
+- Les administrateurs déjà connectés (token JWT valide) ne sont pas affectés.
+- Les administrateurs peuvent se connecter normalement même en mode maintenance.
+
+---
+
+## 🔗 Liens directs
+
+Il est possible de partager des liens vers une date ou un créneau précis, utilisables dans d'autres applications (messagerie, planning, email…).
+
+### Liens disponibles
+| Type | Format | Exemple |
+|------|--------|---------|
+| Date + vue | `/?date=YYYY-MM-DD&view=day\|week\|month` | `/?date=2026-06-15&view=day` |
+| Créneau | `/?slot=ID` | `/?slot=42` |
+
+### Génération
+- **Bouton 🔗 Partager** dans la barre de navigation du calendrier (copie le lien vers la période affichée).
+- **Bouton 🔗 dans l'en-tête du créneau** (dans le panneau de détails) : copie le lien direct vers ce créneau.
+
+### Comportement
+- Si l'accès public est activé, le contenu s'affiche immédiatement.
+- Si l'accès public est désactivé, l'utilisateur est redirigé vers la page de connexion. Après authentification réussie, il est automatiquement redirigé vers la date ou le créneau demandé.
 
 ---
 

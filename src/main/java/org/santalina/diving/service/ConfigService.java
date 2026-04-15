@@ -39,6 +39,8 @@ public class ConfigService {
     private static final String KEY_NOTIF_MOVED_TO_WL     = "notif.moved_to_waitlist.enabled";
     private static final String KEY_NOTIF_DP_NEW_REG      = "notif.dp.new_registration.enabled";
 
+    private static final String KEY_MAINTENANCE_MODE           = "maintenance.mode";
+
     // -- Rappel fiche de sécurité --
     private static final String KEY_NOTIF_SAFETY_REMINDER      = "notif.safety_reminder.enabled";
     private static final String KEY_SAFETY_REMINDER_DELAY_DAYS = "notif.safety_reminder.delay_days";
@@ -93,6 +95,9 @@ public class ConfigService {
     }
     public boolean isSelfRegistration() {
         return Boolean.parseBoolean(getStringValue(KEY_SELF_REGISTRATION, "true"));
+    }
+    public boolean isMaintenanceMode() {
+        return Boolean.parseBoolean(getStringValue(KEY_MAINTENANCE_MODE, "false"));
     }
     /** Types de créneaux qui bloquent tout chevauchement (liste vide = aucun type exclusif) */
     public List<String> getExclusiveSlotTypes() {
@@ -166,7 +171,8 @@ public class ConfigService {
                 isNotifDpNewRegEnabled(),
                 isNotifSafetyReminderEnabled(),
                 getSafetyReminderDelayDays(),
-                getSafetyReminderEmailBody()
+                getSafetyReminderEmailBody(),
+                isMaintenanceMode()
         );
     }
 
@@ -205,6 +211,11 @@ public class ConfigService {
     @Transactional
     public ConfigResponse updateSelfRegistration(boolean value) {
         forceUpsert(KEY_SELF_REGISTRATION, String.valueOf(value));
+        return getConfig();
+    }
+    @Transactional
+    public ConfigResponse updateMaintenanceMode(boolean value) {
+        forceUpsert(KEY_MAINTENANCE_MODE, String.valueOf(value));
         return getConfig();
     }
     @Transactional
@@ -302,6 +313,7 @@ public class ConfigService {
         upsertIfMissing(KEY_NOTIF_SAFETY_REMINDER,      "false");
         upsertIfMissing(KEY_SAFETY_REMINDER_DELAY_DAYS, "3");
         upsertIfMissing(KEY_SAFETY_REMINDER_EMAIL_BODY, DEFAULT_SAFETY_REMINDER_BODY);
+        upsertIfMissing(KEY_MAINTENANCE_MODE,           "false");
     }
 
     // ---- Helpers privés ----

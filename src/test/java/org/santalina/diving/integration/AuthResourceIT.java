@@ -196,4 +196,38 @@ class AuthResourceIT {
                 .statusCode(200)
                 .body("message", containsString("réinitialisation"));
     }
+
+    /* ── Mode maintenance ── */
+
+    @Test
+    @Order(10)
+    @io.quarkus.test.security.TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void login_adminShouldSucceed_evenInMaintenanceMode() {
+        // Activer le mode maintenance via l'API
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"value\":true}")
+                .when().put("/api/config/maintenance-mode")
+                .then().statusCode(200);
+
+        try {
+            // L'admin doit pouvoir se connecter malgré le mode maintenance
+            given()
+                    .contentType(ContentType.JSON)
+                    .body("""
+                          {"email":"admin@santalina.com","password":"Admin1234"}
+                          """)
+                    .when().post(LOGIN_URL)
+                    .then()
+                    .statusCode(200)
+                    .body("token", notNullValue());
+        } finally {
+            // Remettre l'état initial (désactiver le mode maintenance)
+            given()
+                    .contentType(ContentType.JSON)
+                    .body("{\"value\":false}")
+                    .when().put("/api/config/maintenance-mode")
+                    .then().statusCode(200);
+        }
+    }
 }

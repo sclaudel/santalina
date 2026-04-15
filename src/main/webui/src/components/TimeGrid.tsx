@@ -17,6 +17,8 @@ interface Props {
   /** Callback déclenché quand l'utilisateur clique sur une zone libre de la grille */
   onClickTime?: (time: string) => void;
   onOpenPalanquees?: (slotId: number) => void;
+  /** ID du créneau à ouvrir automatiquement (lien direct) */
+  openSlotId?: number;
 }
 
 const DEFAULT_START = 6;   // 06:00 par défaut
@@ -78,7 +80,7 @@ function computeColumns(slots: DiveSlot[]): Map<number, { col: number; totalCols
   return result;
 }
 
-export function TimeGrid({ slots, config, onDelete, onRefresh, canEdit, currentUserId, currentUserRole, startHour: startHourProp, endHour: endHourProp, onClickTime, onOpenPalanquees }: Props) {
+export function TimeGrid({ slots, config, onDelete, onRefresh, canEdit, currentUserId, currentUserRole, startHour: startHourProp, endHour: endHourProp, onClickTime, onOpenPalanquees, openSlotId }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoverTime, setHoverTime] = useState<{ time: string; y: number } | null>(null);
 
@@ -221,6 +223,7 @@ export function TimeGrid({ slots, config, onDelete, onRefresh, canEdit, currentU
                   currentUserId={currentUserId}
                   currentUserRole={currentUserRole}
                   onOpenPalanquees={onOpenPalanquees}
+                  initialOpen={openSlotId === slot.id}
                 />
               </div>
             );

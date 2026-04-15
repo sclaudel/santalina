@@ -117,6 +117,14 @@ public class AuthService {
             LOG.warnf("Tentative de connexion d'un compte non activé : %s", normalizedEmail);
             throw new BadRequestException("Compte non activé. Vérifiez votre email.");
         }
+        // Vérification du mode maintenance : seuls les administrateurs peuvent se connecter
+        boolean isAdmin = (user.roles != null && user.roles.contains(UserRole.ADMIN))
+                || user.role == UserRole.ADMIN;
+        if (configService.isMaintenanceMode() && !isAdmin) {
+            LOG.warnf("Connexion refusée (maintenance) pour : %s", normalizedEmail);
+            throw new jakarta.ws.rs.ServiceUnavailableException(
+                    "Le site est actuellement en maintenance. Seuls les administrateurs peuvent se connecter.");
+        }
         // Synchroniser roles depuis role si vide (migration)
         if (user.roles == null || user.roles.isEmpty()) {
             user.roles = new java.util.HashSet<>();

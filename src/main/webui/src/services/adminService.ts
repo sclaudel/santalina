@@ -120,6 +120,11 @@ export const adminService = {
     return res.data;
   },
 
+  async updateMaintenanceMode(value: boolean): Promise<AppConfig> {
+    const res = await api.put<AppConfig>('/config/maintenance-mode', { value });
+    return res.data;
+  },
+
   // ---- Logs ----
 
   async getLogs(): Promise<LogInfo[]> {
