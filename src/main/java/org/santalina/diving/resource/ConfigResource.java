@@ -61,6 +61,27 @@ public class ConfigResource {
     }
 
     @PUT
+    @Path("/diver-levels")
+    @RolesAllowed("ADMIN")
+    public ConfigResponse updateDiverLevels(@Valid UpdateListRequest request) {
+        return configService.updateDiverLevels(request.items());
+    }
+
+    @PUT
+    @Path("/dp-levels")
+    @RolesAllowed("ADMIN")
+    public ConfigResponse updateDpLevels(@Valid UpdateListRequest request) {
+        return configService.updateDpLevels(request.items());
+    }
+
+    @PUT
+    @Path("/prepared-levels")
+    @RolesAllowed("ADMIN")
+    public ConfigResponse updatePreparedLevels(@Valid UpdateListRequest request) {
+        return configService.updatePreparedLevels(request.items());
+    }
+
+    @PUT
     @Path("/public-access")
     @RolesAllowed("ADMIN")
     public ConfigResponse updatePublicAccess(@Valid UpdateBooleanRequest request) {

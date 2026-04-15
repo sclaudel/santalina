@@ -66,6 +66,21 @@ export const adminService = {
     return res.data;
   },
 
+  async updateDiverLevels(items: string[]): Promise<AppConfig> {
+    const res = await api.put<AppConfig>('/config/diver-levels', { items });
+    return res.data;
+  },
+
+  async updateDpLevels(items: string[]): Promise<AppConfig> {
+    const res = await api.put<AppConfig>('/config/dp-levels', { items });
+    return res.data;
+  },
+
+  async updatePreparedLevels(items: string[]): Promise<AppConfig> {
+    const res = await api.put<AppConfig>('/config/prepared-levels', { items });
+    return res.data;
+  },
+
   async updatePublicAccess(value: boolean): Promise<AppConfig> {
     const res = await api.put<AppConfig>('/config/public-access', { value });
     return res.data;

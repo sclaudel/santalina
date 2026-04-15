@@ -47,6 +47,9 @@ export function AdminPage() {
   const [exclusiveSlotTypes, setExclusiveSlotTypes] = useState<string[]>([]);
   const [clubsText, setClubsText]           = useState('');
   const [levelsText, setLevelsText]         = useState('');
+  const [diverLevelsText, setDiverLevelsText]     = useState('');
+  const [dpLevelsText, setDpLevelsText]           = useState('');
+  const [preparedLevelsText, setPreparedLevelsText] = useState('');
   const [listLoading, setListLoading]       = useState(false);
   const [exclusiveLoading, setExclusiveLoading] = useState(false);
 
@@ -117,6 +120,9 @@ export function AdminPage() {
       setExclusiveSlotTypes(c.exclusiveSlotTypes ?? []);
       setClubsText((c.clubs ?? []).join('\n'));
       setLevelsText((c.levels ?? []).join('\n'));
+      setDiverLevelsText((c.diverLevels ?? []).join('\n'));
+      setDpLevelsText((c.dpLevels ?? []).join('\n'));
+      setPreparedLevelsText((c.preparedLevels ?? []).join('\n'));
       setBookingOpenHour(c.bookingOpenHour ?? -1);
       setBookingCloseHour(c.bookingCloseHour ?? -1);
       setNotificationEmail(c.notificationBookingEmail ?? '');
@@ -289,6 +295,42 @@ export function AdminPage() {
       setConfig(updated);
       setLevelsText((updated.levels ?? []).join('\n'));
       setMsg('Niveaux mis à jour');
+    } catch (err: unknown) { setError(getErrorMessage(err)); }
+    finally { setListLoading(false); }
+  };
+
+  const handleUpdateDiverLevels = async (e: React.FormEvent) => {
+    e.preventDefault(); setMsg(''); setError(''); setListLoading(true);
+    const items = diverLevelsText.split('\n').map(s => s.trim()).filter(Boolean);
+    try {
+      const updated = await adminService.updateDiverLevels(items);
+      setConfig(updated);
+      setDiverLevelsText((updated.diverLevels ?? []).join('\n'));
+      setMsg('Niveaux plongeurs (inscription) mis à jour');
+    } catch (err: unknown) { setError(getErrorMessage(err)); }
+    finally { setListLoading(false); }
+  };
+
+  const handleUpdateDpLevels = async (e: React.FormEvent) => {
+    e.preventDefault(); setMsg(''); setError(''); setListLoading(true);
+    const items = dpLevelsText.split('\n').map(s => s.trim()).filter(Boolean);
+    try {
+      const updated = await adminService.updateDpLevels(items);
+      setConfig(updated);
+      setDpLevelsText((updated.dpLevels ?? []).join('\n'));
+      setMsg('Niveaux DP (inscription) mis à jour');
+    } catch (err: unknown) { setError(getErrorMessage(err)); }
+    finally { setListLoading(false); }
+  };
+
+  const handleUpdatePreparedLevels = async (e: React.FormEvent) => {
+    e.preventDefault(); setMsg(''); setError(''); setListLoading(true);
+    const items = preparedLevelsText.split('\n').map(s => s.trim()).filter(Boolean);
+    try {
+      const updated = await adminService.updatePreparedLevels(items);
+      setConfig(updated);
+      setPreparedLevelsText((updated.preparedLevels ?? []).join('\n'));
+      setMsg('Niveaux en préparation mis à jour');
     } catch (err: unknown) { setError(getErrorMessage(err)); }
     finally { setListLoading(false); }
   };
@@ -988,6 +1030,7 @@ export function AdminPage() {
           <form onSubmit={handleUpdateLevels} style={{ flex: 1, minWidth: 280 }}>
             <div className="form-group">
               <label style={{ fontWeight: 700 }}>Niveaux de plongeurs</label>
+              <p style={{ color: '#6b7280', fontSize: 11, margin: '2px 0 6px' }}>Liste maître utilisée pour l'ajout manuel d'un plongeur par le DP.</p>
               <textarea rows={8} value={levelsText}
                 onChange={e => setLevelsText(e.target.value)}
                 placeholder={"Inconnu\nE1\nNiveau 1\n..."}
@@ -995,6 +1038,58 @@ export function AdminPage() {
             </div>
             <button type="submit" className="btn btn-primary" disabled={listLoading}>
               {listLoading ? '...' : '💾 Enregistrer les niveaux'}
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {/* Listes de niveaux (inscription libre) */}
+      <div className="admin-section">
+        <h2>🎓 Niveaux d'inscription libre</h2>
+        <p style={{ color: '#6b7280', fontSize: 13, marginBottom: 16 }}>
+          Ces listes sont proposées aux plongeurs et directeurs de plongée lors de l'inscription libre sur un créneau.
+          Saisissez un niveau par ligne.
+        </p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
+          <form onSubmit={handleUpdateDiverLevels} style={{ flex: 1, minWidth: 250 }}>
+            <div className="form-group">
+              <label style={{ fontWeight: 700 }}>Niveaux plongeurs</label>
+              <p style={{ color: '#6b7280', fontSize: 11, margin: '2px 0 6px' }}>Niveaux proposés aux plongeurs lors de l'inscription libre.</p>
+              <textarea rows={8} value={diverLevelsText}
+                onChange={e => setDiverLevelsText(e.target.value)}
+                placeholder={"N1\nN2\nN3\n..."}
+                style={{ fontFamily: 'monospace', fontSize: 13 }} />
+            </div>
+            <button type="submit" className="btn btn-primary" disabled={listLoading}>
+              {listLoading ? '...' : '💾 Enregistrer'}
+            </button>
+          </form>
+
+          <form onSubmit={handleUpdateDpLevels} style={{ flex: 1, minWidth: 250 }}>
+            <div className="form-group">
+              <label style={{ fontWeight: 700 }}>Niveaux directeur de plongée</label>
+              <p style={{ color: '#6b7280', fontSize: 11, margin: '2px 0 6px' }}>Niveaux proposés aux DP lors de l'auto-inscription.</p>
+              <textarea rows={8} value={dpLevelsText}
+                onChange={e => setDpLevelsText(e.target.value)}
+                placeholder={"N5\nE3\nE4\n..."}
+                style={{ fontFamily: 'monospace', fontSize: 13 }} />
+            </div>
+            <button type="submit" className="btn btn-primary" disabled={listLoading}>
+              {listLoading ? '...' : '💾 Enregistrer'}
+            </button>
+          </form>
+
+          <form onSubmit={handleUpdatePreparedLevels} style={{ flex: 1, minWidth: 250 }}>
+            <div className="form-group">
+              <label style={{ fontWeight: 700 }}>Niveaux en préparation</label>
+              <p style={{ color: '#6b7280', fontSize: 11, margin: '2px 0 6px' }}>Liste optionnelle affichée dans le formulaire d'inscription.</p>
+              <textarea rows={8} value={preparedLevelsText}
+                onChange={e => setPreparedLevelsText(e.target.value)}
+                placeholder={"Aucun\nN1\nN2\n..."}
+                style={{ fontFamily: 'monospace', fontSize: 13 }} />
+            </div>
+            <button type="submit" className="btn btn-primary" disabled={listLoading}>
+              {listLoading ? '...' : '💾 Enregistrer'}
             </button>
           </form>
         </div>

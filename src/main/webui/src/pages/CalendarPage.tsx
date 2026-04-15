@@ -42,6 +42,7 @@ export function CalendarPage({ onNavigate, returnContext, onReturnConsumed, init
   const [config, setConfig] = useState<AppConfig>({
     maxDivers: 25, slotMinHours: 1, slotMaxHours: 10, slotResolutionMinutes: 15,
     siteName: 'Carrière de Saint-Lin', slotTypes: [], clubs: [], levels: [],
+    diverLevels: [], dpLevels: [], preparedLevels: [],
     publicAccess: true, selfRegistration: true,
     bookingOpenHour: -1, bookingCloseHour: -1,
     exclusiveSlotTypes: [], defaultSlotHours: 2,

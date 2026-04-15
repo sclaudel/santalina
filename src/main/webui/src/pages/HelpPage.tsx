@@ -332,11 +332,11 @@ export function HelpPage() {
               <ul>
                 <li><strong>Prénom / Nom</strong> — champs obligatoires.</li>
                 <li><strong>E-mail</strong> (double saisie obligatoire pour éviter les erreurs)</li>
-                <li><strong>Niveau de certification</strong> — sélectionner parmi : N1, N2, N3, N4, N5, E2, E3, E4, PE12, PE40, PE60, MF1, MF2.</li>
+                <li><strong>Niveau de certification</strong> — sélectionner parmi la liste configurée par l'administrateur (par défaut : N1, N2, N3, N4, N5, E2, E3, E4, PE12, PE40, PE60, MF1, MF2). Les directeurs de plongée disposent d'une liste spécifique.</li>
                 <li><strong>Club d'appartenance</strong> — repris automatiquement depuis votre profil utilisateur. Pour modifier votre club, rendez-vous sur la page <strong>Mon profil</strong>.</li>
                 <li><strong>Nombre de plongées effectuées</strong> — champ obligatoire.</li>
                 <li><strong>Date de la dernière plongée</strong> — champ obligatoire.</li>
-                <li><strong>Niveau en préparation</strong> — optionnel (vaste liste disponible).</li>
+                <li><strong>Niveau en préparation</strong> — optionnel (liste configurable par l'administrateur).</li>
                 <li><strong>Commentaire pour le DP</strong> — optionnel, pour indiquer ce que vous souhaitez travailler ou faire durant la plongée.</li>
                 <li><strong>Date de début du certificat médical</strong> — <em>obligatoire</em>. Le certificat doit avoir moins d'un an à la date du créneau.</li>
                 <li>
@@ -627,7 +627,17 @@ export function HelpPage() {
           <ul>
             <li><strong>Types de plongée</strong> — ex : Exploration, Formation, Apnée. Chaque entrée peut être personnalisée avec une couleur.</li>
             <li><strong>Clubs</strong> — liste des clubs participants. Utilisée à deux endroits : associée à chaque <strong>créneau</strong> (club organisateur) et proposée aux plongeurs lors de leur <strong>inscription libre</strong> pour indiquer leur club d'appartenance.</li>
+            <li><strong>Niveaux de plongeurs</strong> — liste maître de tous les niveaux de certification, utilisée par le DP pour l'ajout manuel d'un plongeur sur un créneau.</li>
           </ul>
+
+          <h4>Niveaux d'inscription libre</h4>
+          <p>Dans l'onglet <strong>📚 Référentiels</strong>, la section <strong>🎓 Niveaux d'inscription libre</strong> permet de configurer trois listes de niveaux indépendantes :</p>
+          <ul>
+            <li><strong>Niveaux plongeurs</strong> — niveaux proposés aux plongeurs lors de l'inscription libre (par défaut : N1 à MF2).</li>
+            <li><strong>Niveaux directeur de plongée</strong> — niveaux proposés aux DP lors de leur auto-inscription (par défaut : N5, E3, E4, MF1, MF2).</li>
+            <li><strong>Niveaux en préparation</strong> — liste optionnelle proposée dans le formulaire d'inscription libre (par défaut : Aucun, N1 à PV2).</li>
+          </ul>
+          <p>Chaque liste est modifiable : un niveau par ligne. Les modifications sont prises en compte immédiatement.</p>
 
           <h4>Accès &amp; inscriptions</h4>
           <ul>
@@ -853,7 +863,9 @@ export function HelpPage() {
           { type: 'h4' as const, text: 'Configuration du lac' },
           { type: 'ul' as const, items: ['Nom du site — affiché dans la barre de navigation et les exports.', 'Capacité max de plongeurs — valeur par défaut à la création d\'un créneau.', 'Durée min / max d\'un créneau — en heures.', 'Résolution de la grille horaire — en minutes (15, 30 ou 60).'] },
           { type: 'h4' as const, text: 'Listes configurables' },
-          { type: 'ul' as const, items: ['Types de plongée — ex : Exploration, Formation, Apnée.', 'Clubs — liste des clubs participants.'] },
+          { type: 'ul' as const, items: ['Types de plongée — ex : Exploration, Formation, Apnée.', 'Clubs — liste des clubs participants.', 'Niveaux de plongeurs — liste maître pour l\'ajout manuel d\'un plongeur.'] },
+          { type: 'h4' as const, text: 'Niveaux d\'inscription libre' },
+          { type: 'ul' as const, items: ['Niveaux plongeurs — proposés aux plongeurs lors de l\'inscription libre.', 'Niveaux directeur de plongée — proposés aux DP lors de leur auto-inscription.', 'Niveaux en préparation — liste optionnelle dans le formulaire d\'inscription.'] },
           { type: 'h4' as const, text: 'Accès & inscriptions' },
           { type: 'ul' as const, items: ['Accès public au calendrier — si désactivé, les visiteurs non connectés voient une page de connexion.', 'Inscription libre — si désactivé, seul un administrateur peut créer des comptes.'] },
         ],

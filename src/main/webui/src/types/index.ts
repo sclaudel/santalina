@@ -143,6 +143,9 @@ export interface AppConfig {
   slotTypes: string[];
   clubs: string[];
   levels: string[];
+  diverLevels: string[];
+  dpLevels: string[];
+  preparedLevels: string[];
   publicAccess: boolean;
   selfRegistration: boolean;
   bookingOpenHour: number;
@@ -254,9 +257,11 @@ export interface Palanquee {
 
 // ── Liste d'attente ──────────────────────────────────────────────────────────
 
+/** @deprecated Utiliser config.diverLevels à la place */
 export const DIVER_LEVELS = ['N1','N2','N3','N4','N5','E2','E3','E4','PE12','PE40','PE60','MF1','MF2'] as const;
+/** @deprecated Utiliser config.dpLevels à la place */
 export const DP_LEVELS = ['N5','E3','E4','MF1','MF2'] as const;
-
+/** @deprecated Utiliser config.preparedLevels à la place */
 export const PREPARED_LEVELS = [
   'Aucun','N1','N2','N3','N4','N5','MF1','MF2',
   'E1','E2','E3','E4','PE12','PE40','PE60',

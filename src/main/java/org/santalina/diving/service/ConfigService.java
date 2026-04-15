@@ -23,6 +23,9 @@ public class ConfigService {
     private static final String KEY_SLOT_TYPES       = "slot.types";
     private static final String KEY_CLUBS             = "slot.clubs";
     private static final String KEY_LEVELS            = "diver.levels";
+    private static final String KEY_DIVER_LEVELS       = "diver.levels.registration";
+    private static final String KEY_DP_LEVELS          = "diver.levels.dp";
+    private static final String KEY_PREPARED_LEVELS    = "diver.levels.prepared";
     private static final String KEY_PUBLIC_ACCESS     = "public.access";
     private static final String KEY_SELF_REGISTRATION = "self.registration";
     private static final String KEY_BOOKING_OPEN_HOUR    = "booking.open.hour";
@@ -58,6 +61,13 @@ public class ConfigService {
         "|MF1|MF2|Moniteur|Directeur de plongée" +
         "|PADI Open Water|PADI Advanced|PADI Rescue" +
         "|Prepa-N1|Prepa-N2|Prepa-N3|Prepa-N4|Prepa-MF1|Prepa-MF2";
+    private static final String DEFAULT_DIVER_LEVELS =
+        "N1|N2|N3|N4|N5|E2|E3|E4|PE12|PE40|PE60|MF1|MF2";
+    private static final String DEFAULT_DP_LEVELS =
+        "N5|E3|E4|MF1|MF2";
+    private static final String DEFAULT_PREPARED_LEVELS =
+        "Aucun|N1|N2|N3|N4|N5|MF1|MF2|E1|E2|E3|E4|PE12|PE40|PE60" +
+        "|PA20|PA40|PA60|PN|PNC|PB1|PB2|PV1|PV2";
 
     @Inject
     DivingConfig divingConfig;
@@ -89,6 +99,15 @@ public class ConfigService {
     }
     public List<String> getLevels() {
         return parseList(getStringValue(KEY_LEVELS, DEFAULT_LEVELS));
+    }
+    public List<String> getDiverLevels() {
+        return parseList(getStringValue(KEY_DIVER_LEVELS, DEFAULT_DIVER_LEVELS));
+    }
+    public List<String> getDpLevels() {
+        return parseList(getStringValue(KEY_DP_LEVELS, DEFAULT_DP_LEVELS));
+    }
+    public List<String> getPreparedLevels() {
+        return parseList(getStringValue(KEY_PREPARED_LEVELS, DEFAULT_PREPARED_LEVELS));
     }
     public boolean isPublicAccess() {
         return Boolean.parseBoolean(getStringValue(KEY_PUBLIC_ACCESS, "true"));
@@ -159,6 +178,7 @@ public class ConfigService {
                 getMaxDivers(), getSlotMinHours(), getSlotMaxHours(),
                 getSlotResolutionMinutes(), getSiteName(),
                 getSlotTypes(), getClubs(), getLevels(),
+                getDiverLevels(), getDpLevels(), getPreparedLevels(),
                 isPublicAccess(), isSelfRegistration(),
                 getBookingOpenHour(), getBookingCloseHour(),
                 getExclusiveSlotTypes(), getDefaultSlotHours(),
@@ -201,6 +221,21 @@ public class ConfigService {
     @Transactional
     public ConfigResponse updateLevels(List<String> levels) {
         forceUpsert(KEY_LEVELS, serializeList(levels));
+        return getConfig();
+    }
+    @Transactional
+    public ConfigResponse updateDiverLevels(List<String> levels) {
+        forceUpsert(KEY_DIVER_LEVELS, serializeList(levels));
+        return getConfig();
+    }
+    @Transactional
+    public ConfigResponse updateDpLevels(List<String> levels) {
+        forceUpsert(KEY_DP_LEVELS, serializeList(levels));
+        return getConfig();
+    }
+    @Transactional
+    public ConfigResponse updatePreparedLevels(List<String> levels) {
+        forceUpsert(KEY_PREPARED_LEVELS, serializeList(levels));
         return getConfig();
     }
     @Transactional
@@ -297,6 +332,9 @@ public class ConfigService {
         upsertIfMissing(KEY_SLOT_TYPES,       DEFAULT_SLOT_TYPES);
         upsertIfMissing(KEY_CLUBS,             DEFAULT_CLUBS);
         upsertIfMissing(KEY_LEVELS,            DEFAULT_LEVELS);
+        upsertIfMissing(KEY_DIVER_LEVELS,      DEFAULT_DIVER_LEVELS);
+        upsertIfMissing(KEY_DP_LEVELS,         DEFAULT_DP_LEVELS);
+        upsertIfMissing(KEY_PREPARED_LEVELS,   DEFAULT_PREPARED_LEVELS);
         upsertIfMissing(KEY_PUBLIC_ACCESS,     "true");
         upsertIfMissing(KEY_SELF_REGISTRATION, "true");
         upsertIfMissing(KEY_BOOKING_OPEN_HOUR,    "-1");
