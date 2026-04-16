@@ -74,6 +74,21 @@ export function AdminPage() {
   const [safetyReminderEmailBody, setSafetyReminderEmailBody] = useState('');
   const [notifSettingsLoading, setNotifSettingsLoading] = useState(false);
 
+  // Rapport périodique d'inscriptions par e-mail
+  const [reportEmailEnabled, setReportEmailEnabled]       = useState(false);
+  const [reportEmailPeriodDays, setReportEmailPeriodDays] = useState(7);
+  const [reportEmailRecipients, setReportEmailRecipients] = useState('');
+  const [reportEmailLoading, setReportEmailLoading]       = useState(false);
+  // Déclenchement manuel du rapport
+  const today = new Date().toISOString().slice(0, 10);
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const [manualReportFrom, setManualReportFrom]           = useState(thirtyDaysAgo);
+  const [manualReportTo, setManualReportTo]               = useState(today);
+  const [manualReportClub, setManualReportClub]           = useState('');
+  const [manualReportRecipients, setManualReportRecipients] = useState('');
+  const [manualReportSendLoading, setManualReportSendLoading] = useState(false);
+  const [manualReportDownloadLoading, setManualReportDownloadLoading] = useState(false);
+
   // Recherche et pagination utilisateurs
   const [userSearch, setUserSearch]   = useState('');
   const [userPage, setUserPage]       = useState(1);
@@ -136,6 +151,9 @@ export function AdminPage() {
       setNotifSafetyReminder(c.notifSafetyReminderEnabled ?? false);
       setSafetyReminderDelayDays(c.safetyReminderDelayDays ?? 3);
       setSafetyReminderEmailBody(c.safetyReminderEmailBody ?? '');
+      setReportEmailEnabled(c.reportEmailEnabled ?? false);
+      setReportEmailPeriodDays(c.reportEmailPeriodDays ?? 7);
+      setReportEmailRecipients(c.reportEmailRecipients ?? '');
     } catch {
       setError('Erreur lors du chargement des données');
     }
@@ -391,6 +409,37 @@ export function AdminPage() {
       setMsg('Paramètres de notifications enregistrés.');
     } catch (err: unknown) { setError(getErrorMessage(err)); }
     finally { setNotifSettingsLoading(false); }
+  };
+
+  const handleUpdateReportEmailSettings = async () => {
+    setMsg(''); setError(''); setReportEmailLoading(true);
+    try {
+      const updated = await adminService.updateReportEmailSettings({
+        reportEmailEnabled,
+        reportEmailPeriodDays,
+        reportEmailRecipients,
+      });
+      setConfig(updated);
+      setMsg('Paramètres du rapport périodique enregistrés.');
+    } catch (err: unknown) { setError(getErrorMessage(err)); }
+    finally { setReportEmailLoading(false); }
+  };
+
+  const handleManualReportSend = async () => {
+    setMsg(''); setError(''); setManualReportSendLoading(true);
+    try {
+      const result = await adminService.sendManualReport(manualReportFrom, manualReportTo, manualReportRecipients, manualReportClub || undefined);
+      setMsg(`Rapport envoyé (${result.count} inscription(s) sur la période).`);
+    } catch (err: unknown) { setError(getErrorMessage(err)); }
+    finally { setManualReportSendLoading(false); }
+  };
+
+  const handleManualReportDownload = async () => {
+    setMsg(''); setError(''); setManualReportDownloadLoading(true);
+    try {
+      await adminService.downloadReport(manualReportFrom, manualReportTo, manualReportClub || undefined);
+    } catch (err: unknown) { setError(getErrorMessage(err)); }
+    finally { setManualReportDownloadLoading(false); }
   };
 
   const toggleCreateRole = (role: UserRole) => {
@@ -824,6 +873,110 @@ export function AdminPage() {
         <button className="btn btn-primary" onClick={handleUpdateNotifSettings} disabled={notifSettingsLoading}>
           {notifSettingsLoading ? '...' : '💾 Enregistrer les paramètres'}
         </button>
+      </div>
+
+      {/* ── Rapport périodique d'inscriptions ── */}
+      <div className="admin-section">
+        <h2>📊 Rapport périodique des inscriptions</h2>
+        <p style={{ color: '#6b7280', fontSize: 13, marginBottom: 16 }}>
+          Envoyez automatiquement un fichier CSV listant les nouvelles inscriptions
+          (nom, prénom, e-mail, licence, club, date d'inscription) à une liste d'adresses configurables.
+          Le premier envoi couvre la période précédant la date d'activation.
+        </p>
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={reportEmailEnabled}
+            onChange={e => setReportEmailEnabled(e.target.checked)}
+          />
+          <span>Activer l'envoi automatique du rapport</span>
+          <span className={`badge ${reportEmailEnabled ? 'badge-success' : 'badge-muted'}`}>
+            {reportEmailEnabled ? 'Activé' : 'Désactivé'}
+          </span>
+        </label>
+
+        {reportEmailEnabled && (
+          <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8, padding: 16, marginBottom: 16 }}>
+            <div className="form-group" style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 13 }}>Période d'envoi (en jours)</label>
+              <input
+                type="number"
+                min={1}
+                max={365}
+                value={reportEmailPeriodDays}
+                onChange={e => setReportEmailPeriodDays(Number(e.target.value))}
+                style={{ width: 90 }}
+              />
+              <span style={{ color: '#6b7280', fontSize: 12, marginTop: 4, display: 'block' }}>
+                Ex : 7 = hebdomadaire, 30 = mensuel
+              </span>
+            </div>
+            <div className="form-group">
+              <label style={{ fontSize: 13 }}>Destinataires (séparés par une virgule ou un point-virgule)</label>
+              <input
+                type="text"
+                value={reportEmailRecipients}
+                onChange={e => setReportEmailRecipients(e.target.value)}
+                placeholder="secretaire@club.fr, president@club.fr"
+                style={{ width: '100%' }}
+              />
+            </div>
+            {config?.reportEmailLastSent && (
+              <div style={{ fontSize: 12, color: '#6b7280', marginTop: 8 }}>
+                Dernier envoi : <strong>{config.reportEmailLastSent.replace('T', ' ').substring(0, 16)}</strong>
+              </div>
+            )}
+          </div>
+        )}
+
+        <button className="btn btn-primary" onClick={handleUpdateReportEmailSettings} disabled={reportEmailLoading}>
+          {reportEmailLoading ? '...' : '💾 Enregistrer le rapport périodique'}
+        </button>
+
+        {/* Déclenchement manuel */}
+        <hr style={{ border: '1px solid #e5e7eb', margin: '24px 0' }} />
+        <h3 style={{ marginBottom: 12 }}>📤 Envoi ou téléchargement manuel</h3>
+        <p style={{ color: '#6b7280', fontSize: 13, marginBottom: 16 }}>
+          Générez un rapport CSV pour une période personnalisée, à envoyer par e-mail ou à télécharger directement.
+        </p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 16 }}>
+          <div className="form-group" style={{ minWidth: 160 }}>
+            <label style={{ fontSize: 13 }}>Du</label>
+            <input type="date" value={manualReportFrom} onChange={e => setManualReportFrom(e.target.value)} />
+          </div>
+          <div className="form-group" style={{ minWidth: 160 }}>
+            <label style={{ fontSize: 13 }}>Au</label>
+            <input type="date" value={manualReportTo} onChange={e => setManualReportTo(e.target.value)} />
+          </div>
+          <div className="form-group" style={{ minWidth: 180 }}>
+            <label style={{ fontSize: 13 }}>Club (laisser vide = tous)</label>
+            <select value={manualReportClub} onChange={e => setManualReportClub(e.target.value)}>
+              <option value="">— Tous les clubs —</option>
+              {(config?.clubs ?? []).map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group" style={{ flex: 1, minWidth: 220 }}>
+            <label style={{ fontSize: 13 }}>Destinataires (laisser vide = destinataires configurés)</label>
+            <input
+              type="text"
+              value={manualReportRecipients}
+              onChange={e => setManualReportRecipients(e.target.value)}
+              placeholder="email1@club.fr, email2@club.fr"
+              style={{ width: '100%' }}
+            />
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button className="btn btn-primary" onClick={handleManualReportSend} disabled={manualReportSendLoading}>
+            {manualReportSendLoading ? '...' : '📧 Envoyer par e-mail'}
+          </button>
+          <button className="btn btn-secondary" onClick={handleManualReportDownload} disabled={manualReportDownloadLoading}>
+            {manualReportDownloadLoading ? '...' : '⬇️ Télécharger CSV'}
+          </button>
+        </div>
       </div>
 
       {/* ── Créneaux récurrents ── */}

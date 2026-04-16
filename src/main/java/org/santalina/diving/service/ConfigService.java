@@ -50,6 +50,12 @@ public class ConfigService {
     private static final String KEY_SAFETY_REMINDER_DELAY_DAYS = "notif.safety_reminder.delay_days";
     private static final String KEY_SAFETY_REMINDER_EMAIL_BODY = "notif.safety_reminder.email_body";
 
+    // -- Rapport périodique d'inscriptions --
+    private static final String KEY_REPORT_EMAIL_ENABLED     = "report.email.enabled";
+    private static final String KEY_REPORT_EMAIL_PERIOD_DAYS = "report.email.period.days";
+    private static final String KEY_REPORT_EMAIL_RECIPIENTS  = "report.email.recipients";
+    private static final String KEY_REPORT_EMAIL_LAST_SENT   = "report.email.last.sent";
+
     private static final String DEFAULT_SAFETY_REMINDER_BODY =
         "Ce rappel vous est envoyé car vous êtes le directeur de plongée du créneau du {slotDate} sur le site {siteName}.\n\n" +
         "Pensez à transmettre la fiche de sécurité remplie à votre club si ce n'est pas encore fait.";
@@ -179,6 +185,20 @@ public class ConfigService {
         return getStringValue(KEY_SAFETY_REMINDER_EMAIL_BODY, DEFAULT_SAFETY_REMINDER_BODY);
     }
 
+    // -- Getters rapport périodique --
+    public boolean isReportEmailEnabled() {
+        return Boolean.parseBoolean(getStringValue(KEY_REPORT_EMAIL_ENABLED, "false"));
+    }
+    public int getReportEmailPeriodDays() {
+        return getIntValue(KEY_REPORT_EMAIL_PERIOD_DAYS, 7);
+    }
+    public String getReportEmailRecipients() {
+        return getStringValue(KEY_REPORT_EMAIL_RECIPIENTS, "");
+    }
+    public String getReportEmailLastSent() {
+        return getStringValue(KEY_REPORT_EMAIL_LAST_SENT, "");
+    }
+
     public ConfigResponse getConfig() {
         return new ConfigResponse(
                 getMaxDivers(), getSlotMinHours(), getSlotMaxHours(),
@@ -199,7 +219,11 @@ public class ConfigService {
                 isNotifSafetyReminderEnabled(),
                 getSafetyReminderDelayDays(),
                 getSafetyReminderEmailBody(),
-                isMaintenanceMode()
+                isMaintenanceMode(),
+                isReportEmailEnabled(),
+                getReportEmailPeriodDays(),
+                getReportEmailRecipients(),
+                getReportEmailLastSent()
         );
     }
 
@@ -264,6 +288,19 @@ public class ConfigService {
     public ConfigResponse updateMaintenanceMode(boolean value) {
         forceUpsert(KEY_MAINTENANCE_MODE, String.valueOf(value));
         return getConfig();
+    }
+
+    @Transactional
+    public ConfigResponse updateReportEmailSettings(boolean enabled, int periodDays, String recipients) {
+        forceUpsert(KEY_REPORT_EMAIL_ENABLED,     String.valueOf(enabled));
+        forceUpsert(KEY_REPORT_EMAIL_PERIOD_DAYS, String.valueOf(periodDays));
+        forceUpsert(KEY_REPORT_EMAIL_RECIPIENTS,  recipients != null ? recipients.trim() : "");
+        return getConfig();
+    }
+
+    @Transactional
+    public void updateReportEmailLastSent(String isoDateTime) {
+        forceUpsert(KEY_REPORT_EMAIL_LAST_SENT, isoDateTime);
     }
     @Transactional
     public ConfigResponse updateBookingHours(int openHour, int closeHour) {
@@ -365,6 +402,10 @@ public class ConfigService {
         upsertIfMissing(KEY_SAFETY_REMINDER_DELAY_DAYS, "3");
         upsertIfMissing(KEY_SAFETY_REMINDER_EMAIL_BODY, DEFAULT_SAFETY_REMINDER_BODY);
         upsertIfMissing(KEY_MAINTENANCE_MODE,           "false");
+        upsertIfMissing(KEY_REPORT_EMAIL_ENABLED,       "false");
+        upsertIfMissing(KEY_REPORT_EMAIL_PERIOD_DAYS,   "7");
+        upsertIfMissing(KEY_REPORT_EMAIL_RECIPIENTS,    "");
+        upsertIfMissing(KEY_REPORT_EMAIL_LAST_SENT,     "");
     }
 
     // ---- Helpers privés ----

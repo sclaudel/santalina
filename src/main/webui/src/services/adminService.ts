@@ -145,6 +145,36 @@ export const adminService = {
     return res.data;
   },
 
+  async updateReportEmailSettings(settings: {
+    reportEmailEnabled: boolean;
+    reportEmailPeriodDays: number;
+    reportEmailRecipients: string;
+  }): Promise<AppConfig> {
+    const res = await api.put<AppConfig>('/config/report-email-settings', settings);
+    return res.data;
+  },
+
+  async sendManualReport(from: string, to: string, recipients: string, club?: string): Promise<{ count: number }> {
+    const res = await api.post<{ count: number }>('/config/report-email-send', { fromDate: from, toDate: to, recipients, ...(club ? { club } : {}) });
+    return res.data;
+  },
+
+  async downloadReport(from: string, to: string, club?: string): Promise<void> {
+    const res = await api.get('/config/report-email-download', {
+      params: { from, to, ...(club ? { club } : {}) },
+      responseType: 'blob',
+    });
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/csv;charset=UTF-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    const clubSuffix = club ? `_${club}` : '';
+    link.setAttribute('download', `inscriptions_${from}_${to}${clubSuffix}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
   // ---- Logs ----
 
   async getLogs(): Promise<LogInfo[]> {

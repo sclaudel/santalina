@@ -37,7 +37,11 @@ public class ConfigDto {
             boolean notifSafetyReminderEnabled,
             int safetyReminderDelayDays,
             String safetyReminderEmailBody,
-            boolean maintenanceMode
+            boolean maintenanceMode,
+            boolean reportEmailEnabled,
+            int reportEmailPeriodDays,
+            String reportEmailRecipients,
+            String reportEmailLastSent
     ) {}
 
     public record UpdateMaxRecurringMonthsRequest(
@@ -86,5 +90,18 @@ public class ConfigDto {
             @NotNull Boolean notifSafetyReminderEnabled,
             @NotNull @Min(1) @jakarta.validation.constraints.Max(30) Integer safetyReminderDelayDays,
             String safetyReminderEmailBody
+    ) {}
+
+    public record UpdateReportEmailSettingsRequest(
+            @NotNull Boolean reportEmailEnabled,
+            @NotNull @Min(1) @jakarta.validation.constraints.Max(365) Integer reportEmailPeriodDays,
+            String reportEmailRecipients
+    ) {}
+
+    public record ManualReportSendRequest(
+            @NotBlank String fromDate,
+            @NotBlank String toDate,
+            String recipients,
+            String club
     ) {}
 }

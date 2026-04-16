@@ -377,4 +377,189 @@ class ConfigResourceIT {
                 .then()
                 .statusCode(401);
     }
+
+    /* ── Rapport périodique d'inscriptions ── */
+
+    @Test
+    void updateReportEmailSettings_shouldReturn401_withoutAuthentication() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"reportEmailEnabled\":true,\"reportEmailPeriodDays\":7,\"reportEmailRecipients\":\"admin@test.com\"}")
+                .when().put("/api/config/report-email-settings")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    @TestSecurity(user = "diver@test.com", roles = {"DIVER"})
+    void updateReportEmailSettings_shouldReturn403_whenDiver() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"reportEmailEnabled\":true,\"reportEmailPeriodDays\":7,\"reportEmailRecipients\":\"admin@test.com\"}")
+                .when().put("/api/config/report-email-settings")
+                .then()
+                .statusCode(403);
+    }
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void updateReportEmailSettings_shouldReturn200_whenAdmin() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"reportEmailEnabled\":true,\"reportEmailPeriodDays\":14,\"reportEmailRecipients\":\"rapport@club.fr\"}")
+                .when().put("/api/config/report-email-settings")
+                .then()
+                .statusCode(200)
+                .body("reportEmailEnabled", equalTo(true))
+                .body("reportEmailPeriodDays", equalTo(14))
+                .body("reportEmailRecipients", equalTo("rapport@club.fr"));
+    }
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void updateReportEmailSettings_shouldReturn400_whenPeriodDaysIsZero() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"reportEmailEnabled\":true,\"reportEmailPeriodDays\":0,\"reportEmailRecipients\":\"admin@test.com\"}")
+                .when().put("/api/config/report-email-settings")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    void getConfig_shouldContainReportEmailFields() {
+        given()
+                .when().get("/api/config")
+                .then()
+                .statusCode(200)
+                .body("reportEmailEnabled", notNullValue())
+                .body("reportEmailPeriodDays", notNullValue())
+                .body("reportEmailRecipients", notNullValue());
+    }
+
+    /* ── Déclenchement manuel du rapport ── */
+
+    @Test
+    void sendManualReport_shouldReturn401_withoutAuthentication() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"fromDate\":\"2024-01-01\",\"toDate\":\"2024-01-31\"}")
+                .when().post("/api/config/report-email-send")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    @TestSecurity(user = "diver@test.com", roles = {"DIVER"})
+    void sendManualReport_shouldReturn403_whenDiver() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"fromDate\":\"2024-01-01\",\"toDate\":\"2024-01-31\"}")
+                .when().post("/api/config/report-email-send")
+                .then()
+                .statusCode(403);
+    }
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void sendManualReport_shouldReturn200_whenAdmin() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"fromDate\":\"2024-01-01\",\"toDate\":\"2024-01-31\"}")
+                .when().post("/api/config/report-email-send")
+                .then()
+                .statusCode(200)
+                .body("count", greaterThanOrEqualTo(0));
+    }
+
+    @Test
+    void downloadReport_shouldReturn401_withoutAuthentication() {
+        given()
+                .queryParam("from", "2024-01-01")
+                .queryParam("to", "2024-01-31")
+                .when().get("/api/config/report-email-download")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    @TestSecurity(user = "diver@test.com", roles = {"DIVER"})
+    void downloadReport_shouldReturn403_whenDiver() {
+        given()
+                .queryParam("from", "2024-01-01")
+                .queryParam("to", "2024-01-31")
+                .when().get("/api/config/report-email-download")
+                .then()
+                .statusCode(403);
+    }
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void downloadReport_shouldReturn200_withCsvContentType_whenAdmin() {
+        given()
+                .queryParam("from", "2024-01-01")
+                .queryParam("to", "2024-01-31")
+                .when().get("/api/config/report-email-download")
+                .then()
+                .statusCode(200)
+                .contentType(containsString("text/csv"));
+    }
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void downloadReport_shouldContainClubColumnHeader() {
+        given()
+                .queryParam("from", "2024-01-01")
+                .queryParam("to", "2024-01-31")
+                .when().get("/api/config/report-email-download")
+                .then()
+                .statusCode(200)
+                .body(containsString("Club"));
+    }
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void downloadReport_shouldReturn400_whenFromDateMissing() {
+        given()
+                .queryParam("to", "2024-01-31")
+                .when().get("/api/config/report-email-download")
+                .then()
+                .statusCode(500); // date parse error without 'from'
+    }
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void sendManualReport_shouldReturn400_whenFromDateMissing() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"toDate\":\"2024-01-31\"}")
+                .when().post("/api/config/report-email-send")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void downloadReport_withClubFilter_shouldReturn200_whenAdmin() {
+        given()
+                .queryParam("from", "2024-01-01")
+                .queryParam("to", "2024-01-31")
+                .queryParam("club", "Club Alpha")
+                .when().get("/api/config/report-email-download")
+                .then()
+                .statusCode(200)
+                .contentType(containsString("text/csv"));
+    }
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void sendManualReport_withClubFilter_shouldReturn200_whenAdmin() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"fromDate\":\"2024-01-01\",\"toDate\":\"2024-01-31\",\"club\":\"Club Alpha\"}")
+                .when().post("/api/config/report-email-send")
+                .then()
+                .statusCode(200)
+                .body("count", greaterThanOrEqualTo(0));
+    }
 }

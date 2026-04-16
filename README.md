@@ -1,4 +1,4 @@
-# 🌊 Santalina — Système de Réservation
+# Santalina — Système de Réservation
 
 [![Dernière version](https://img.shields.io/github/v/release/sclaudel/santalina?label=derni%C3%A8re%20version&logo=github&color=blue&include_prereleases)](https://github.com/sclaudel/santalina/releases/latest)
 [![Licence MIT](https://img.shields.io/badge/licence-MIT-green)](./LICENSE)
@@ -7,30 +7,31 @@
 
 Application de réservation de créneaux de plongée en lac, développée avec **Quarkus 3.32.2** (Java 21) et **React 19** (TypeScript).
 
-## ✨ Fonctionnalités
+## Fonctionnalités
 
-- 📅 **Calendrier public** : vues Jour, Semaine et Mois **chronologiques** sans authentification
-- 🔐 **Authentification JWT** : login, inscription avec **activation par email** (lien 24 h), reset de mot de passe par email
-- 🛡️ **RGPD** : consentement explicite collecté à l'inscription- 🏆 **Certification d'appartenance club** : case obligatoire à l’inscription (« Je certifie sur l’honneur être membre du club indiqué ») — le club est également obligatoire
-- 🔒 **Politique de mot de passe robuste** : minimum 8 caractères, au moins 1 majuscule, 1 chiffre et 1 caractère spécial (appliquée à la création de compte, la réinitialisation et le changement — sans impact sur les mots de passe existants)- 👥 **3 rôles** (cumulables) :
-  - `ADMIN` 🔑 : configuration, tous les créneaux, gestion des utilisateurs
-  - `DIVE_DIRECTOR` 🤿 : création et suppression de ses propres créneaux, gestion des plongeurs sur ses créneaux et ceux où il est assigné comme DP, auto-assignation comme DP sur tout créneau sans directeur
-  - `DIVER` 🏊 : consultation + inscription libre sur les créneaux ouverts
-- ⏰ **Créneaux** : 1h min, 10h max, résolution 15 min, chevauchements affichés côte à côte
-- 🤿 **Plongeurs** : ajout/modification/suppression (nom, prénom capitalisé, niveau) sur chaque créneau
-- 🎯 **Capacité configurable** : max 25 plongeurs simultanés (modifiable par l'admin)
-- 📋 **Liste d'attente** : inscription libre pour les plongeurs (DIVER/DIVE_DIRECTOR non créateur), validation/refus par le DP responsable, badge de notification
-- 🔓 **Inscriptions libres** : le DP assigné (ou le créateur du créneau) peut ouvrir les inscriptions avec une date d'ouverture optionnelle — les plongeurs s'inscrivent eux-mêmes et peuvent annuler leur inscription (avertissement si < 48 h avant la sortie)
-- 🤿 **Auto-assignation DP** : un directeur de plongée peut se désigner lui-même comme DP sur n'importe quel créneau sans directeur, depuis le panneau de détails du calendrier, sans passer par le formulaire d'ajout
-- 🗂️ **Organisation des palanquées** : drag-and-drop, gestion des aptitudes/profondeurs, export Excel fiche de sécurité, export CSV liste des plongeurs avec emails
-- 🔒 **Normalisation des données** : prénoms capitalisés (composés inclus), emails en minuscules — à la saisie et à l'import backup
-- 🐳 **Docker-ready** : Dockerfile multi-stage + docker-compose
-- 🗄️ **Double base de données** : H2 fichier (dev) / PostgreSQL (prod) — couche d'abstraction Panache
-- 📊 **Statistiques** (ADMIN) : tableau de bord avec camemberts, histogrammes et tableaux
-- 💾 **Sauvegarde / restauration** : export JSON complet ou config+utilisateurs, import avec normalisation automatique
-- 🚧 **Mode maintenance** (ADMIN) : désactivation des connexions non-admin en un clic — les utilisateurs reçoivent un message de maintenance à la connexion
-- 🔗 **Liens directs** : partage d'un lien vers une date précise (`?date=YYYY-MM-DD&view=day|week|month`) ou directement vers un créneau (`?slot=ID`) — les utilisateurs non connectés sont redirigés vers le bon contenu après authentification
-
+- **Calendrier public** : vues Jour, Semaine et Mois chronologiques sans authentification
+- **Authentification JWT** : login, inscription avec activation par email (lien 24 h), reset de mot de passe par email
+- **RGPD** : consentement explicite collecté à l'inscription
+- **Certification d'appartenance club** : case obligatoire à l'inscription (club obligatoire)
+- **Politique de mot de passe** : minimum 8 caractères, au moins 1 majuscule, 1 chiffre et 1 caractère spécial
+- **3 rôles** (cumulables) :
+  - `ADMIN` : configuration, tous les créneaux, gestion des utilisateurs
+  - `DIVE_DIRECTOR` : création et suppression de ses propres créneaux, gestion des plongeurs
+  - `DIVER` : consultation + inscription libre sur les créneaux ouverts
+- **Créneaux** : 1h min, 10h max, résolution 15 min, chevauchements affichés côte à côte
+- **Plongeurs** : ajout/modification/suppression sur chaque créneau
+- **Capacité configurable** : max 25 plongeurs simultanés (modifiable par l'admin)
+- **Liste d'attente** : inscription libre, validation/refus par le DP responsable
+- **Inscriptions libres** : le DP assigné peut ouvrir les inscriptions avec date d'ouverture optionnelle
+- **Organisation des palanquées** : drag-and-drop, gestion des aptitudes, export Excel fiche de sécurité, export CSV
+- **Normalisation des données** : prénoms capitalisés, emails en minuscules
+- **Docker-ready** : Dockerfile multi-stage + docker-compose
+- **Double base de données** : H2 fichier (dev) / PostgreSQL (prod)
+- **Statistiques** (ADMIN) : tableau de bord avec camemberts, histogrammes et tableaux
+- **Sauvegarde / restauration** : export JSON complet ou config+utilisateurs, import avec normalisation automatique
+- **Mode maintenance** (ADMIN) : désactivation des connexions non-admin en un clic
+- **Rapport périodique d'inscriptions** (ADMIN) : envoi automatique d'un fichier CSV des nouvelles inscriptions trié par club d'appartenance, avec période paramétrable (hebdomadaire, mensuel, etc.) ; le mail informe explicitement le destinataire qu'il peut signaler au CODEP tout plongeur hors de son club ; déclenchement manuel sur période personnalisée avec filtre par club, envoi par e-mail ou téléchargement direct
+- **Liens directs** : partage d'un lien vers une date précise ou directement vers un créneau
 ---
 
 ## 🚀 Démarrage rapide (développement)
@@ -128,6 +129,9 @@ docker compose up --build
 | `PUT` | `/api/config/max-divers` | ADMIN | Max plongeurs |
 | `PUT` | `/api/config/site-name` | ADMIN | Nom du site |
 | `PUT` | `/api/config/maintenance-mode` | ADMIN | Activer/désactiver le mode maintenance |
+| `PUT` | `/api/config/report-email-settings` | ADMIN | Configurer le rapport périodique d'inscriptions |
+| `POST` | `/api/config/report-email-send` | ADMIN | Envoyer le rapport manuellement (période + destinataires) |
+| `GET` | `/api/config/report-email-download?from=&to=` | ADMIN | Télécharger le rapport CSV sur une période |
 | `GET` | `/api/stats?from=YYYY-MM-DD&to=YYYY-MM-DD` | ADMIN | Statistiques agrégées (période optionnelle) |
 
 Documentation Swagger : **http://localhost:8085/q/swagger-ui**
@@ -209,9 +213,10 @@ src/main/
 │   ├── domain/          # Entités JPA (User, DiveSlot, SlotDiver, WaitingListEntry, Palanquee, AppConfigEntry)
 │   ├── dto/             # Records Java (request/response)
 │   ├── exception/       # GlobalExceptionMapper
-│   ├── mail/            # PasswordResetMailer, ActivationMailer, WaitingListMailer
+│   ├── mail/            # PasswordResetMailer, ActivationMailer, WaitingListMailer, RegistrationReportMailer
 │   ├── resource/        # JAX-RS endpoints (AuthResource, SlotResource, SlotDiverResource,
 │   │                   #   WaitingListResource, PalanqueeResource, UserResource, StatsResource, BackupResource…)
+│   ├── scheduler/       # RegistrationReportScheduler (rapport périodique inscriptions)
 │   ├── security/        # JwtUtil, PasswordUtil (BCrypt), NameUtil (capitalisation)
 │   ├── service/         # AuthService, UserService, ConfigService, BackupService
 │   └── startup/         # AppStartup (init admin + config)

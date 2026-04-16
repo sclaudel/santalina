@@ -164,6 +164,10 @@ export interface AppConfig {
   safetyReminderDelayDays: number;
   safetyReminderEmailBody: string;
   maintenanceMode: boolean;
+  reportEmailEnabled: boolean;
+  reportEmailPeriodDays: number;
+  reportEmailRecipients: string;
+  reportEmailLastSent: string;
 }
 
 // Logs

@@ -665,6 +665,33 @@ export function HelpPage() {
             <li><strong>📋 Nouvelles inscriptions sur un créneau (→ DP / créateur)</strong> — envoyée au directeur de plongée assigné et au créateur du créneau quand un plongeur s'inscrit librement en liste d'attente, ou est ajouté directement.</li>
             <li><strong>📋 Rappel fiche de sécurité</strong> — envoyé au directeur de plongée assigné X jours après la sortie pour lui rappeler de transmettre la fiche de sécurité remplie. Désactivée par défaut. Le délai (en jours) et le contenu du mail sont configurables. Ce rappel n'est envoyé qu'une seule fois par créneau.</li>
           </ul>
+
+          <h4>Rapport périodique des inscriptions (admin)</h4>
+          <p>
+            La section <strong>📊 Rapport périodique des inscriptions</strong> permet d'envoyer automatiquement
+            un fichier CSV listant toutes les nouvelles inscriptions sur le site depuis le dernier envoi.
+          </p>
+          <ul>
+            <li><strong>Activation</strong> — cochez <em>Activer l'envoi automatique du rapport</em> pour démarrer l'envoi périodique.</li>
+            <li><strong>Période d'envoi</strong> — nombre de jours entre deux envois (ex : 7 = hebdomadaire, 30 = mensuel). Le premier envoi couvre la période précédant l'activation.</li>
+            <li><strong>Destinataires</strong> — liste d'adresses e-mail séparées par des virgules ou des points-virgules (administrateurs, présidents de club, responsables techniques).</li>
+            <li><strong>Contenu du fichier CSV</strong> — une ligne par nouvel inscrit : <strong>club</strong>, nom, prénom, e-mail, numéro de licence et date d'inscription. Les inscriptions sont <strong>triées par club d'appartenance</strong>, puis par nom.</li>
+          </ul>
+          <div className="help-tip">Le rapport est vérifié et envoyé automatiquement toutes les heures. La date du dernier envoi est affichée dans l'interface une fois le rapport configuré.</div>
+          <div className="help-tip">📧 <strong>Message aux destinataires :</strong> le mail précise que le destinataire reçoit ce rapport en tant qu'administrateur, président de club ou responsable technique, et l'invite à signaler au <strong>CODEP</strong> tout plongeur qui ne ferait pas partie de son club.</div>
+
+          <h4>Envoi ou téléchargement manuel du rapport</h4>
+          <p>
+            La sous-section <strong>📤 Envoi ou téléchargement manuel</strong> permet de générer un rapport CSV
+            pour une période personnalisée, sans attendre l'envoi automatique.
+          </p>
+          <ul>
+            <li><strong>Du / Au</strong> — choisissez la plage de dates souhaitée.</li>
+            <li><strong>Club</strong> — filtre optionnel par club d'appartenance. Laisser sur <em>— Tous les clubs —</em> pour inclure toutes les inscriptions.</li>
+            <li><strong>Destinataires</strong> — adresses e-mail cibles pour l'envoi (laisser vide pour utiliser les destinataires configurés).</li>
+            <li><strong>📧 Envoyer par e-mail</strong> — envoie le rapport par e-mail aux adresses indiquées (même message CODEP inclus).</li>
+            <li><strong>⬇️ Télécharger CSV</strong> — télécharge directement le fichier CSV sans envoyer de mail. Compatible Excel (encodage UTF-8 avec BOM).</li>
+          </ul>
         </>
       ),
     },
@@ -869,6 +896,15 @@ export function HelpPage() {
           { type: 'ul' as const, items: ['Niveaux plongeurs — proposés aux plongeurs lors de l\'inscription libre.', 'Niveaux directeur de plongée — proposés aux DP lors de leur auto-inscription.', 'Niveaux en préparation — liste optionnelle dans le formulaire d\'inscription.'] },
           { type: 'h4' as const, text: 'Accès & inscriptions' },
           { type: 'ul' as const, items: ['Accès public au calendrier — si désactivé, les visiteurs non connectés voient une page de connexion.', 'Inscription libre — si désactivé, seul un administrateur peut créer des comptes.'] },
+          { type: 'h4' as const, text: 'Rapport périodique des inscriptions' },
+          { type: 'ul' as const, items: [
+            'Activation — cochez « Activer l\'envoi automatique du rapport » pour démarrer l\'envoi périodique.',
+            'Période d\'envoi — nombre de jours entre deux envois (ex : 7 = hebdomadaire, 30 = mensuel).',
+            'Destinataires — liste d\'adresses e-mail séparées par des virgules ou des points-virgules.',
+            'Contenu CSV — trié par club, puis nom : club, nom, prénom, e-mail, licence, date d\'inscription.',
+            'Message CODEP — le mail invite le destinataire à signaler tout plongeur hors club au CODEP.',
+            'Déclenchement manuel — envoi ou téléchargement CSV pour une période personnalisée.',
+          ] },
         ],
       },
       {
