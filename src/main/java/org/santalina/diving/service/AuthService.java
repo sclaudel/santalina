@@ -65,7 +65,8 @@ public class AuthService {
         user.firstName             = NameUtil.capitalize(request.firstName().trim());
         user.lastName              = request.lastName().trim().toUpperCase();
         user.phone                 = request.phone();
-        user.club                  = request.club() != null && !request.club().isBlank() ? request.club().trim() : null;
+        user.club                  = request.club().trim();
+        user.clubCertified         = request.clubCertified();
         user.consentGiven          = request.consentGiven();
         user.consentDate           = request.consentGiven() ? LocalDateTime.now() : null;
         user.passwordHash          = null;

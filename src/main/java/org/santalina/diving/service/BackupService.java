@@ -133,6 +133,7 @@ public class BackupService {
                 user.notifOnDpRegistration  = u.notifOnDpRegistration();
                 user.notifOnCreatorRegistration = u.notifOnCreatorRegistration();
                 user.notifOnSafetyReminder  = u.notifOnSafetyReminder();
+                user.clubCertified          = u.clubCertified();
                 user.createdAt      = LocalDateTime.now();
                 user.updatedAt      = LocalDateTime.now();
                 // Rôles
@@ -325,7 +326,7 @@ public class BackupService {
                 u.activated, u.consentGiven, u.consentDate, roles,
                 u.notifOnRegistration, u.notifOnApproved, u.notifOnCancelled,
                 u.notifOnMovedToWaitlist, u.notifOnDpRegistration, u.notifOnCreatorRegistration,
-                u.notifOnSafetyReminder);
+                u.notifOnSafetyReminder, u.clubCertified);
     }
 
     private SlotEntry toSlotEntry(DiveSlot s) {

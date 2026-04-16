@@ -22,14 +22,18 @@ public class AuthDto {
             boolean consentGiven,
             @NotBlank String captchaId,
             @NotBlank String captchaAnswer,
-            String club
+            @NotBlank(message = "Le club d'appartenance est obligatoire") String club,
+            boolean clubCertified
     ) {}
 
     public record RegisterResponse(String message) {}
 
     public record ActivateAccountRequest(
             @NotBlank String token,
-            @NotBlank @Size(min = 6, max = 100) String password
+            @NotBlank @Pattern(
+                regexp = "^(?=.*[A-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{8,100}$",
+                message = "Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial"
+            ) String password
     ) {}
 
     public record LoginResponse(
@@ -51,11 +55,17 @@ public class AuthDto {
 
     public record PasswordResetConfirm(
             @NotBlank String token,
-            @NotBlank @Size(min = 6, max = 100) String newPassword
+            @NotBlank @Pattern(
+                regexp = "^(?=.*[A-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{8,100}$",
+                message = "Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial"
+            ) String newPassword
     ) {}
 
     public record ChangePasswordRequest(
             @NotBlank String currentPassword,
-            @NotBlank @Size(min = 6, max = 100) String newPassword
+            @NotBlank @Pattern(
+                regexp = "^(?=.*[A-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{8,100}$",
+                message = "Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial"
+            ) String newPassword
     ) {}
 }

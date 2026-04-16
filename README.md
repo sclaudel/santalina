@@ -11,8 +11,8 @@ Application de réservation de créneaux de plongée en lac, développée avec *
 
 - 📅 **Calendrier public** : vues Jour, Semaine et Mois **chronologiques** sans authentification
 - 🔐 **Authentification JWT** : login, inscription avec **activation par email** (lien 24 h), reset de mot de passe par email
-- 🛡️ **RGPD** : consentement explicite collecté à l'inscription
-- 👥 **3 rôles** (cumulables) :
+- 🛡️ **RGPD** : consentement explicite collecté à l'inscription- 🏆 **Certification d'appartenance club** : case obligatoire à l’inscription (« Je certifie sur l’honneur être membre du club indiqué ») — le club est également obligatoire
+- 🔒 **Politique de mot de passe robuste** : minimum 8 caractères, au moins 1 majuscule, 1 chiffre et 1 caractère spécial (appliquée à la création de compte, la réinitialisation et le changement — sans impact sur les mots de passe existants)- 👥 **3 rôles** (cumulables) :
   - `ADMIN` 🔑 : configuration, tous les créneaux, gestion des utilisateurs
   - `DIVE_DIRECTOR` 🤿 : création et suppression de ses propres créneaux, gestion des plongeurs sur ses créneaux et ceux où il est assigné comme DP, auto-assignation comme DP sur tout créneau sans directeur
   - `DIVER` 🏊 : consultation + inscription libre sur les créneaux ouverts

@@ -101,6 +101,10 @@ public class User extends PanacheEntityBase {
     @Column(name = "notif_on_safety_reminder", nullable = false)
     public boolean notifOnSafetyReminder = true;
 
+    /** L'utilisateur certifie sur l'honneur être membre du club indiqué lors de l'inscription */
+    @Column(name = "club_certified", nullable = false)
+    public boolean clubCertified = false;
+
     // ---- helpers ----
 
     /** Retourne le nom complet (prénom + nom). */
