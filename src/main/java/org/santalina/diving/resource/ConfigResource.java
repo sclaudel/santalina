@@ -1,14 +1,22 @@
 package org.santalina.diving.resource;
 
+import org.santalina.diving.domain.User;
 import org.santalina.diving.dto.ConfigDto.*;
+import org.santalina.diving.mail.RegistrationReportMailer;
 import org.santalina.diving.service.ConfigService;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Path("/api/config")
 @Produces(MediaType.APPLICATION_JSON)
@@ -18,6 +26,9 @@ public class ConfigResource {
 
     @Inject
     ConfigService configService;
+
+    @Inject
+    RegistrationReportMailer reportMailer;
 
     @GET
     @PermitAll
@@ -165,5 +176,70 @@ public class ConfigResource {
     @RolesAllowed("ADMIN")
     public ConfigResponse updateMaintenanceMode(@Valid UpdateBooleanRequest request) {
         return configService.updateMaintenanceMode(request.value());
+    }
+
+    @PUT
+    @Path("/report-email-settings")
+    @RolesAllowed("ADMIN")
+    public ConfigResponse updateReportEmailSettings(@Valid UpdateReportEmailSettingsRequest request) {
+        return configService.updateReportEmailSettings(
+                request.reportEmailEnabled(),
+                request.reportEmailPeriodDays(),
+                request.reportEmailRecipients()
+        );
+    }
+
+    @POST
+    @Path("/report-email-send")
+    @RolesAllowed("ADMIN")
+    @Transactional
+    public Response sendManualReport(@Valid ManualReportSendRequest request) {
+        LocalDateTime fromDt = LocalDate.parse(request.fromDate()).atStartOfDay();
+        LocalDateTime toDt   = LocalDate.parse(request.toDate()).plusDays(1).atStartOfDay();
+
+        List<User> users = User.<User>find(
+                "activated = true AND createdAt >= ?1 AND createdAt < ?2", fromDt, toDt
+        ).list();
+        users = filterByClub(users, request.club());
+
+        String recipients = (request.recipients() != null && !request.recipients().isBlank())
+                ? request.recipients()
+                : configService.getReportEmailRecipients();
+
+        reportMailer.sendReport(fromDt, users, recipients);
+
+        return Response.ok("{\"count\":" + users.size() + "}").type(MediaType.APPLICATION_JSON).build();
+    }
+
+    @GET
+    @Path("/report-email-download")
+    @Produces("text/csv")
+    @RolesAllowed("ADMIN")
+    @Transactional
+    public Response downloadReport(@QueryParam("from") String from, @QueryParam("to") String to,
+                                    @QueryParam("club") String club) {
+        LocalDateTime fromDt = LocalDate.parse(from).atStartOfDay();
+        LocalDateTime toDt   = LocalDate.parse(to).plusDays(1).atStartOfDay();
+
+        List<User> users = User.<User>find(
+                "activated = true AND createdAt >= ?1 AND createdAt < ?2", fromDt, toDt
+        ).list();
+        users = filterByClub(users, club);
+
+        byte[] csvBytes = reportMailer.buildCsvBytes(users);
+        String clubSuffix = (club != null && !club.isBlank()) ? "_" + club.replaceAll("[^a-zA-Z0-9_-]", "_") : "";
+        String filename = "inscriptions_" + from + "_" + to + clubSuffix + ".csv";
+
+        return Response.ok(csvBytes)
+                .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
+                .header("Content-Type", "text/csv; charset=UTF-8")
+                .build();
+    }
+
+    private List<User> filterByClub(List<User> users, String club) {
+        if (club == null || club.isBlank()) return users;
+        return users.stream()
+                .filter(u -> club.equalsIgnoreCase(u.club))
+                .collect(java.util.stream.Collectors.toList());
     }
 }
