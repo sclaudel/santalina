@@ -106,7 +106,7 @@ class UserResourceIT {
             given()
                     .contentType(ContentType.JSON)
                     .body("""
-                          {"email":"%s","password":"Password1",
+                          {"email":"%s","password":"Password1@",
                            "firstName":"Sans","lastName":"Telephone",
                            "phone":"","licenseNumber":"","club":"",
                            "roles":["DIVER"]}
@@ -221,7 +221,7 @@ class UserResourceIT {
             given()
                     .contentType(ContentType.JSON)
                     .body("""
-                          {"email":"%s","password":"Password1",
+                          {"email":"%s","password":"Password1@",
                            "firstName":"Club","lastName":"Admin",
                            "phone":"+33600000099","licenseNumber":null,
                            "club":"Club Santalina",

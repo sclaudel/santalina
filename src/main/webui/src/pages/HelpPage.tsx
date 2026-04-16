@@ -501,7 +501,7 @@ export function HelpPage() {
             <li><strong>Téléphone</strong> — champ <em>optionnel</em>. Format attendu : <code>0612345678</code> ou <code>+33612345678</code>. Utilisé pour contacter le directeur de plongée.</li>
             <li><strong>N° de licence fédérale</strong> — champ <em>optionnel</em>. Format attendu : <code>A-14-1234567890</code> (lettre, tiret, 2 chiffres, tiret, 6 à 10 chiffres). S'il est renseigné, il sera automatiquement repris lorsque vous êtes sélectionné comme directeur de plongée sur un créneau, et apparaîtra dans la fiche de sécurité Excel.</li>
             <li><strong>Club d'appartenance</strong> — champ <em>optionnel</em>. Votre club est automatiquement repris lors de votre inscription en liste d'attente sur un créneau ouvert aux inscriptions libres, et apparaît dans la liste d'attente visible par le directeur de plongée.</li>
-            <li><strong>Mot de passe</strong> — modifiable depuis cette page (champ optionnel, laissez vide pour ne pas le changer).</li>
+            <li><strong>Mot de passe</strong> — modifiable depuis cette page. Le nouveau mot de passe doit contenir au moins <strong>8 caractères</strong>, une <strong>majuscule</strong>, un <strong>chiffre</strong> et un <strong>caractère spécial</strong>.</li>
           </ul>
           <p>Accès : cliquez sur votre nom dans la barre de navigation → <strong>👤 Mon profil</strong>.</p>
         </>
@@ -818,7 +818,7 @@ export function HelpPage() {
         { type: 'h4', text: 'Se connecter' },
         { type: 'ol', items: ['Cliquez sur Connexion dans la barre de navigation.', 'Saisissez votre email et votre mot de passe.', 'Cliquez sur Se connecter.'] },
         { type: 'h4', text: 'S\'inscrire (si activé)' },
-        { type: 'ol', items: ['Cliquez sur Connexion, puis sur Pas encore de compte ? S\'inscrire.', 'Remplissez votre prénom/nom, email, téléphone et mot de passe.', 'Votre compte est créé avec le rôle Plongeur. Un administrateur peut ensuite modifier votre rôle.'] },
+        { type: 'ol', items: ['Cliquez sur Connexion, puis sur Pas encore de compte ? S\'inscrire.', 'Remplissez prénom/nom, email, téléphone. Sélectionnez ensuite le <strong>club d\'appartenance</strong> (obligatoire).', 'Acceptez la politique RGPD et cochez « Je certifie sur l\'honneur être membre du club indiqué ».', 'Vous recevrez un email d\'activation. Cliquez le lien pour définir votre mot de passe (8 caractères min., majuscule, chiffre et caractère spécial requis).'] },
         { type: 'h4', text: 'Mot de passe oublié' },
         { type: 'ol', items: ['Dans la fenêtre de connexion, cliquez sur Mot de passe oublié ?.', 'Saisissez votre email. Un lien de réinitialisation vous sera envoyé.'] },
       ],
@@ -827,7 +827,7 @@ export function HelpPage() {
       icon: '👤', title: 'Mon profil',
       items: [
         { type: 'paragraph', text: 'La page Mon profil vous permet de consulter et modifier vos informations personnelles.' },
-        { type: 'ul', items: ['Nom et email — affichés dans le menu et les listes de plongeurs.', 'Téléphone — utilisé pour contacter le directeur de plongée.', 'N° de licence fédérale (optionnel) — repris automatiquement si vous êtes désigné DP sur un créneau, et exporté dans la fiche de sécurité.', 'Mot de passe — modifiable depuis cette page.'] },
+        { type: 'ul', items: ['Nom et email — affichés dans le menu et les listes de plongeurs.', 'Téléphone — utilisé pour contacter le directeur de plongée.', 'N° de licence fédérale (optionnel) — repris automatiquement si vous êtes désigné DP sur un créneau, et exporté dans la fiche de sécurité.', 'Mot de passe — modifiable depuis cette page. Doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial.'] },
         { type: 'paragraph', text: 'Accès : cliquez sur votre nom dans la barre de navigation → Mon profil.' },
       ],
     },

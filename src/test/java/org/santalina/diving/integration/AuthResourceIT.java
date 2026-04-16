@@ -46,7 +46,8 @@ class AuthResourceIT {
                 .body("""
                       {"email":"newuser@test.com","firstName":"Test","lastName":"User",
                        "phone":"+33600000001","consentGiven":true,
-                       "captchaId":"test-id","captchaAnswer":"ABCDE"}
+                       "captchaId":"test-id","captchaAnswer":"ABCDE",
+                       "club":"Club Santalina","clubCertified":true}
                       """)
                 .when().post(REGISTER_URL)
                 .then()
@@ -63,7 +64,8 @@ class AuthResourceIT {
                 .body("""
                       {"email":"newuser@test.com","firstName":"Test","lastName":"User",
                        "phone":"+33600000001","consentGiven":true,
-                       "captchaId":"test-id","captchaAnswer":"ABCDE"}
+                       "captchaId":"test-id","captchaAnswer":"ABCDE",
+                       "club":"Club Santalina","clubCertified":true}
                       """)
                 .when().post(REGISTER_URL)
                 .then()
@@ -78,7 +80,8 @@ class AuthResourceIT {
                 .body("""
                       {"email":"other@test.com","firstName":"","lastName":"User",
                        "phone":"+33600000001","consentGiven":true,
-                       "captchaId":"test-id","captchaAnswer":"ABCDE"}
+                       "captchaId":"test-id","captchaAnswer":"ABCDE",
+                       "club":"Club Santalina","clubCertified":true}
                       """)
                 .when().post(REGISTER_URL)
                 .then()
@@ -93,7 +96,8 @@ class AuthResourceIT {
                 .body("""
                       {"email":"not-an-email","firstName":"Test","lastName":"User",
                        "phone":"+33600000001","consentGiven":true,
-                       "captchaId":"test-id","captchaAnswer":"ABCDE"}
+                       "captchaId":"test-id","captchaAnswer":"ABCDE",
+                       "club":"Club Santalina","clubCertified":true}
                       """)
                 .when().post(REGISTER_URL)
                 .then()
@@ -109,12 +113,56 @@ class AuthResourceIT {
                       {"email":"club.user@test.com","firstName":"Club","lastName":"User",
                        "phone":"+33600000002","consentGiven":true,
                        "captchaId":"test-id","captchaAnswer":"ABCDE",
-                       "club":"Club Santalina"}
+                       "club":"Club Santalina","clubCertified":true}
                       """)
                 .when().post(REGISTER_URL)
                 .then()
                 .statusCode(200)
                 .body("message", notNullValue());
+    }
+
+    @Test
+    @Order(5)
+    void register_shouldReturn400_whenClubIsBlank() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                      {"email":"noclubuser@test.com","firstName":"Sans","lastName":"Club",
+                       "phone":"+33600000003","consentGiven":true,
+                       "captchaId":"test-id","captchaAnswer":"ABCDE",
+                       "club":"","clubCertified":false}
+                      """)
+                .when().post(REGISTER_URL)
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    @Order(5)
+    void activate_shouldReturn400_whenPasswordIsTooWeak() {
+        // Bean Validation doit rejeter un mot de passe trop faible avant même d'appeler le service
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                      {"token":"any-token","password":"weakpass"}
+                      """)
+                .when().post("/api/auth/activate")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    @Order(5)
+    void passwordResetConfirm_shouldReturn400_whenPasswordIsTooWeak() {
+        // Bean Validation doit rejeter un mot de passe trop faible avant même d'appeler le service
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                      {"token":"any-token","newPassword":"weakpass"}
+                      """)
+                .when().post("/api/auth/password-reset/confirm")
+                .then()
+                .statusCode(400);
     }
 
     /* ── Connexion ── */

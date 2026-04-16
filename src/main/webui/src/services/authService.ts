@@ -12,8 +12,8 @@ export const authService = {
     return res.data;
   },
 
-  async register(email: string, firstName: string, lastName: string, phone: string, consentGiven: boolean, captchaId: string, captchaAnswer: string, club?: string): Promise<{ message: string }> {
-    const res = await api.post<{ message: string }>('/auth/register', { email, firstName, lastName, phone, consentGiven, captchaId, captchaAnswer, club: club || null });
+  async register(email: string, firstName: string, lastName: string, phone: string, consentGiven: boolean, captchaId: string, captchaAnswer: string, club: string, clubCertified: boolean): Promise<{ message: string }> {
+    const res = await api.post<{ message: string }>('/auth/register', { email, firstName, lastName, phone, consentGiven, captchaId, captchaAnswer, club, clubCertified });
     return res.data;
   },
 

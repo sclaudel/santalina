@@ -45,7 +45,8 @@ public class BackupDto {
             boolean notifOnMovedToWaitlist,
             boolean notifOnDpRegistration,
             boolean notifOnCreatorRegistration,
-            boolean notifOnSafetyReminder
+            boolean notifOnSafetyReminder,
+            boolean clubCertified
     ) {}
 
     public record SlotEntry(

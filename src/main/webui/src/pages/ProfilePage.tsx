@@ -182,6 +182,7 @@ export function ProfilePage() {
 
         <div className="profile-section">
           <h3>🔒 Changer le mot de passe</h3>
+          <p style={{ color: '#6b7280', fontSize: 13, marginBottom: 12 }}>Le nouveau mot de passe doit contenir au moins <strong>8 caractères</strong>, une <strong>majuscule</strong>, un <strong>chiffre</strong> et un <strong>caractère spécial</strong>.</p>
           <form onSubmit={handleChangePassword} className="form">
             <div className="form-group">
               <label>Mot de passe actuel</label>
@@ -189,7 +190,9 @@ export function ProfilePage() {
             </div>
             <div className="form-group">
               <label>Nouveau mot de passe</label>
-              <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required minLength={6} />
+              <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required minLength={8}
+                pattern="^(?=.*[A-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{8,100}$"
+                title="Au moins 8 caractères, une majuscule, un chiffre et un caractère spécial" />
             </div>
             <button type="submit" className="btn btn-primary" disabled={loading}>
               {loading ? 'Modification...' : 'Changer le mot de passe'}

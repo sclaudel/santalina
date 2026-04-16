@@ -20,6 +20,7 @@ export function LoginModal({ onClose, selfRegistration = true, maintenanceMode =
   const [club, setClub] = useState('');
   const [clubs, setClubs] = useState<string[]>([]);
   const [gdprAccepted, setGdprAccepted] = useState(false);
+  const [clubCertified, setClubCertified] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -50,6 +51,7 @@ export function LoginModal({ onClose, selfRegistration = true, maintenanceMode =
       setFirstName(''); setLastName('');
       setClub('');
       setGdprAccepted(false);
+      setClubCertified(false);
       setRegisterDone(false);
       loadCaptcha();
       adminService.getConfig().then(cfg => setClubs(cfg.clubs ?? [])).catch(() => {});
@@ -64,7 +66,7 @@ export function LoginModal({ onClose, selfRegistration = true, maintenanceMode =
         await login(email, password);
         onClose();
       } else if (mode === 'register') {
-        const msg = await register(email, firstName, lastName, phone, gdprAccepted, captchaId, captchaAnswer, club || undefined);
+        const msg = await register(email, firstName, lastName, phone, gdprAccepted, captchaId, captchaAnswer, club, clubCertified);
         setRegisterDone(true);
         setSuccess(msg);
       } else {
@@ -147,15 +149,20 @@ export function LoginModal({ onClose, selfRegistration = true, maintenanceMode =
             </div>
           )}
 
-          {mode === 'register' && clubs.length > 0 && (
+          {mode === 'register' && (
             <div className="form-group">
-              <label>Club d'appartenance</label>
-              <select value={club} onChange={e => setClub(e.target.value)}>
-                <option value="">— Aucun / Non affilié —</option>
-                {clubs.map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+              <label>Club d'appartenance *</label>
+              {clubs.length > 0 ? (
+                <select value={club} onChange={e => setClub(e.target.value)} required>
+                  <option value="">— Sélectionner un club —</option>
+                  {clubs.map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              ) : (
+                <input type="text" value={club} onChange={e => setClub(e.target.value)}
+                  required placeholder="Nom de votre club" minLength={2} />
+              )}
             </div>
           )}
 
@@ -195,6 +202,17 @@ export function LoginModal({ onClose, selfRegistration = true, maintenanceMode =
                 J'accepte que mes données personnelles (prénom, nom, email, téléphone) soient
                 enregistrées pour la gestion des réservations de plongée, conformément au RGPD.
                 Ces données ne seront pas transmises à des tiers.
+              </label>
+            </div>
+          )}
+
+          {/* Certification club */}
+          {mode === 'register' && (
+            <div className="gdpr-consent">
+              <input id="club-certified-check" type="checkbox" required checked={clubCertified}
+                onChange={e => setClubCertified(e.target.checked)} />
+              <label htmlFor="club-certified-check">
+                Je certifie sur l'honneur être membre du club indiqué dans mon inscription.
               </label>
             </div>
           )}

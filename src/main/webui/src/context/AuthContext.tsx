@@ -6,7 +6,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, firstName: string, lastName: string, phone: string, gdprAccepted: boolean, captchaId: string, captchaAnswer: string, club?: string) => Promise<string>;
+  register: (email: string, firstName: string, lastName: string, phone: string, gdprAccepted: boolean, captchaId: string, captchaAnswer: string, club: string, clubCertified: boolean) => Promise<string>;
   activateAccount: (token: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
@@ -55,8 +55,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(userData);
   };
 
-  const register = async (email: string, firstName: string, lastName: string, phone: string, gdprAccepted: boolean, captchaId: string, captchaAnswer: string, club?: string): Promise<string> => {
-    const data = await authService.register(email, firstName, lastName, phone, gdprAccepted, captchaId, captchaAnswer, club);
+  const register = async (email: string, firstName: string, lastName: string, phone: string, gdprAccepted: boolean, captchaId: string, captchaAnswer: string, club: string, clubCertified: boolean): Promise<string> => {
+    const data = await authService.register(email, firstName, lastName, phone, gdprAccepted, captchaId, captchaAnswer, club, clubCertified);
     return data.message;
   };
 
