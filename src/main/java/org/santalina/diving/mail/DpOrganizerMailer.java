@@ -91,16 +91,23 @@ public class DpOrganizerMailer {
      * @param subject        Objet du mail (peut contenir des variables)
      * @param htmlBody       Corps HTML du mail (peut contenir des variables)
      * @param siteName       Nom du site (pour la résolution des variables)
+     * @param attachName     Nom du fichier joint (null = pas de pièce jointe)
+     * @param attachBytes    Contenu binaire du fichier joint (null = pas de pièce jointe)
+     * @param attachMime     Type MIME du fichier joint
      */
     public void sendOrganizationEmail(DiveSlot slot, User dp, List<SlotDiver> divers,
                                       Map<Long, String> emailOverrides,
-                                      String subject, String htmlBody, String siteName) {
+                                      String subject, String htmlBody, String siteName,
+                                      String attachName, byte[] attachBytes, String attachMime) {
 
         String resolvedSubject = resolveVariables(subject, slot, dp, siteName);
         String resolvedBody    = resolveVariables(htmlBody, slot, dp, siteName);
         String wrappedBody     = wrapHtml(resolvedBody, siteName);
 
         String dpEmail = dp != null && dp.email != null && !dp.email.isBlank() ? dp.email.trim() : null;
+
+        boolean hasAttachment = attachName != null && !attachName.isBlank()
+                && attachBytes != null && attachBytes.length > 0;
 
         // Collecter les adresses uniques des plongeurs
         List<String> recipients = divers.stream()
@@ -129,6 +136,9 @@ public class DpOrganizerMailer {
             if (dpEmail != null) {
                 m.addHeader("Reply-To", dpEmail);
             }
+            if (hasAttachment) {
+                m.addAttachment(attachName, attachBytes, attachMime);
+            }
             mails.add(m);
         }
 
@@ -143,12 +153,16 @@ public class DpOrganizerMailer {
             }
             recipientList.append("</ul>\n");
             String copyBody = wrapHtml(resolvedBody + recipientList, siteName);
-            mails.add(Mail.withHtml(dpEmail, "[Copie] " + resolvedSubject, copyBody));
+            Mail copy = Mail.withHtml(dpEmail, "[Copie] " + resolvedSubject, copyBody);
+            if (hasAttachment) {
+                copy.addAttachment(attachName, attachBytes, attachMime);
+            }
+            mails.add(copy);
         }
 
         mailer.send(mails.toArray(new Mail[0]));
-        LOG.infof("Mail d'organisation envoyé pour slotId=%d par %s — %d destinataire(s).",
-                slot.id, dpEmail, recipients.size());
+        LOG.infof("Mail d'organisation envoyé pour slotId=%d par %s — %d destinataire(s)%s.",
+                slot.id, dpEmail, recipients.size(), hasAttachment ? " + PJ : " + attachName : "");
     }
 
     // -------------------------------------------------------------------------
