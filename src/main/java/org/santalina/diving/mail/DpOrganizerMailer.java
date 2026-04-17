@@ -4,7 +4,6 @@ import io.quarkus.mailer.Mail;
 import io.quarkus.mailer.Mailer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 import org.santalina.diving.domain.DiveSlot;
 import org.santalina.diving.domain.SlotDiver;
@@ -83,14 +82,6 @@ public class DpOrganizerMailer {
     Mailer mailer;
 
     /**
-     * Adresse expéditeur configurée (SMTP MAIL FROM / enveloppe).
-     * Utilisée comme bounceAddress pour que le relay SMTP reste autorisé
-     * même quand le header From est surchargé avec l'adresse du DP.
-     */
-    @ConfigProperty(name = "quarkus.mailer.from")
-    java.util.Optional<String> mailerFromAddress;
-
-    /**
      * Envoie le mail d'organisation aux plongeurs du créneau.
      *
      * @param slot           Créneau concerné
@@ -118,12 +109,8 @@ public class DpOrganizerMailer {
         boolean hasAttachment = attachName != null && !attachName.isBlank()
                 && attachBytes != null && attachBytes.length > 0;
 
-        // Construire l'adresse "From" au format RFC 2822 "Prénom NOM" <noreply@server>
-        // On utilise l'adresse serveur configurée (quarkus.mailer.from) pour que
-        // SPF/DKIM/DMARC passent correctement : le relay n'envoie que depuis ce domaine.
-        // Le nom du DP reste affiché dans le header From pour le destinataire.
-        String serverEmail = mailerFromAddress.orElse(dpEmail);
-        String dpFrom = buildFromAddress(dp, serverEmail);
+        // Le From est géré par quarkus.mailer.from (noreply@santalina.com) — SPF/DKIM/DMARC OK.
+        // Le Reply-To pointe vers le DP pour que les réponses lui parviennent directement.
 
         // Collecter les adresses uniques des plongeurs
         List<String> recipients = divers.stream()
@@ -149,8 +136,8 @@ public class DpOrganizerMailer {
         List<Mail> mails = new java.util.ArrayList<>();
         for (String to : recipients) {
             Mail m = Mail.withHtml(to, resolvedSubject, wrappedBody);
-            if (dpFrom != null) {
-                m.setFrom(dpFrom);
+            if (dpEmail != null) {
+                m.addHeader("Reply-To", dpEmail);
             }
             if (hasAttachment) {
                 m.addAttachment(attachName, attachBytes, attachMime);
@@ -170,9 +157,7 @@ public class DpOrganizerMailer {
             recipientList.append("</ul>\n");
             String copyBody = wrapHtml(resolvedBody + recipientList, siteName);
             Mail copy = Mail.withHtml(dpEmail, "[Copie] " + resolvedSubject, copyBody);
-            if (dpFrom != null) {
-                copy.setFrom(dpFrom);
-            }
+            copy.addHeader("Reply-To", dpEmail);
             if (hasAttachment) {
                 copy.addAttachment(attachName, attachBytes, attachMime);
             }
