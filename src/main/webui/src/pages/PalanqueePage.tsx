@@ -701,15 +701,20 @@ export function PalanqueePage({ slotId, onBack }: Props) {
   // ── mail d'organisation ───────────────────────────────────────────────────
   const handleOpenMailModal = async () => {
     setMailSuccess(''); setMailError('');
-    // Charger le profil pour récupérer le modèle enregistré
+    // Charger le profil et la config admin pour récupérer le modèle
     let template = DpOrganizerMailer.DEFAULT_TEMPLATE;
     try {
-      const profile = await authService.getProfile();
+      const [profile, cfg] = await Promise.all([
+        authService.getProfile(),
+        adminService.getConfig().catch(() => null),
+      ]);
       if (profile.dpOrganizerEmailTemplate) template = profile.dpOrganizerEmailTemplate;
+      else if (cfg?.defaultOrganizerMailTemplate) template = cfg.defaultOrganizerMailTemplate;
     } catch { /* utiliser le modèle par défaut */ }
 
+    const titlePart = slot?.title?.trim();
     const defSubject = slot
-      ? `Organisation sortie du ${fmtDate(slot.slotDate)} — ${slot.title ?? slot.slotType ?? 'plongée'}`
+      ? `Organisation sortie du ${fmtDate(slot.slotDate)}${titlePart ? ` — ${titlePart}` : ''}`
       : 'Organisation de la sortie';
 
     setMailSubject(defSubject);

@@ -154,6 +154,11 @@ export const adminService = {
     return res.data;
   },
 
+  async updateOrganizerMailTemplate(template: string): Promise<AppConfig> {
+    const res = await api.put<AppConfig>('/config/organizer-mail-template', { template });
+    return res.data;
+  },
+
   async sendManualReport(from: string, to: string, recipients: string, club?: string): Promise<{ count: number }> {
     const res = await api.post<{ count: number }>('/config/report-email-send', { fromDate: from, toDate: to, recipients, ...(club ? { club } : {}) });
     return res.data;

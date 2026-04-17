@@ -56,6 +56,8 @@ public class ConfigService {
     private static final String KEY_REPORT_EMAIL_RECIPIENTS  = "report.email.recipients";
     private static final String KEY_REPORT_EMAIL_LAST_SENT   = "report.email.last.sent";
 
+    private static final String KEY_DEFAULT_ORGANIZER_MAIL_TEMPLATE = "dp.organizer.mail.template.default";
+
     private static final String DEFAULT_SAFETY_REMINDER_BODY =
         "Ce rappel vous est envoyé car vous êtes le directeur de plongée du créneau du {slotDate} sur le site {siteName}.\n\n" +
         "Pensez à transmettre la fiche de sécurité remplie à votre club si ce n'est pas encore fait.";
@@ -199,6 +201,10 @@ public class ConfigService {
         return getStringValue(KEY_REPORT_EMAIL_LAST_SENT, "");
     }
 
+    public String getDefaultOrganizerMailTemplate() {
+        return getStringValue(KEY_DEFAULT_ORGANIZER_MAIL_TEMPLATE, "");
+    }
+
     public ConfigResponse getConfig() {
         return new ConfigResponse(
                 getMaxDivers(), getSlotMinHours(), getSlotMaxHours(),
@@ -223,7 +229,8 @@ public class ConfigService {
                 isReportEmailEnabled(),
                 getReportEmailPeriodDays(),
                 getReportEmailRecipients(),
-                getReportEmailLastSent()
+                getReportEmailLastSent(),
+                getDefaultOrganizerMailTemplate()
         );
     }
 
@@ -295,6 +302,12 @@ public class ConfigService {
         forceUpsert(KEY_REPORT_EMAIL_ENABLED,     String.valueOf(enabled));
         forceUpsert(KEY_REPORT_EMAIL_PERIOD_DAYS, String.valueOf(periodDays));
         forceUpsert(KEY_REPORT_EMAIL_RECIPIENTS,  recipients != null ? recipients.trim() : "");
+        return getConfig();
+    }
+
+    @Transactional
+    public ConfigResponse updateDefaultOrganizerMailTemplate(String template) {
+        forceUpsert(KEY_DEFAULT_ORGANIZER_MAIL_TEMPLATE, template != null ? template : "");
         return getConfig();
     }
 
@@ -406,6 +419,7 @@ public class ConfigService {
         upsertIfMissing(KEY_REPORT_EMAIL_PERIOD_DAYS,   "7");
         upsertIfMissing(KEY_REPORT_EMAIL_RECIPIENTS,    "");
         upsertIfMissing(KEY_REPORT_EMAIL_LAST_SENT,     "");
+        upsertIfMissing(KEY_DEFAULT_ORGANIZER_MAIL_TEMPLATE, "");
     }
 
     // ---- Helpers privés ----

@@ -562,4 +562,39 @@ class ConfigResourceIT {
                 .statusCode(200)
                 .body("count", greaterThanOrEqualTo(0));
     }
+
+    /* ── Modèle d'e-mail d'organisation par défaut ── */
+
+    @Test
+    void updateOrganizerMailTemplate_shouldReturn401_withoutAuthentication() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"template\":\"<p>Test</p>\"}")
+                .when().put("/api/config/organizer-mail-template")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    @TestSecurity(user = "diver@test.com", roles = {"DIVER"})
+    void updateOrganizerMailTemplate_shouldReturn403_whenDiver() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"template\":\"<p>Test</p>\"}")
+                .when().put("/api/config/organizer-mail-template")
+                .then()
+                .statusCode(403);
+    }
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void updateOrganizerMailTemplate_shouldReturn200_andPersistTemplate_whenAdmin() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"template\":\"<p>Bonjour {dpName}</p>\"}")
+                .when().put("/api/config/organizer-mail-template")
+                .then()
+                .statusCode(200)
+                .body("defaultOrganizerMailTemplate", containsString("Bonjour"));
+    }
 }

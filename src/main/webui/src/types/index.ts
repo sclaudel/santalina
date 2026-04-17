@@ -169,6 +169,7 @@ export interface AppConfig {
   reportEmailPeriodDays: number;
   reportEmailRecipients: string;
   reportEmailLastSent: string;
+  defaultOrganizerMailTemplate?: string;
 }
 
 // Logs

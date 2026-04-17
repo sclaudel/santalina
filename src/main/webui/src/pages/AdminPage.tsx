@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { adminService } from '../services/adminService';
 import type { User, AppConfig, CreateUserRequest, UpdateUserAdminRequest, UserRole, LogInfo, ImportResult, CsvImportResult } from '../types';
 import { getErrorMessage } from '../utils/errorUtils';
+import { RichTextEditor } from '../components/RichTextEditor';
+import { DpOrganizerMailer } from '../utils/dpMailDefaults';
 
 
 const ALL_ROLES: { value: UserRole; label: string }[] = [
@@ -101,6 +103,11 @@ export function AdminPage() {
   const [newMaxRecurringMonths, setNewMaxRecurringMonths] = useState('4');
   const [recurringLoading, setRecurringLoading] = useState(false);
 
+  // Modèle d'e-mail d'organisation par défaut (admin)
+  const [adminOrgMailTemplate, setAdminOrgMailTemplate] = useState('');
+  const [adminOrgMailTemplateKey, setAdminOrgMailTemplateKey] = useState(0);
+  const [adminOrgMailTemplateLoading, setAdminOrgMailTemplateLoading] = useState(false);
+
   // Logs
   const [logs, setLogs]                 = useState<LogInfo[]>([]);
   const [logsLoading, setLogsLoading]   = useState(false);
@@ -143,6 +150,8 @@ export function AdminPage() {
       setBookingOpenHour(c.bookingOpenHour ?? -1);
       setBookingCloseHour(c.bookingCloseHour ?? -1);
       setNotificationEmail(c.notificationBookingEmail ?? '');
+      setAdminOrgMailTemplate(c.defaultOrganizerMailTemplate ?? '');
+      setAdminOrgMailTemplateKey(k => k + 1);
       setNotifRegistration(c.notifRegistrationEnabled ?? true);
       setNotifApproved(c.notifApprovedEnabled ?? true);
       setNotifCancelled(c.notifCancelledEnabled ?? true);
@@ -365,6 +374,20 @@ export function AdminPage() {
       setMsg('Aptitudes mis à jour');
     } catch (err: unknown) { setError(getErrorMessage(err)); }
     finally { setListLoading(false); }
+  };
+
+  const handleSaveAdminOrgMailTemplate = async () => {
+    setAdminOrgMailTemplateLoading(true); setMsg(''); setError('');
+    try {
+      const updated = await adminService.updateOrganizerMailTemplate(adminOrgMailTemplate);
+      setConfig(updated);
+      setAdminOrgMailTemplate(updated.defaultOrganizerMailTemplate ?? '');
+      setMsg("Modèle d'e-mail d'organisation mis à jour");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
+    } finally {
+      setAdminOrgMailTemplateLoading(false);
+    }
   };
 
   const handleUpdateBookingHours = async (e: React.FormEvent) => {
@@ -1330,6 +1353,32 @@ export function AdminPage() {
             </div>
           </>
         )}
+      </div>
+
+      {/* Modèle d'e-mail d'organisation par défaut */}
+      <div className="admin-section">
+        <h2>📧 Modèle d'e-mail d'organisation par défaut</h2>
+        <p style={{ color: '#6b7280', fontSize: 13, marginBottom: 8 }}>
+          Ce modèle est utilisé pour les directeurs de plongée qui n'ont pas défini leur propre modèle dans leur profil.
+          Laissez vide pour utiliser le modèle intégré à l'application.
+        </p>
+        <RichTextEditor
+          key={adminOrgMailTemplateKey}
+          initialValue={adminOrgMailTemplate || DpOrganizerMailer.DEFAULT_TEMPLATE}
+          onChange={setAdminOrgMailTemplate}
+        />
+        <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+          <button className="btn btn-primary" onClick={handleSaveAdminOrgMailTemplate}
+            disabled={adminOrgMailTemplateLoading}>
+            {adminOrgMailTemplateLoading ? '⏳ ...' : '💾 Enregistrer le modèle'}
+          </button>
+          <button type="button" className="btn btn-secondary" onClick={() => {
+            setAdminOrgMailTemplate('');
+            setAdminOrgMailTemplateKey(k => k + 1);
+          }}>
+            ↩ Remettre le modèle intégré
+          </button>
+        </div>
       </div>
 
       </div>

@@ -189,6 +189,14 @@ public class ConfigResource {
         );
     }
 
+    @PUT
+    @Path("/organizer-mail-template")
+    @RolesAllowed("ADMIN")
+    public ConfigResponse updateOrganizerMailTemplate(UpdateOrganizerMailTemplateRequest request) {
+        return configService.updateDefaultOrganizerMailTemplate(
+                request != null ? request.template() : null);
+    }
+
     @POST
     @Path("/report-email-send")
     @RolesAllowed("ADMIN")

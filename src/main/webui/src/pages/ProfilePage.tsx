@@ -40,7 +40,10 @@ export function ProfilePage() {
 
   // Charge le profil complet depuis l'API pour avoir phone & licenseNumber à jour
   useEffect(() => {
-    authService.getProfile().then(profile => {
+    Promise.all([
+      authService.getProfile(),
+      adminService.getConfig().catch(() => null),
+    ]).then(([profile, cfg]) => {
       setFirstName(profile.firstName || '');
       setLastName(profile.lastName   || '');
       setPhone(profile.phone || '');
@@ -53,9 +56,11 @@ export function ProfilePage() {
       setNotifOnDpRegistration(profile.notifOnDpRegistration ?? true);
       setNotifOnCreatorRegistration(profile.notifOnCreatorRegistration ?? false);
       setNotifOnSafetyReminder(profile.notifOnSafetyReminder ?? true);
-      const tpl = profile.dpOrganizerEmailTemplate || DpOrganizerMailer.DEFAULT_TEMPLATE;
+      const adminTpl = cfg?.defaultOrganizerMailTemplate ?? '';
+      const tpl = profile.dpOrganizerEmailTemplate || adminTpl || DpOrganizerMailer.DEFAULT_TEMPLATE;
       setDpTemplate(tpl);
       setDpTemplateKey(k => k + 1);
+      setClubs(cfg?.clubs ?? []);
     }).catch(() => {
       // Repli sur les données du contexte si l'API échoue
       setFirstName(user?.firstName || '');
@@ -64,7 +69,6 @@ export function ProfilePage() {
       setLicenseNumber(user?.licenseNumber || '');
       setClub(user?.club || '');
     });
-    adminService.getConfig().then(cfg => setClubs(cfg.clubs ?? [])).catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
