@@ -118,11 +118,12 @@ public class DpOrganizerMailer {
         boolean hasAttachment = attachName != null && !attachName.isBlank()
                 && attachBytes != null && attachBytes.length > 0;
 
-        // Construire l'adresse "From" au format RFC 2822 "Prénom NOM" <email>
-        // Cela évite le faux positif SpamAssassin FREEMAIL_FORGED_REPLYTO causé par
-        // l'association From=noreply@santalina.com + Reply-To=gmail/yahoo.
-        // L'enveloppe SMTP (MAIL FROM) reste celle du serveur → SPF passe normalement.
-        String dpFrom = buildFromAddress(dp, dpEmail);
+        // Construire l'adresse "From" au format RFC 2822 "Prénom NOM" <noreply@server>
+        // On utilise l'adresse serveur configurée (quarkus.mailer.from) pour que
+        // SPF/DKIM/DMARC passent correctement : le relay n'envoie que depuis ce domaine.
+        // Le nom du DP reste affiché dans le header From pour le destinataire.
+        String serverEmail = mailerFromAddress.orElse(dpEmail);
+        String dpFrom = buildFromAddress(dp, serverEmail);
 
         // Collecter les adresses uniques des plongeurs
         List<String> recipients = divers.stream()
@@ -150,9 +151,6 @@ public class DpOrganizerMailer {
             Mail m = Mail.withHtml(to, resolvedSubject, wrappedBody);
             if (dpFrom != null) {
                 m.setFrom(dpFrom);
-                // Forcer l'enveloppe SMTP (MAIL FROM) à rester sur l'adresse du
-                // serveur pour que le relay autorisé accepte d'envoyer le mail.
-                mailerFromAddress.ifPresent(m::setBounceAddress);
             }
             if (hasAttachment) {
                 m.addAttachment(attachName, attachBytes, attachMime);
@@ -174,7 +172,6 @@ public class DpOrganizerMailer {
             Mail copy = Mail.withHtml(dpEmail, "[Copie] " + resolvedSubject, copyBody);
             if (dpFrom != null) {
                 copy.setFrom(dpFrom);
-                mailerFromAddress.ifPresent(copy::setBounceAddress);
             }
             if (hasAttachment) {
                 copy.addAttachment(attachName, attachBytes, attachMime);
@@ -194,10 +191,9 @@ public class DpOrganizerMailer {
     /**
      * Construit l'adresse expéditeur au format RFC 2822 {@code "Prénom NOM" <email>}.
      * <p>
-     * En utilisant directement l'email du DP comme {@code From}, on évite le
-     * faux positif SpamAssassin {@code FREEMAIL_FORGED_REPLYTO} qui se déclenche
-     * lorsque le {@code Reply-To} contient une adresse freemail (gmail, yahoo…)
-     * différente du {@code From}.
+     * L'email passé doit être l'adresse serveur (ex. {@code noreply@santalina.com})
+     * afin que SPF/DKIM/DMARC passent correctement. Le nom du DP est utilisé
+     * comme display name pour que le destinataire identifie l'expéditeur.
      * </p>
      *
      * @return adresse formatée, ou {@code null} si l'email est absent
