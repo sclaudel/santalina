@@ -282,6 +282,11 @@ export function HelpPage() {
             <li><strong>Glissez-déposez</strong> une fiche plongeur vers une palanquée existante ou vers <strong>+ Nouvelle palanquée</strong> pour créer un nouveau groupe.</li>
             <li>Pour retirer un plongeur d'une palanquée, glissez-le vers la zone <strong>Non assignés</strong>.</li>
           </ul>
+          <h4>Sur mobile</h4>
+          <ul>
+            <li>Appuyez sur une fiche plongeur pour la sélectionner.</li>
+            <li>Des boutons apparaissent en bas de l'écran : choisissez une palanquée (P1, P2…) pour y affecter le plongeur, ou appuyez sur <strong>📋 Non assignés</strong> pour le retirer de sa palanquée.</li>
+          </ul>
           <h4>Modifier le niveau d'un plongeur</h4>
           <ul>
             <li><strong>Double-cliquez</strong> sur le niveau affiché sur la fiche (ex : MF1) pour ouvrir un menu déroulant et le modifier.</li>
@@ -307,6 +312,53 @@ export function HelpPage() {
             <li>Ce bouton est <strong>masqué automatiquement</strong> lorsque les inscriptions sont fermées ou pas encore ouvertes sur le créneau.</li>
           </ul>
           <div className="help-tip">💡 Les modifications de niveau, aptitudes, profondeur et temps sont enregistrées immédiatement sur le serveur.</div>
+        </>
+      ),
+    },
+
+    // ── MAIL D'ORGANISATION ───────────────────────────────────────────────────
+    {
+      id: 'mail-organisation',
+      icon: '📧',
+      title: 'Mail d\'organisation',
+      roles: ['ADMIN', 'DIVE_DIRECTOR'],
+      content: (
+        <>
+          <p>Depuis la page Organisation des palanquées, vous pouvez envoyer un email groupé à tous les plongeurs inscrits sur le créneau.</p>
+          <h4>Envoyer le mail</h4>
+          <ol>
+            <li>Ouvrez la page Palanquées d'un créneau.</li>
+            <li>Cliquez sur <strong>📧 Mail d'organisation</strong>.</li>
+            <li>Vérifiez ou modifiez l'objet et le corps du mail.</li>
+            <li>Si des plongeurs n'ont pas d'email enregistré, un champ de saisie manuel s'affiche pour chacun d'eux — il reste visible jusqu'au clic sur Envoyer.</li>
+            <li>(Optionnel) Joignez un fichier via le champ <strong>Pièce jointe</strong> — taille max. 3 Mo.</li>
+            <li>Cliquez sur <strong>📧 Envoyer</strong>.</li>
+          </ol>
+          <h4>Pièce jointe</h4>
+          <ul>
+            <li>Tout type de fichier est accepté (PDF, image, tableur…) dans la limite de 3 Mo.</li>
+            <li>Le fichier est joint à chaque email envoyé aux plongeurs ainsi qu'à la copie du DP.</li>
+          </ul>
+          <h4>Destinataires</h4>
+          <ul>
+            <li>Les plongeurs inscrits sont en CCI (BCC) — ils ne voient pas les adresses des autres.</li>
+            <li>Vous (le directeur de plongée) êtes en CC.</li>
+            <li>Le champ <strong>Reply-To</strong> pointe vers votre email : les réponses vous sont adressées directement.</li>
+          </ul>
+          <h4>Variables</h4>
+          <p>Le corps du mail peut contenir des variables remplacées automatiquement :</p>
+          <ul>
+            <li><code>{'{siteName}'}</code> — nom du site de plongée</li>
+            <li><code>{'{slotDate}'}</code> — date du créneau</li>
+            <li><code>{'{startTime}'}</code> / <code>{'{endTime}'}</code> — horaires</li>
+            <li><code>{'{slotTitle}'}</code> — titre du créneau (si renseigné)</li>
+            <li><code>{'{dpName}'}</code> — votre nom</li>
+            <li><code>{'{dpEmail}'}</code> — votre email</li>
+            <li><code>{'{dpPhone}'}</code> — votre téléphone</li>
+          </ul>
+          <h4>Personnaliser le modèle par défaut</h4>
+          <p>Enregistrez votre propre modèle dans <strong>Mon profil → 📧 Modèle d'e-mail d'organisation</strong>. Il sera pré-chargé à chaque ouverture de l'éditeur.</p>
+          <div className="help-tip">💡 L'éditeur WYSIWYG supporte le gras, l'italique, le souligné, les titres H2/H3, les listes à puces et numérotées.</div>
         </>
       ),
     },
