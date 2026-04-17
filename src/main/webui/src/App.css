@@ -2070,12 +2070,15 @@ body {
   padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; font-size: 13px;
 }
 .mail-modal-missing-row {
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
 }
-.mail-modal-missing-row span { min-width: 160px; font-weight: 500; }
+.mail-modal-missing-row span { min-width: 140px; font-weight: 500; flex-shrink: 0; }
 .mail-modal-missing-row input {
-  flex: 1; padding: 5px 8px; border: 1px solid var(--gray-300);
+  flex: 1; min-width: 0; padding: 5px 8px; border: 1px solid var(--gray-300);
   border-radius: 6px; font-size: 13px;
+}
+.mail-modal-missing-row .mail-missing-error {
+  width: 100%; font-size: 11px; color: #ef4444; padding-left: 4px;
 }
 .mail-modal-vars {
   display: flex; flex-wrap: wrap; align-items: center; gap: 6px;

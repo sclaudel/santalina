@@ -98,76 +98,82 @@ public class SlotMailResource {
             throw new BadRequestException("L'objet du mail est obligatoire");
         }
 
-        // Vérifier la taille de la pièce jointe
+        // Extraire le fichier temporaire de la pièce jointe (éventuellement null)
         java.io.File attachFile = null;
         String attachName = null;
         byte[] attachBytes = null;
         String attachMime = "application/octet-stream";
         if (attachment != null && attachment.fileName() != null && !attachment.fileName().isBlank()) {
             attachFile = attachment.uploadedFile().toFile();
-            if (attachFile.length() > MAX_ATTACHMENT_SIZE) {
-                throw new BadRequestException("La pièce jointe dépasse la taille maximale autorisée (3 Mo)");
-            }
-            attachName  = attachment.fileName();
-            attachBytes = Files.readAllBytes(attachment.uploadedFile());
+            attachName = attachment.fileName();
             if (attachment.contentType() != null && !attachment.contentType().isBlank()) {
                 attachMime = attachment.contentType();
             }
         }
 
-        DiveSlot slot = checkSlotAccess(slotId);
-        User dp       = User.findByEmail(jwt.getName());
-        List<SlotDiver> divers = SlotDiver.findBySlot(slotId);
-
-        Map<Long, String> overrides = request.emailOverrides() != null ? request.emailOverrides() : Map.of();
-
-        // Valider le format des emails saisis manuellement
-        java.util.regex.Pattern emailPattern = java.util.regex.Pattern.compile(
-                "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
-        for (Map.Entry<Long, String> entry : overrides.entrySet()) {
-            String email = entry.getValue();
-            if (email != null && !email.isBlank() && !emailPattern.matcher(email.trim()).matches()) {
-                throw new BadRequestException("Format d'email invalide : " + email.trim());
-            }
-        }
-
-        // Vérifier les emails manquants
-        List<MissingEmailInfo> missing = new ArrayList<>();
-        for (SlotDiver d : divers) {
-            boolean hasEmail = (d.email != null && !d.email.isBlank())
-                    || (overrides.containsKey(d.id) && !overrides.get(d.id).isBlank());
-            if (!hasEmail) {
-                missing.add(new MissingEmailInfo(d.id, d.firstName + " " + d.lastName));
-            }
-        }
-
-        if (!missing.isEmpty()) {
-            return Response.status(422)
-                    .entity(new OrganizationMailResponse(0, missing))
-                    .build();
-        }
-
-        String siteName = configService.getSiteName();
+        // Le finally garantit la suppression du fichier temporaire dans tous les cas
+        // (erreur de taille, validation, emails manquants, exception d'envoi…).
         try {
+            if (attachFile != null && attachFile.length() > MAX_ATTACHMENT_SIZE) {
+                throw new BadRequestException("La pièce jointe dépasse la taille maximale autorisée (3 Mo)");
+            }
+            if (attachFile != null) {
+                attachBytes = Files.readAllBytes(attachment.uploadedFile());
+            }
+
+            DiveSlot slot = checkSlotAccess(slotId);
+            User dp       = User.findByEmail(jwt.getName());
+            List<SlotDiver> divers = SlotDiver.findBySlot(slotId);
+
+            Map<Long, String> overrides = request.emailOverrides() != null ? request.emailOverrides() : Map.of();
+
+            // Valider le format des emails saisis manuellement
+            java.util.regex.Pattern emailPattern = java.util.regex.Pattern.compile(
+                    "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
+            for (Map.Entry<Long, String> entry : overrides.entrySet()) {
+                String email = entry.getValue();
+                if (email != null && !email.isBlank() && !emailPattern.matcher(email.trim()).matches()) {
+                    throw new BadRequestException("Format d'email invalide : " + email.trim());
+                }
+            }
+
+            // Vérifier les emails manquants
+            List<MissingEmailInfo> missing = new ArrayList<>();
+            for (SlotDiver d : divers) {
+                boolean hasEmail = (d.email != null && !d.email.isBlank())
+                        || (overrides.containsKey(d.id) && !overrides.get(d.id).isBlank());
+                if (!hasEmail) {
+                    missing.add(new MissingEmailInfo(d.id, d.firstName + " " + d.lastName));
+                }
+            }
+
+            if (!missing.isEmpty()) {
+                return Response.status(422)
+                        .entity(new OrganizationMailResponse(0, missing))
+                        .build();
+            }
+
+            String siteName = configService.getSiteName();
             dpOrganizerMailer.sendOrganizationEmail(slot, dp, divers, overrides,
                     request.subject(), request.htmlBody(), siteName,
                     attachName, attachBytes, attachMime);
+
+            // Compter les destinataires effectifs (emails uniques)
+            long sent = divers.stream()
+                    .map(d -> (d.email != null && !d.email.isBlank()) ? d.email.trim()
+                            : overrides.getOrDefault(d.id, ""))
+                    .filter(e -> !e.isBlank())
+                    .distinct()
+                    .count();
+
+            return Response.ok(new OrganizationMailResponse((int) sent, List.of())).build();
+
         } finally {
-            // Supprimer le fichier temporaire après envoi
+            // Supprimer le fichier temporaire dans tous les cas (succès ou erreur)
             if (attachFile != null && attachFile.exists()) {
                 attachFile.delete();
             }
         }
-
-        // Compter les destinataires effectifs (emails uniques)
-        long sent = divers.stream()
-                .map(d -> (d.email != null && !d.email.isBlank()) ? d.email.trim()
-                        : overrides.getOrDefault(d.id, ""))
-                .filter(e -> !e.isBlank())
-                .distinct()
-                .count();
-
-        return Response.ok(new OrganizationMailResponse((int) sent, List.of())).build();
     }
 
     // ─────────────────────────────────────────────────────────────────────────

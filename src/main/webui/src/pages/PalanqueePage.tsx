@@ -1238,7 +1238,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                               onChange={e => setEmailOverrides(prev => ({ ...prev, [d.id]: e.target.value }))}
                               style={invalid ? { borderColor: '#ef4444' } : undefined}
                             />
-                            {invalid && <span style={{ fontSize: 11, color: '#ef4444' }}>Format invalide</span>}
+                            {invalid && <span className="mail-missing-error">Format invalide</span>}
                           </div>
                         );
                       })}
