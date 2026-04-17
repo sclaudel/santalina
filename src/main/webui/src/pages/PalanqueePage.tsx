@@ -1185,7 +1185,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                   className="palanquee-mobile-action-btn palanquee-mobile-action-btn--pool"
                   onClick={() => handleMobileAssign(null)}
                 >
-                  📋 Réserve
+                  📋 Non assignés
                 </button>
               )}
               {palanquees.map((p, idx) => (
