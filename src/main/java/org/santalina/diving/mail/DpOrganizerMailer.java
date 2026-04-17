@@ -4,6 +4,7 @@ import io.quarkus.mailer.Mail;
 import io.quarkus.mailer.Mailer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 import org.santalina.diving.domain.DiveSlot;
 import org.santalina.diving.domain.SlotDiver;
@@ -82,6 +83,14 @@ public class DpOrganizerMailer {
     Mailer mailer;
 
     /**
+     * Adresse expéditeur configurée (SMTP MAIL FROM / enveloppe).
+     * Utilisée comme bounceAddress pour que le relay SMTP reste autorisé
+     * même quand le header From est surchargé avec l'adresse du DP.
+     */
+    @ConfigProperty(name = "quarkus.mailer.from")
+    java.util.Optional<String> mailerFromAddress;
+
+    /**
      * Envoie le mail d'organisation aux plongeurs du créneau.
      *
      * @param slot           Créneau concerné
@@ -141,6 +150,9 @@ public class DpOrganizerMailer {
             Mail m = Mail.withHtml(to, resolvedSubject, wrappedBody);
             if (dpFrom != null) {
                 m.setFrom(dpFrom);
+                // Forcer l'enveloppe SMTP (MAIL FROM) à rester sur l'adresse du
+                // serveur pour que le relay autorisé accepte d'envoyer le mail.
+                mailerFromAddress.ifPresent(m::setBounceAddress);
             }
             if (hasAttachment) {
                 m.addAttachment(attachName, attachBytes, attachMime);
@@ -162,6 +174,7 @@ public class DpOrganizerMailer {
             Mail copy = Mail.withHtml(dpEmail, "[Copie] " + resolvedSubject, copyBody);
             if (dpFrom != null) {
                 copy.setFrom(dpFrom);
+                mailerFromAddress.ifPresent(copy::setBounceAddress);
             }
             if (hasAttachment) {
                 copy.addAttachment(attachName, attachBytes, attachMime);

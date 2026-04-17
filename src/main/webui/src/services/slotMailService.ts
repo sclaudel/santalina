@@ -27,9 +27,6 @@ export const slotMailService = {
     const res = await api.post<OrganizationMailResponse>(
       `/slots/${slotId}/mail/organization`,
       fd,
-      // Laisser le navigateur définir Content-Type (multipart/form-data; boundary=...)
-      // en supprimant le header application/json imposé par l'instance axios.
-      { headers: { 'Content-Type': undefined } },
     );
     return res.data;
   },
