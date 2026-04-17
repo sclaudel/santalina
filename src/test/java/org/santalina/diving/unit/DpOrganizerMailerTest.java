@@ -1,8 +1,12 @@
 package org.santalina.diving.unit;
 
 import org.junit.jupiter.api.Test;
+import org.santalina.diving.domain.DiveSlot;
 import org.santalina.diving.domain.User;
 import org.santalina.diving.mail.DpOrganizerMailer;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -17,6 +21,15 @@ class DpOrganizerMailerTest {
         u.lastName  = lastName;
         u.email     = email;
         return u;
+    }
+
+    private static DiveSlot slot(String title) {
+        DiveSlot s = new DiveSlot();
+        s.slotDate  = LocalDate.of(2025, 6, 14);
+        s.startTime = LocalTime.of(9, 0);
+        s.endTime   = LocalTime.of(12, 0);
+        s.title     = title;
+        return s;
     }
 
     @Test
@@ -55,5 +68,21 @@ class DpOrganizerMailerTest {
     void buildFromAddress_shouldReturnEmail_whenDpNull() {
         String from = DpOrganizerMailer.buildFromAddress(null, "solo@example.com");
         assertEquals("solo@example.com", from);
+    }
+
+    /* ── resolveVariables ── */
+
+    @Test
+    void resolveVariables_shouldIncludeSlotTitle_whenTitleIsSet() {
+        DiveSlot s = slot("Exploration");
+        String result = DpOrganizerMailer.resolveVariables("Sortie {slotTitle}", s, null, "Carrière");
+        assertEquals("Sortie Exploration", result);
+    }
+
+    @Test
+    void resolveVariables_shouldLeaveSlotTitleEmpty_whenTitleIsNull() {
+        DiveSlot s = slot(null);
+        String result = DpOrganizerMailer.resolveVariables("Sortie{slotTitle}", s, null, "Carrière");
+        assertEquals("Sortie", result);
     }
 }

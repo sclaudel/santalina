@@ -41,7 +41,8 @@ public class ConfigDto {
             boolean reportEmailEnabled,
             int reportEmailPeriodDays,
             String reportEmailRecipients,
-            String reportEmailLastSent
+            String reportEmailLastSent,
+            String defaultOrganizerMailTemplate
     ) {}
 
     public record UpdateMaxRecurringMonthsRequest(
@@ -103,5 +104,9 @@ public class ConfigDto {
             @NotBlank String toDate,
             String recipients,
             String club
+    ) {}
+
+    public record UpdateOrganizerMailTemplateRequest(
+            String template
     ) {}
 }

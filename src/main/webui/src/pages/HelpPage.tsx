@@ -357,7 +357,11 @@ export function HelpPage() {
             <li><code>{'{dpPhone}'}</code> — votre téléphone</li>
           </ul>
           <h4>Personnaliser le modèle par défaut</h4>
-          <p>Enregistrez votre propre modèle dans <strong>Mon profil → 📧 Modèle d'e-mail d'organisation</strong>. Il sera pré-chargé à chaque ouverture de l'éditeur.</p>
+          <p>Deux niveaux de personnalisation sont disponibles :</p>
+          <ul>
+            <li><strong>Modèle personnel</strong> — enregistrez votre propre modèle dans <strong>Mon profil → 📧 Modèle d'e-mail d'organisation</strong>. Il sera pré-chargé à chaque ouverture de l'éditeur et prend le dessus sur le modèle par défaut.</li>
+            <li><strong>Modèle par défaut du site</strong> — un administrateur peut définir un modèle commun à tous les DP dans <strong>Admin → Référentiels → 📧 Modèle d'e-mail d'organisation par défaut</strong>. Il s'applique pour tout DP qui n'a pas encore défini son propre modèle.</li>
+          </ul>
           <div className="help-tip">💡 L'éditeur WYSIWYG supporte le gras, l'italique, le souligné, les titres H2/H3, les listes à puces et numérotées.</div>
         </>
       ),
@@ -927,7 +931,11 @@ export function HelpPage() {
             '{dpPhone} — votre téléphone',
           ] },
           { type: 'h4' as const, text: 'Personnaliser le modèle par défaut' },
-          { type: 'paragraph' as const, text: 'Vous pouvez enregistrer votre propre modèle de mail dans Mon profil → 📧 Modèle d\'e-mail d\'organisation. Ce modèle sera pré-chargé à chaque ouverture de l\'éditeur.' },
+          { type: 'paragraph' as const, text: 'Deux niveaux de personnalisation sont disponibles :' },
+          { type: 'ul' as const, items: [
+            'Modèle personnel — enregistrez votre propre modèle dans Mon profil → 📧 Modèle d\'e-mail d\'organisation.',
+            'Modèle par défaut du site — un administrateur peut définir un modèle commun dans Admin → Référentiels → 📧 Modèle d\'e-mail d\'organisation par défaut.',
+          ] },
           { type: 'tip' as const, text: 'L\'éditeur WYSIWYG supporte le gras, l\'italique, le souligné, les titres H2/H3, les listes à puces et numérotées.' },
         ],
       },
