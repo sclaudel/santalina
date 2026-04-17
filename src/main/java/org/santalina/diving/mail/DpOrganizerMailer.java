@@ -109,6 +109,12 @@ public class DpOrganizerMailer {
         boolean hasAttachment = attachName != null && !attachName.isBlank()
                 && attachBytes != null && attachBytes.length > 0;
 
+        // Construire l'adresse "From" au format RFC 2822 "Prénom NOM" <email>
+        // Cela évite le faux positif SpamAssassin FREEMAIL_FORGED_REPLYTO causé par
+        // l'association From=noreply@santalina.com + Reply-To=gmail/yahoo.
+        // L'enveloppe SMTP (MAIL FROM) reste celle du serveur → SPF passe normalement.
+        String dpFrom = buildFromAddress(dp, dpEmail);
+
         // Collecter les adresses uniques des plongeurs
         List<String> recipients = divers.stream()
                 .map(d -> {
@@ -133,8 +139,8 @@ public class DpOrganizerMailer {
         List<Mail> mails = new java.util.ArrayList<>();
         for (String to : recipients) {
             Mail m = Mail.withHtml(to, resolvedSubject, wrappedBody);
-            if (dpEmail != null) {
-                m.addHeader("Reply-To", dpEmail);
+            if (dpFrom != null) {
+                m.setFrom(dpFrom);
             }
             if (hasAttachment) {
                 m.addAttachment(attachName, attachBytes, attachMime);
@@ -154,6 +160,9 @@ public class DpOrganizerMailer {
             recipientList.append("</ul>\n");
             String copyBody = wrapHtml(resolvedBody + recipientList, siteName);
             Mail copy = Mail.withHtml(dpEmail, "[Copie] " + resolvedSubject, copyBody);
+            if (dpFrom != null) {
+                copy.setFrom(dpFrom);
+            }
             if (hasAttachment) {
                 copy.addAttachment(attachName, attachBytes, attachMime);
             }
@@ -168,6 +177,27 @@ public class DpOrganizerMailer {
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    /**
+     * Construit l'adresse expéditeur au format RFC 2822 {@code "Prénom NOM" <email>}.
+     * <p>
+     * En utilisant directement l'email du DP comme {@code From}, on évite le
+     * faux positif SpamAssassin {@code FREEMAIL_FORGED_REPLYTO} qui se déclenche
+     * lorsque le {@code Reply-To} contient une adresse freemail (gmail, yahoo…)
+     * différente du {@code From}.
+     * </p>
+     *
+     * @return adresse formatée, ou {@code null} si l'email est absent
+     */
+    public static String buildFromAddress(User dp, String dpEmail) {
+        if (dpEmail == null || dpEmail.isBlank()) return null;
+        if (dp == null) return dpEmail;
+        String name = dp.fullName().trim();
+        if (name.isEmpty()) return dpEmail;
+        // Échapper les guillemets éventuels dans le nom affiché (RFC 2822)
+        String safeName = name.replace("\\", "\\\\").replace("\"", "\\\"");
+        return "\"" + safeName + "\" <" + dpEmail + ">";
+    }
 
     /**
      * Remplace les variables dans une chaîne de caractères.
