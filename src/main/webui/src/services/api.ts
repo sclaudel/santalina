@@ -5,8 +5,13 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Injecter le JWT automatiquement
+// Injecter le JWT automatiquement + supprimer Content-Type pour FormData
 api.interceptors.request.use((config) => {
+  // Pour les envois multipart (FormData), supprimer le Content-Type par défaut
+  // afin que le navigateur génère automatiquement le boundary correct.
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
+  }
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
