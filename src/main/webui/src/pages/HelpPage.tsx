@@ -848,7 +848,14 @@ export function HelpPage() {
             'Cliquez sur 📧 Mail d\'organisation.',
             'Vérifiez ou modifiez l\'objet et le corps du mail.',
             'Si des plongeurs n\'ont pas d\'email enregistré, un champ de saisie manuel s\'affiche pour chacun d\'eux — il reste visible jusqu\'au clic sur Envoyer.',
+            '(Optionnel) Joignez un fichier (programme, carte, etc.) via le champ Pièce jointe — taille max. 3 Mo.',
             'Cliquez sur 📧 Envoyer.',
+          ] },
+          { type: 'h4' as const, text: 'Pièce jointe' },
+          { type: 'ul' as const, items: [
+            'Tout type de fichier est accepté (PDF, image, tableur…) dans la limite de 3 Mo.',
+            'Le fichier est joint à chaque email envoyé aux plongeurs ainsi qu\'à la copie du DP.',
+            'Le fichier temporaire est automatiquement supprimé du serveur après l\'envoi.',
           ] },
           { type: 'h4' as const, text: 'Destinataires' },
           { type: 'ul' as const, items: [

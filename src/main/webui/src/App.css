@@ -2089,6 +2089,16 @@ body {
 }
 .mail-modal-var-chip:hover { background: #c7d2fe; }
 
+.mail-modal-attachment {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; background: var(--gray-50);
+  border: 1px solid var(--gray-200); border-radius: 6px;
+}
+.mail-modal-attachment-name {
+  flex: 1; font-size: 13px; color: var(--gray-700);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
 /* ========== RICH TEXT EDITOR ========== */
 .rte {
   border: 1px solid var(--gray-300); border-radius: 8px; overflow: hidden;

@@ -289,6 +289,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
   const [mailBody, setMailBody]           = useState('');
   const [mailBodyKey, setMailBodyKey]     = useState(0); // force re-mount RichTextEditor
   const [emailOverrides, setEmailOverrides] = useState<Record<number, string>>({});
+  const [mailAttachment, setMailAttachment] = useState<File | null>(null);
   const [mailSending, setMailSending]     = useState(false);
   const [mailSuccess, setMailSuccess]     = useState('');
   const [mailError, setMailError]         = useState('');
@@ -708,12 +709,13 @@ export function PalanqueePage({ slotId, onBack }: Props) {
     } catch { /* utiliser le modèle par défaut */ }
 
     const defSubject = slot
-      ? `Organisation sortie ${slot.slotDate} \u2014 ${slot.title ?? slot.slotType ?? 'plongée'}`
+      ? `Organisation sortie du ${fmtDate(slot.slotDate)} — ${slot.title ?? slot.slotType ?? 'plongée'}`
       : 'Organisation de la sortie';
 
     setMailSubject(defSubject);
     setMailBody(template);
     setEmailOverrides({});
+    setMailAttachment(null);
     setMailBodyKey(k => k + 1); // force RichTextEditor remount avec le nouveau contenu
     setShowMailModal(true);
   };
@@ -726,6 +728,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
       const result = await slotMailService.sendOrganizationMail(
         slotId, mailSubject, mailBody,
         Object.keys(emailOverrides).length ? emailOverrides : undefined,
+        mailAttachment,
       );
       if (result.missingEmails.length > 0) {
         // Le serveur a retourné des emails manquants (ne devrait pas arriver si le front valide)
@@ -736,6 +739,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
         setEmailOverrides(newOv);
       } else {
         setMailSuccess(`Mail envoyé avec succès à ${result.sent} destinataire(s).`);
+        setMailAttachment(null);
         setTimeout(() => setShowMailModal(false), 2000);
       }
     } catch (err: unknown) {
@@ -1275,6 +1279,35 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                 />
               </div>
 
+              {/* Pièce jointe */}
+              <div className="form-group">
+                <label style={{ fontSize: 13 }}>Pièce jointe <span style={{ color: '#9ca3af' }}>(optionnelle, max 3 Mo)</span></label>
+                {mailAttachment ? (
+                  <div className="mail-modal-attachment">
+                    <span className="mail-modal-attachment-name">📎 {mailAttachment.name}</span>
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm"
+                      onClick={() => setMailAttachment(null)}
+                    >✕ Retirer</button>
+                  </div>
+                ) : (
+                  <input
+                    type="file"
+                    onChange={e => {
+                      const f = e.target.files?.[0] ?? null;
+                      if (f && f.size > 3 * 1024 * 1024) {
+                        setMailError('La pièce jointe dépasse la taille maximale autorisée (3 Mo).');
+                        e.target.value = '';
+                      } else {
+                        setMailError('');
+                        setMailAttachment(f);
+                      }
+                    }}
+                  />
+                )}
+              </div>
+
               {/* Récapitulatif destinataires */}
               <div style={{ fontSize: 12, color: '#6b7280' }}>
                 {(() => {
@@ -1290,7 +1323,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
             </div>
 
             <div className="modal-footer">
-              <button className="btn btn-outline" onClick={() => setShowMailModal(false)} disabled={mailSending}>
+              <button className="btn btn-outline" onClick={() => { setShowMailModal(false); setMailAttachment(null); }} disabled={mailSending}>
                 Annuler
               </button>
               <button

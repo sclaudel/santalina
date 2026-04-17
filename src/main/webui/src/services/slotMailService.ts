@@ -16,10 +16,20 @@ export const slotMailService = {
     subject: string,
     htmlBody: string,
     emailOverrides?: Record<number, string>,
+    attachment?: File | null,
   ): Promise<OrganizationMailResponse> {
+    const payload = { subject, htmlBody, emailOverrides: emailOverrides ?? {} };
+    const fd = new FormData();
+    fd.append('data', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
+    if (attachment) {
+      fd.append('attachment', attachment);
+    }
     const res = await api.post<OrganizationMailResponse>(
       `/slots/${slotId}/mail/organization`,
-      { subject, htmlBody, emailOverrides: emailOverrides ?? {} },
+      fd,
+      // Laisser le navigateur définir Content-Type (multipart/form-data; boundary=...)
+      // en supprimant le header application/json imposé par l'instance axios.
+      { headers: { 'Content-Type': undefined } },
     );
     return res.data;
   },

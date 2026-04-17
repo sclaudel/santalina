@@ -1,5 +1,6 @@
 package org.santalina.diving.resource;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -8,12 +9,16 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.jboss.resteasy.reactive.RestForm;
+import org.jboss.resteasy.reactive.multipart.FileUpload;
 import org.santalina.diving.domain.DiveSlot;
 import org.santalina.diving.domain.SlotDiver;
 import org.santalina.diving.domain.User;
 import org.santalina.diving.mail.DpOrganizerMailer;
 import org.santalina.diving.service.ConfigService;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -24,10 +29,11 @@ import java.util.Map;
  */
 @Path("/api/slots/{slotId}/mail")
 @Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 @RolesAllowed({"ADMIN", "DIVE_DIRECTOR"})
 @Tag(name = "Mail de sortie")
 public class SlotMailResource {
+
+    static final long MAX_ATTACHMENT_SIZE = 3 * 1024 * 1024L; // 3 Mo
 
     @Inject
     JsonWebToken jwt;
@@ -37,6 +43,9 @@ public class SlotMailResource {
 
     @Inject
     ConfigService configService;
+
+    @Inject
+    ObjectMapper objectMapper;
 
     // ─────────────────────────────────────────────────────────────────────────
     // DTO interne
@@ -59,20 +68,51 @@ public class SlotMailResource {
     /**
      * POST /api/slots/{slotId}/mail/organization
      * <p>
-     * Envoie le mail d'organisation aux plongeurs inscrits sur le créneau.
-     * Retourne 422 si des plongeurs n'ont pas d'adresse mail et qu'aucun override n'est fourni.
+     * Corps multipart :
+     * <ul>
+     *   <li>{@code data} — JSON de type {@link SendOrganizationMailRequest}</li>
+     *   <li>{@code attachment} — fichier optionnel (max 3 Mo), supprimé après envoi</li>
+     * </ul>
      * </p>
      */
     @POST
     @Path("/organization")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Transactional
-    public Response sendOrganizationMail(@PathParam("slotId") Long slotId,
-                                         SendOrganizationMailRequest request) {
-        if (request == null || request.htmlBody() == null || request.htmlBody().isBlank()) {
+    public Response sendOrganizationMail(
+            @PathParam("slotId") Long slotId,
+            @RestForm("data") String dataJson,
+            @RestForm("attachment") FileUpload attachment) throws IOException {
+
+        SendOrganizationMailRequest request;
+        try {
+            request = objectMapper.readValue(dataJson != null ? dataJson : "{}", SendOrganizationMailRequest.class);
+        } catch (Exception e) {
+            throw new BadRequestException("Payload JSON invalide : " + e.getMessage());
+        }
+
+        if (request.htmlBody() == null || request.htmlBody().isBlank()) {
             throw new BadRequestException("Le corps du mail est obligatoire");
         }
         if (request.subject() == null || request.subject().isBlank()) {
             throw new BadRequestException("L'objet du mail est obligatoire");
+        }
+
+        // Vérifier la taille de la pièce jointe
+        java.io.File attachFile = null;
+        String attachName = null;
+        byte[] attachBytes = null;
+        String attachMime = "application/octet-stream";
+        if (attachment != null && attachment.fileName() != null && !attachment.fileName().isBlank()) {
+            attachFile = attachment.uploadedFile().toFile();
+            if (attachFile.length() > MAX_ATTACHMENT_SIZE) {
+                throw new BadRequestException("La pièce jointe dépasse la taille maximale autorisée (3 Mo)");
+            }
+            attachName  = attachment.fileName();
+            attachBytes = Files.readAllBytes(attachment.uploadedFile());
+            if (attachment.contentType() != null && !attachment.contentType().isBlank()) {
+                attachMime = attachment.contentType();
+            }
         }
 
         DiveSlot slot = checkSlotAccess(slotId);
@@ -108,8 +148,16 @@ public class SlotMailResource {
         }
 
         String siteName = configService.getSiteName();
-        dpOrganizerMailer.sendOrganizationEmail(slot, dp, divers, overrides,
-                request.subject(), request.htmlBody(), siteName);
+        try {
+            dpOrganizerMailer.sendOrganizationEmail(slot, dp, divers, overrides,
+                    request.subject(), request.htmlBody(), siteName,
+                    attachName, attachBytes, attachMime);
+        } finally {
+            // Supprimer le fichier temporaire après envoi
+            if (attachFile != null && attachFile.exists()) {
+                attachFile.delete();
+            }
+        }
 
         // Compter les destinataires effectifs (emails uniques)
         long sent = divers.stream()
