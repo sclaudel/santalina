@@ -25,7 +25,8 @@ public class UserDto {
             boolean notifOnMovedToWaitlist,
             boolean notifOnDpRegistration,
             boolean notifOnCreatorRegistration,
-            boolean notifOnSafetyReminder
+            boolean notifOnSafetyReminder,
+            String dpOrganizerEmailTemplate
     ) {
         public static UserResponse from(User user) {
             return new UserResponse(
@@ -39,7 +40,8 @@ public class UserDto {
                     user.notifOnMovedToWaitlist,
                     user.notifOnDpRegistration,
                     user.notifOnCreatorRegistration,
-                    user.notifOnSafetyReminder
+                    user.notifOnSafetyReminder,
+                    user.dpOrganizerEmailTemplate
             );
         }
     }
@@ -132,5 +134,10 @@ public class UserDto {
             @jakarta.validation.constraints.NotBlank String csvContent,
             @jakarta.validation.constraints.NotBlank
             @jakarta.validation.constraints.Size(min = 6, max = 100) String password
+    ) {}
+
+    /** Mise à jour du modèle d'email d'organisation du directeur de plongée. */
+    public record UpdateDpEmailTemplateRequest(
+            String template
     ) {}
 }

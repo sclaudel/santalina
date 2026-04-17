@@ -4,7 +4,11 @@ import { palanqueeService } from '../services/palanqueeService';
 import { slotService } from '../services/slotService';
 import { waitingListService } from '../services/waitingListService';
 import { adminService } from '../services/adminService';
+import { authService } from '../services/authService';
+import { slotMailService } from '../services/slotMailService';
 import { exportDiverListCsv } from '../utils/exportDiverList';
+import { RichTextEditor } from '../components/RichTextEditor';
+import { DpOrganizerMailer } from '../utils/dpMailDefaults';
 import type { DiveSlot, SlotDiver, Palanquee, WaitingListEntry } from '../types';
 
 // ── constantes ──────────────────────────────────────────────────────────────
@@ -278,6 +282,16 @@ export function PalanqueePage({ slotId, onBack }: Props) {
   const renameInputRef = useRef<HTMLInputElement>(null);
 
   const [saving, setSaving] = useState(false);
+
+  // ── Mail d'organisation DP ─────────────────────────────────────────────
+  const [showMailModal, setShowMailModal] = useState(false);
+  const [mailSubject, setMailSubject]     = useState('');
+  const [mailBody, setMailBody]           = useState('');
+  const [mailBodyKey, setMailBodyKey]     = useState(0); // force re-mount RichTextEditor
+  const [emailOverrides, setEmailOverrides] = useState<Record<number, string>>({});
+  const [mailSending, setMailSending]     = useState(false);
+  const [mailSuccess, setMailSuccess]     = useState('');
+  const [mailError, setMailError]         = useState('');
   const [exporting, setExporting] = useState(false);
 
   // ── mobile ─────────────────────────────────────────────────────────────────
@@ -683,6 +697,55 @@ export function PalanqueePage({ slotId, onBack }: Props) {
     }
   };
 
+  // ── mail d'organisation ───────────────────────────────────────────────────
+  const handleOpenMailModal = async () => {
+    setMailSuccess(''); setMailError('');
+    // Charger le profil pour récupérer le modèle enregistré
+    let template = DpOrganizerMailer.DEFAULT_TEMPLATE;
+    try {
+      const profile = await authService.getProfile();
+      if (profile.dpOrganizerEmailTemplate) template = profile.dpOrganizerEmailTemplate;
+    } catch { /* utiliser le modèle par défaut */ }
+
+    const defSubject = slot
+      ? `Organisation sortie ${slot.slotDate} \u2014 ${slot.title ?? slot.slotType ?? 'plongée'}`
+      : 'Organisation de la sortie';
+
+    setMailSubject(defSubject);
+    setMailBody(template);
+    setEmailOverrides({});
+    setMailBodyKey(k => k + 1); // force RichTextEditor remount avec le nouveau contenu
+    setShowMailModal(true);
+  };
+
+  const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+
+  const handleSendOrganizationMail = async () => {
+    setMailSending(true); setMailError(''); setMailSuccess('');
+    try {
+      const result = await slotMailService.sendOrganizationMail(
+        slotId, mailSubject, mailBody,
+        Object.keys(emailOverrides).length ? emailOverrides : undefined,
+      );
+      if (result.missingEmails.length > 0) {
+        // Le serveur a retourné des emails manquants (ne devrait pas arriver si le front valide)
+        const names = result.missingEmails.map(m => m.diverName).join(', ');
+        setMailError(`Emails manquants pour : ${names}. Veuillez les saisir ci-dessous.`);
+        const newOv: Record<number, string> = { ...emailOverrides };
+        result.missingEmails.forEach(m => { if (!newOv[m.diverId]) newOv[m.diverId] = ''; });
+        setEmailOverrides(newOv);
+      } else {
+        setMailSuccess(`Mail envoyé avec succès à ${result.sent} destinataire(s).`);
+        setTimeout(() => setShowMailModal(false), 2000);
+      }
+    } catch (err: unknown) {
+      const m = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setMailError(m ?? 'Erreur lors de l\'envoi du mail.');
+    } finally {
+      setMailSending(false);
+    }
+  };
+
   // ── rendu ─────────────────────────────────────────────────────────────────
   if (loading) {
     return (
@@ -734,6 +797,14 @@ export function PalanqueePage({ slotId, onBack }: Props) {
             title="Exporter la fiche de sécurité Excel avec les palanquées"
           >
             {exporting ? '…' : '📥 Export Excel'}
+          </button>
+          <button
+            className="palanquee-export-btn palanquee-export-btn--mail"
+            onClick={handleOpenMailModal}
+            disabled={allDivers.length === 0}
+            title="Envoyer un mail d'organisation aux plongeurs inscrits"
+          >
+            📧 Mail d'organisation
           </button>
         </div>
       </div>
@@ -1110,7 +1181,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                   className="palanquee-mobile-action-btn palanquee-mobile-action-btn--pool"
                   onClick={() => handleMobileAssign(null)}
                 >
-                  📋 Pool
+                  📋 Réserve
                 </button>
               )}
               {palanquees.map((p, idx) => (
@@ -1132,6 +1203,113 @@ export function PalanqueePage({ slotId, onBack }: Props) {
           </div>
         );
       })()}
+
+      {/* ── Modal mail d'organisation DP ─────────────────────────────────── */}
+      {showMailModal && (
+        <div className="modal-overlay" onClick={() => !mailSending && setShowMailModal(false)}>
+          <div className="modal modal--wide" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>📧 Mail d'organisation</h3>
+              <button className="modal-close" onClick={() => setShowMailModal(false)} disabled={mailSending}>✕</button>
+            </div>
+
+            <div className="modal-body" style={{ gap: 14 }}>
+              {/* Emails manquants */}
+              {(() => {
+                const missingDivers = allDivers.filter(d => !d.email);
+                if (missingDivers.length === 0) return null;
+                return (
+                  <div className="mail-modal-missing">
+                    <strong>⚠️ Emails manquants — saisir manuellement :</strong>
+                    {missingDivers.map(d => {
+                        const val = emailOverrides[d.id] ?? '';
+                        const invalid = val.trim() !== '' && !isValidEmail(val);
+                        return (
+                          <div key={d.id} className="mail-modal-missing-row">
+                            <span>{d.firstName} {d.lastName}</span>
+                            <input
+                              type="email"
+                              placeholder="email@example.com"
+                              value={val}
+                              onChange={e => setEmailOverrides(prev => ({ ...prev, [d.id]: e.target.value }))}
+                              style={invalid ? { borderColor: '#ef4444' } : undefined}
+                            />
+                            {invalid && <span style={{ fontSize: 11, color: '#ef4444' }}>Format invalide</span>}
+                          </div>
+                        );
+                      })}
+                  </div>
+                );
+              })()}
+
+              {/* Objet */}
+              <div className="form-group">
+                <label style={{ fontSize: 13 }}>Objet du mail</label>
+                <input
+                  type="text"
+                  value={mailSubject}
+                  onChange={e => setMailSubject(e.target.value)}
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              {/* Variables disponibles */}
+              <div className="mail-modal-vars">
+                <span style={{ fontSize: 12, color: '#6b7280', marginRight: 6 }}>Variables :</span>
+                {['{siteName}', '{slotDate}', '{startTime}', '{endTime}', '{slotTitle}',
+                  '{dpName}', '{dpEmail}', '{dpPhone}'].map(v => (
+                  <span key={v} className="mail-modal-var-chip" title="Cliquez pour copier"
+                    onClick={() => navigator.clipboard.writeText(v).catch(() => {})}
+                  >{v}</span>
+                ))}
+              </div>
+
+              {/* Éditeur WYSIWYG */}
+              <div className="form-group">
+                <label style={{ fontSize: 13 }}>Corps du mail</label>
+                <RichTextEditor
+                  key={mailBodyKey}
+                  initialValue={mailBody}
+                  onChange={setMailBody}
+                  minHeight={380}
+                />
+              </div>
+
+              {/* Récapitulatif destinataires */}
+              <div style={{ fontSize: 12, color: '#6b7280' }}>
+                {(() => {
+                  const count = allDivers.filter(
+                    d => (d.email && d.email.trim()) || (emailOverrides[d.id] ?? '').trim(),
+                  ).length;
+                  return `${count} / ${allDivers.length} plongeur(s) ont une adresse mail · Vous serez en CC`;
+                })()}
+              </div>
+
+              {mailError   && <div className="alert alert-error">{mailError}</div>}
+              {mailSuccess && <div className="alert alert-success">{mailSuccess}</div>}
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn btn-outline" onClick={() => setShowMailModal(false)} disabled={mailSending}>
+                Annuler
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleSendOrganizationMail}
+                disabled={
+                  mailSending ||
+                  !mailSubject.trim() ||
+                  !mailBody.trim() ||
+                  allDivers.some(d => !d.email && !(emailOverrides[d.id] ?? '').trim()) ||
+                  Object.values(emailOverrides).some(v => v.trim() !== '' && !isValidEmail(v))
+                }
+              >
+                {mailSending ? '⏳ Envoi…' : '📧 Envoyer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -107,6 +107,13 @@ public class UserResource {
         return userService.updateNotifPrefs(identity.getPrincipal().getName(), request);
     }
 
+    @PUT
+    @Path("/me/dp-email-template")
+    @RolesAllowed({"DIVE_DIRECTOR", "ADMIN"})
+    public UserResponse updateDpEmailTemplate(UpdateDpEmailTemplateRequest request) {
+        return userService.updateDpEmailTemplate(identity.getPrincipal().getName(), request);
+    }
+
     @GET
     @Path("/export/csv")
     @RolesAllowed("ADMIN")

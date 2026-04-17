@@ -57,6 +57,11 @@ export const authService = {
     return res.data;
   },
 
+  async updateDpEmailTemplate(template: string): Promise<User> {
+    const res = await api.put<User>('/users/me/dp-email-template', { template });
+    return res.data;
+  },
+
   async updateEmail(email: string): Promise<LoginResponse> {
     const res = await api.patch<LoginResponse>('/users/me/email', { email });
     // Mettre à jour le token et l'utilisateur stockés

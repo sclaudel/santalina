@@ -24,6 +24,7 @@ Application de réservation de créneaux de plongée en lac, développée avec *
 - **Liste d'attente** : inscription libre, validation/refus par le DP responsable
 - **Inscriptions libres** : le DP assigné peut ouvrir les inscriptions avec date d'ouverture optionnelle
 - **Organisation des palanquées** : drag-and-drop, gestion des aptitudes, export Excel fiche de sécurité, export CSV
+- **Mail d'organisation** (DIVE_DIRECTOR) : envoi groupé depuis la page Palanquées — plongeurs en BCC, DP en CC, Reply-To = DP ; éditeur WYSIWYG avec variables `{siteName}`, `{slotDate}`, `{dpName}`… ; modèle personnalisable par DP dans son profil
 - **Normalisation des données** : prénoms capitalisés, emails en minuscules
 - **Docker-ready** : Dockerfile multi-stage + docker-compose
 - **Double base de données** : H2 fichier (dev) / PostgreSQL (prod)
@@ -121,8 +122,10 @@ docker compose up --build
 | `POST` | `/api/slots/{id}/palanquees` | ADMIN, DIVE_DIRECTOR | Créer une palanquée |
 | `PUT` | `/api/slots/{id}/palanquees/{pid}` | ADMIN, DIVE_DIRECTOR | Modifier une palanquée |
 | `DELETE` | `/api/slots/{id}/palanquees/{pid}` | ADMIN, DIVE_DIRECTOR | Supprimer une palanquée |
+| `POST` | `/api/slots/{id}/mail/organization` | ADMIN, DIVE_DIRECTOR | Envoyer le mail d'organisation aux plongeurs |
 | `GET` | `/api/users/me` | Authentifié | Mon profil |
 | `PUT` | `/api/users/me` | Authentifié | Modifier profil |
+| `PUT` | `/api/users/me/dp-email-template` | ADMIN, DIVE_DIRECTOR | Enregistrer le modèle d'email DP |
 | `GET` | `/api/users` | ADMIN | Liste utilisateurs |
 | `PUT` | `/api/users/{id}/roles` | ADMIN | Changer rôles |
 | `GET` | `/api/config` | Public | Config du site |
@@ -213,7 +216,7 @@ src/main/
 │   ├── domain/          # Entités JPA (User, DiveSlot, SlotDiver, WaitingListEntry, Palanquee, AppConfigEntry)
 │   ├── dto/             # Records Java (request/response)
 │   ├── exception/       # GlobalExceptionMapper
-│   ├── mail/            # PasswordResetMailer, ActivationMailer, WaitingListMailer, RegistrationReportMailer
+│   ├── mail/            # PasswordResetMailer, ActivationMailer, WaitingListMailer, RegistrationReportMailer, DpOrganizerMailer
 │   ├── resource/        # JAX-RS endpoints (AuthResource, SlotResource, SlotDiverResource,
 │   │                   #   WaitingListResource, PalanqueeResource, UserResource, StatsResource, BackupResource…)
 │   ├── scheduler/       # RegistrationReportScheduler (rapport périodique inscriptions)
