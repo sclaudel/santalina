@@ -398,7 +398,7 @@ export function HelpPage() {
             </li>
           </ol>
           <div className="help-tip">
-            💡 Les plongeurs validés apparaissent dans le pool <strong>Non assignés</strong> de la page d'organisation des palanquées.
+            💡 Les plongeurs validés apparaissent dans la réserve <strong>Non assignés</strong> de la page d'organisation des palanquées.
           </div>
 
           <h4>Remettre un plongeur en liste d'attente</h4>
@@ -832,10 +832,44 @@ export function HelpPage() {
           { type: 'h4' as const, text: 'Accéder à la page' },
           { type: 'ol' as const, items: ['Cliquez sur un créneau pour ouvrir le panneau de détails.', 'Cliquez sur Organiser les palanquées.'] },
           { type: 'h4' as const, text: 'Répartir les plongeurs' },
-          { type: 'ul' as const, items: ['Glissez-déposez une fiche vers une palanquée ou vers "+ Nouvelle palanquée".', 'Pour retirer un plongeur d\'une palanquée, glissez-le vers la zone Non assignés.'] },
+          { type: 'ul' as const, items: ['Glissez-déposez une fiche vers une palanquée ou vers "+ Nouvelle palanquée".', 'Pour retirer un plongeur d\'une palanquée, glissez-le vers la zone Non assignés.', 'Sur mobile, sélectionnez un plongeur puis choisissez une palanquée ou « Réserve » pour le remettre dans la zone non assignée.'] },
           { type: 'h4' as const, text: 'Modifier le niveau ou les aptitudes' },
           { type: 'ul' as const, items: ['Double-cliquez sur le niveau affiché pour le modifier.', 'Double-cliquez sur la zone aptitudes pour sélectionner : PE12–PE60, PA12–PA60, E1–E4, GP.', 'Les aptitudes apparaissent en colonne D de l\'export Excel.'] },
           { type: 'tip' as const, text: 'Les modifications de niveau et d\'aptitudes sont enregistrées immédiatement sur le serveur.' },
+        ],
+      },
+      {
+        icon: '📧', title: 'Mail d\'organisation',
+        items: [
+          { type: 'paragraph' as const, text: 'Depuis la page Organisation des palanquées, vous pouvez envoyer un email groupé à tous les plongeurs inscrits sur le créneau.' },
+          { type: 'h4' as const, text: 'Envoyer le mail' },
+          { type: 'ol' as const, items: [
+            'Ouvrez la page Palanquées d\'un créneau.',
+            'Cliquez sur 📧 Mail d\'organisation.',
+            'Vérifiez ou modifiez l\'objet et le corps du mail.',
+            'Si des plongeurs n\'ont pas d\'email enregistré, un champ de saisie manuel s\'affiche pour chacun d\'eux — il reste visible jusqu\'au clic sur Envoyer.',
+            'Cliquez sur 📧 Envoyer.',
+          ] },
+          { type: 'h4' as const, text: 'Destinataires' },
+          { type: 'ul' as const, items: [
+            'Les plongeurs inscrits sont en CCI (BCC) — ils ne voient pas les adresses des autres.',
+            'Vous (le directeur de plongée) êtes en CC.',
+            'Le champ Reply-To pointe vers votre email : les réponses vous sont adressées directement.',
+          ] },
+          { type: 'h4' as const, text: 'Variables' },
+          { type: 'paragraph' as const, text: 'Le corps du mail peut contenir des variables qui sont remplacées automatiquement :' },
+          { type: 'ul' as const, items: [
+            '{siteName} — nom du site de plongée',
+            '{slotDate} — date du créneau',
+            '{startTime} / {endTime} — horaires',
+            '{slotTitle} — titre du créneau (si renseigné)',
+            '{dpName} — votre nom',
+            '{dpEmail} — votre email',
+            '{dpPhone} — votre téléphone',
+          ] },
+          { type: 'h4' as const, text: 'Personnaliser le modèle par défaut' },
+          { type: 'paragraph' as const, text: 'Vous pouvez enregistrer votre propre modèle de mail dans Mon profil → 📧 Modèle d\'e-mail d\'organisation. Ce modèle sera pré-chargé à chaque ouverture de l\'éditeur.' },
+          { type: 'tip' as const, text: 'L\'éditeur WYSIWYG supporte le gras, l\'italique, le souligné, les titres H2/H3, les listes à puces et numérotées.' },
         ],
       },
     ] : []),

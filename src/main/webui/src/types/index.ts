@@ -20,6 +20,7 @@ export interface User {
   notifOnDpRegistration?: boolean;
   notifOnCreatorRegistration?: boolean;
   notifOnSafetyReminder?: boolean;
+  dpOrganizerEmailTemplate?: string;
 }
 
 export interface LoginResponse {

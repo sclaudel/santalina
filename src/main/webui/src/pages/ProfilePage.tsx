@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/authService';
 import { adminService } from '../services/adminService';
+import { RichTextEditor } from '../components/RichTextEditor';
+import { DpOrganizerMailer } from '../utils/dpMailDefaults';
 
 export function ProfilePage() {
   const { user } = useAuth();
@@ -25,6 +27,9 @@ export function ProfilePage() {
   const [notifOnCreatorRegistration, setNotifOnCreatorRegistration] = useState(user?.notifOnCreatorRegistration ?? false);
   const [notifOnSafetyReminder, setNotifOnSafetyReminder] = useState(user?.notifOnSafetyReminder ?? true);
   const [notifLoading, setNotifLoading] = useState(false);
+  const [dpTemplate, setDpTemplate]     = useState(DpOrganizerMailer.DEFAULT_TEMPLATE);
+  const [dpTemplateKey, setDpTemplateKey] = useState(0);
+  const [dpTemplateLoading, setDpTemplateLoading] = useState(false);
 
   // Scroll vers la section notifications si le hash #notifications est présent dans l'URL
   useEffect(() => {
@@ -48,6 +53,9 @@ export function ProfilePage() {
       setNotifOnDpRegistration(profile.notifOnDpRegistration ?? true);
       setNotifOnCreatorRegistration(profile.notifOnCreatorRegistration ?? false);
       setNotifOnSafetyReminder(profile.notifOnSafetyReminder ?? true);
+      const tpl = profile.dpOrganizerEmailTemplate || DpOrganizerMailer.DEFAULT_TEMPLATE;
+      setDpTemplate(tpl);
+      setDpTemplateKey(k => k + 1);
     }).catch(() => {
       // Repli sur les données du contexte si l'API échoue
       setFirstName(user?.firstName || '');
@@ -96,6 +104,18 @@ export function ProfilePage() {
       setError(m || 'Erreur lors du changement de mot de passe');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveDpTemplate = async () => {
+    setMsg(''); setError(''); setDpTemplateLoading(true);
+    try {
+      await authService.updateDpEmailTemplate(dpTemplate);
+      setMsg('Modèle de mail enregistré.');
+    } catch {
+      setError('Erreur lors de l\'enregistrement du modèle.');
+    } finally {
+      setDpTemplateLoading(false);
     }
   };
 
@@ -225,6 +245,32 @@ export function ProfilePage() {
             {notifLoading ? '...' : '💾 Enregistrer'}
           </button>
         </div>
+
+        {(user.role === 'DIVE_DIRECTOR' || user.role === 'ADMIN') && (
+          <div className="profile-section">
+            <h3>📧 Modèle d'e-mail d'organisation</h3>
+            <p style={{ color: '#6b7280', fontSize: 13, marginBottom: 8 }}>
+              Ce modèle est pré-chargé dans l'éditeur lorsque vous envoyez un mail
+              d'organisation depuis la page Palanquées.{' '}
+              <br />Variables disponibles :
+              {['{siteName}', '{slotDate}', '{startTime}', '{endTime}', '{slotTitle}',
+                '{dpName}', '{dpEmail}', '{dpPhone}'].map(v => (
+                <code key={v} style={{ margin: '0 3px', background: '#e0e7ff', borderRadius: 3, padding: '1px 4px', fontSize: 11 }}>{v}</code>
+              ))}
+            </p>
+            <RichTextEditor
+              key={dpTemplateKey}
+              initialValue={dpTemplate}
+              onChange={setDpTemplate}
+              minHeight={400}
+            />
+            <div style={{ marginTop: 10 }}>
+              <button className="btn btn-primary" onClick={handleSaveDpTemplate} disabled={dpTemplateLoading}>
+                {dpTemplateLoading ? '...' : '💾 Enregistrer le modèle'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

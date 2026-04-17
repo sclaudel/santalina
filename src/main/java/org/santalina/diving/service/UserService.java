@@ -184,11 +184,21 @@ public class UserService {
     @Transactional
     public UserResponse updateNotifPrefs(String email, UpdateNotifPrefsRequest request) {
         User user = User.findByEmail(email);
-        if (user == null) throw new NotFoundException("Utilisateur non trouv\u00e9");
+        if (user == null) throw new NotFoundException("Utilisateur non trouvé");
         user.notifOnRegistration    = request.notifOnRegistration();
         user.notifOnApproved        = request.notifOnApproved();
         user.notifOnCancelled       = request.notifOnCancelled();
         user.notifOnMovedToWaitlist = request.notifOnMovedToWaitlist();        user.notifOnDpRegistration  = request.notifOnDpRegistration();        user.notifOnCreatorRegistration = request.notifOnCreatorRegistration();        user.notifOnSafetyReminder = request.notifOnSafetyReminder();        user.persist();
+        return UserResponse.from(user);
+    }
+
+    /** Met à jour le modèle d'email d'organisation du directeur de plongée. */
+    @Transactional
+    public UserResponse updateDpEmailTemplate(String email, UpdateDpEmailTemplateRequest request) {
+        User user = User.findByEmail(email);
+        if (user == null) throw new NotFoundException("Utilisateur non trouvé");
+        user.dpOrganizerEmailTemplate = request.template();
+        user.persist();
         return UserResponse.from(user);
     }
 

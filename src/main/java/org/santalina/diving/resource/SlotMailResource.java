@@ -1,0 +1,146 @@
+package org.santalina.diving.resource;
+
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import org.eclipse.microprofile.jwt.JsonWebToken;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.santalina.diving.domain.DiveSlot;
+import org.santalina.diving.domain.SlotDiver;
+import org.santalina.diving.domain.User;
+import org.santalina.diving.mail.DpOrganizerMailer;
+import org.santalina.diving.service.ConfigService;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Endpoint pour l'envoi du mail d'organisation du directeur de plongée.
+ * POST /api/slots/{slotId}/mail/organization
+ */
+@Path("/api/slots/{slotId}/mail")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+@RolesAllowed({"ADMIN", "DIVE_DIRECTOR"})
+@Tag(name = "Mail de sortie")
+public class SlotMailResource {
+
+    @Inject
+    JsonWebToken jwt;
+
+    @Inject
+    DpOrganizerMailer dpOrganizerMailer;
+
+    @Inject
+    ConfigService configService;
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // DTO interne
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public record SendOrganizationMailRequest(
+            String subject,
+            String htmlBody,
+            Map<Long, String> emailOverrides
+    ) {}
+
+    public record MissingEmailInfo(Long diverId, String diverName) {}
+
+    public record OrganizationMailResponse(int sent, List<MissingEmailInfo> missingEmails) {}
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Endpoint
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * POST /api/slots/{slotId}/mail/organization
+     * <p>
+     * Envoie le mail d'organisation aux plongeurs inscrits sur le créneau.
+     * Retourne 422 si des plongeurs n'ont pas d'adresse mail et qu'aucun override n'est fourni.
+     * </p>
+     */
+    @POST
+    @Path("/organization")
+    @Transactional
+    public Response sendOrganizationMail(@PathParam("slotId") Long slotId,
+                                         SendOrganizationMailRequest request) {
+        if (request == null || request.htmlBody() == null || request.htmlBody().isBlank()) {
+            throw new BadRequestException("Le corps du mail est obligatoire");
+        }
+        if (request.subject() == null || request.subject().isBlank()) {
+            throw new BadRequestException("L'objet du mail est obligatoire");
+        }
+
+        DiveSlot slot = checkSlotAccess(slotId);
+        User dp       = User.findByEmail(jwt.getName());
+        List<SlotDiver> divers = SlotDiver.findBySlot(slotId);
+
+        Map<Long, String> overrides = request.emailOverrides() != null ? request.emailOverrides() : Map.of();
+
+        // Valider le format des emails saisis manuellement
+        java.util.regex.Pattern emailPattern = java.util.regex.Pattern.compile(
+                "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
+        for (Map.Entry<Long, String> entry : overrides.entrySet()) {
+            String email = entry.getValue();
+            if (email != null && !email.isBlank() && !emailPattern.matcher(email.trim()).matches()) {
+                throw new BadRequestException("Format d'email invalide : " + email.trim());
+            }
+        }
+
+        // Vérifier les emails manquants
+        List<MissingEmailInfo> missing = new ArrayList<>();
+        for (SlotDiver d : divers) {
+            boolean hasEmail = (d.email != null && !d.email.isBlank())
+                    || (overrides.containsKey(d.id) && !overrides.get(d.id).isBlank());
+            if (!hasEmail) {
+                missing.add(new MissingEmailInfo(d.id, d.firstName + " " + d.lastName));
+            }
+        }
+
+        if (!missing.isEmpty()) {
+            return Response.status(422)
+                    .entity(new OrganizationMailResponse(0, missing))
+                    .build();
+        }
+
+        String siteName = configService.getSiteName();
+        dpOrganizerMailer.sendOrganizationEmail(slot, dp, divers, overrides,
+                request.subject(), request.htmlBody(), siteName);
+
+        // Compter les destinataires effectifs (emails uniques)
+        long sent = divers.stream()
+                .map(d -> (d.email != null && !d.email.isBlank()) ? d.email.trim()
+                        : overrides.getOrDefault(d.id, ""))
+                .filter(e -> !e.isBlank())
+                .distinct()
+                .count();
+
+        return Response.ok(new OrganizationMailResponse((int) sent, List.of())).build();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Helpers
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private DiveSlot checkSlotAccess(Long slotId) {
+        DiveSlot slot = DiveSlot.findById(slotId);
+        if (slot == null) throw new NotFoundException("Créneau non trouvé");
+
+        String role = jwt.getGroups() != null && jwt.getGroups().contains("ADMIN")
+                ? "ADMIN" : "DIVE_DIRECTOR";
+
+        if ("DIVE_DIRECTOR".equals(role)) {
+            User me = User.findByEmail(jwt.getName());
+            boolean isCreator    = me != null && slot.createdBy != null && slot.createdBy.id.equals(me.id);
+            boolean isAssignedDP = me != null && SlotDiver.isAssignedDirectorByEmail(slot.id, me.email);
+            if (!isCreator && !isAssignedDP) {
+                throw new ForbiddenException("Accès réservé au créateur ou directeur de plongée du créneau");
+            }
+        }
+        return slot;
+    }
+}

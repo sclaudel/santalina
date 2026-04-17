@@ -46,7 +46,8 @@ public class BackupDto {
             boolean notifOnDpRegistration,
             boolean notifOnCreatorRegistration,
             boolean notifOnSafetyReminder,
-            boolean clubCertified
+            boolean clubCertified,
+            String dpOrganizerEmailTemplate
     ) {}
 
     public record SlotEntry(

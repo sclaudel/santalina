@@ -105,6 +105,10 @@ public class User extends PanacheEntityBase {
     @Column(name = "club_certified", nullable = false)
     public boolean clubCertified = false;
 
+    /** Modèle de mail d'organisation stocké par le directeur de plongée dans son profil */
+    @Column(name = "dp_organizer_email_template", columnDefinition = "TEXT")
+    public String dpOrganizerEmailTemplate;
+
     // ---- helpers ----
 
     /** Retourne le nom complet (prénom + nom). */

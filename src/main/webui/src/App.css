@@ -2039,3 +2039,82 @@ body {
   color: #374151;
   margin: 0 0 2px;
 }
+
+/* ========== MODAL WIDE + MODAL HEADER/BODY/FOOTER ========== */
+.modal--wide { max-width: 860px; }
+
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px; padding-bottom: 12px;
+  border-bottom: 1px solid var(--gray-200);
+}
+.modal-header h3 { margin: 0; font-size: 18px; font-weight: 700; }
+.modal-body {
+  display: flex; flex-direction: column; gap: 12px;
+}
+.modal-footer {
+  display: flex; justify-content: flex-end; gap: 10px;
+  margin-top: 18px; padding-top: 14px;
+  border-top: 1px solid var(--gray-200);
+}
+
+/* ========== PALANQUEE MAIL BUTTON ========== */
+.palanquee-export-btn--mail {
+  background: #2563eb;
+}
+.palanquee-export-btn--mail:hover:not(:disabled) { background: #1d4ed8; }
+
+/* ========== MAIL MODAL SPECIFICS ========== */
+.mail-modal-missing {
+  background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px;
+  padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; font-size: 13px;
+}
+.mail-modal-missing-row {
+  display: flex; align-items: center; gap: 10px;
+}
+.mail-modal-missing-row span { min-width: 160px; font-weight: 500; }
+.mail-modal-missing-row input {
+  flex: 1; padding: 5px 8px; border: 1px solid var(--gray-300);
+  border-radius: 6px; font-size: 13px;
+}
+.mail-modal-vars {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  padding: 8px 10px; background: var(--gray-50); border-radius: 6px;
+}
+.mail-modal-var-chip {
+  font-size: 11px; font-family: monospace; padding: 2px 7px;
+  background: #e0e7ff; color: #3730a3; border-radius: 4px;
+  cursor: pointer; user-select: none;
+  transition: background 0.12s;
+}
+.mail-modal-var-chip:hover { background: #c7d2fe; }
+
+/* ========== RICH TEXT EDITOR ========== */
+.rte {
+  border: 1px solid var(--gray-300); border-radius: 8px; overflow: hidden;
+  font-size: 14px;
+}
+.rte-toolbar {
+  display: flex; flex-wrap: wrap; gap: 2px; padding: 6px 8px;
+  background: var(--gray-50); border-bottom: 1px solid var(--gray-200);
+}
+.rte-btn {
+  padding: 3px 8px; background: none; border: 1px solid transparent;
+  border-radius: 4px; font-size: 13px; cursor: pointer; color: var(--gray-700);
+  transition: background 0.12s;
+}
+.rte-btn:hover { background: var(--gray-200); }
+.rte-btn.active { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
+.rte-sep { width: 1px; background: var(--gray-300); margin: 2px 4px; align-self: stretch; }
+.rte-content {
+  min-height: 320px; padding: 12px 14px; outline: none; overflow-y: auto;
+  line-height: 1.6;
+}
+.rte-content:empty:before {
+  content: attr(data-placeholder); color: var(--gray-400); pointer-events: none;
+}
+.rte-content h2 { font-size: 18px; font-weight: 700; margin: 10px 0 4px; }
+.rte-content h3 { font-size: 15px; font-weight: 700; margin: 8px 0 4px; }
+.rte-content p { margin: 0 0 8px; }
+.rte-content ul, .rte-content ol { padding-left: 20px; margin: 4px 0 8px; }
+.rte-content li { margin-bottom: 3px; }
