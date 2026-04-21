@@ -2105,7 +2105,7 @@ body {
 /* ========== RICH TEXT EDITOR ========== */
 .rte {
   border: 1px solid var(--gray-300); border-radius: 8px; overflow: hidden;
-  font-size: 14px;
+  font-size: 14px; background: var(--white);
 }
 .rte-toolbar {
   display: flex; flex-wrap: wrap; gap: 2px; padding: 6px 8px;
@@ -2131,3 +2131,9 @@ body {
 .rte-content p { margin: 0 0 8px; }
 .rte-content ul, .rte-content ol { padding-left: 20px; margin: 4px 0 8px; }
 .rte-content li { margin-bottom: 3px; }
+.rte-content a { color: var(--primary); text-decoration: underline; }
+.rte-link-popup {
+  position: relative; background: var(--white); border: 1px solid var(--gray-300);
+  border-radius: 8px; padding: 12px 14px; margin: 0 0 0;
+}
+.rte-link-popup-inner { display: flex; flex-direction: column; gap: 4px; }
