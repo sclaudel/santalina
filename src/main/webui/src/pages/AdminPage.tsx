@@ -74,6 +74,7 @@ export function AdminPage() {
   const [notifSafetyReminder, setNotifSafetyReminder] = useState(false);
   const [safetyReminderDelayDays, setSafetyReminderDelayDays] = useState(3);
   const [safetyReminderEmailBody, setSafetyReminderEmailBody] = useState('');
+  const [safetyReminderEmailBodyKey, setSafetyReminderEmailBodyKey] = useState(0);
   const [notifSettingsLoading, setNotifSettingsLoading] = useState(false);
 
   // Rapport périodique d'inscriptions par e-mail
@@ -160,6 +161,7 @@ export function AdminPage() {
       setNotifSafetyReminder(c.notifSafetyReminderEnabled ?? false);
       setSafetyReminderDelayDays(c.safetyReminderDelayDays ?? 3);
       setSafetyReminderEmailBody(c.safetyReminderEmailBody ?? '');
+      setSafetyReminderEmailBodyKey(k => k + 1);
       setReportEmailEnabled(c.reportEmailEnabled ?? false);
       setReportEmailPeriodDays(c.reportEmailPeriodDays ?? 7);
       setReportEmailRecipients(c.reportEmailRecipients ?? '');
@@ -884,11 +886,12 @@ export function AdminPage() {
                   (variables disponibles&nbsp;: <code>{'{siteName}'}</code>, <code>{'{slotDate}'}</code>, <code>{'{slotLabel}'}</code>)
                 </span>
               </label>
-              <textarea
-                value={safetyReminderEmailBody}
-                onChange={e => setSafetyReminderEmailBody(e.target.value)}
-                rows={5}
-                style={{ width: '100%', fontFamily: 'monospace', fontSize: 13, resize: 'vertical' }}
+              <RichTextEditor
+                key={safetyReminderEmailBodyKey}
+                initialValue={safetyReminderEmailBody}
+                onChange={setSafetyReminderEmailBody}
+                placeholder="Corps du mail de rappel..."
+                minHeight={200}
               />
             </div>
           </div>
