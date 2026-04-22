@@ -239,6 +239,13 @@ export interface StatsResponse {
   byDayOfWeek: PeriodStat[];
   byLevel: GroupStat[];
   byDiveDirector: DpStat[];
+  totalCapacity: number;
+  fillRate: number;
+  bestDayDate: string;
+  bestDayDivers: number;
+  bestMonthLabel: string;
+  bestMonthDivers: number;
+  totalUniqueDays: number;
 }
 
 export interface MyStatsResponse {
@@ -251,6 +258,13 @@ export interface MyStatsResponse {
   avgDiversPerSlot: number;
   byDayOfWeek: PeriodStat[];
   byLevel: GroupStat[];
+  totalCapacity: number;
+  fillRate: number;
+  bestDayDate: string;
+  bestDayDivers: number;
+  bestMonthLabel: string;
+  bestMonthDivers: number;
+  totalUniqueDays: number;
 }
 
 export interface Palanquee {
