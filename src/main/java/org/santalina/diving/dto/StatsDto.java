@@ -41,7 +41,14 @@ public class StatsDto {
             double           avgDiversPerSlot,
             List<PeriodStat> byDayOfWeek,
             List<GroupStat>  byLevel,
-            List<DpStat>     byDiveDirector
+            List<DpStat>     byDiveDirector,
+            int              totalCapacity,
+            double           fillRate,
+            String           bestDayDate,
+            int              bestDayDivers,
+            String           bestMonthLabel,
+            int              bestMonthDivers,
+            int              totalUniqueDays
     ) {}
 
     public record MyStatsResponse(
@@ -53,6 +60,13 @@ public class StatsDto {
             int              totalDivers,
             double           avgDiversPerSlot,
             List<PeriodStat> byDayOfWeek,
-            List<GroupStat>  byLevel
+            List<GroupStat>  byLevel,
+            int              totalCapacity,
+            double           fillRate,
+            String           bestDayDate,
+            int              bestDayDivers,
+            String           bestMonthLabel,
+            int              bestMonthDivers,
+            int              totalUniqueDays
     ) {}
 }

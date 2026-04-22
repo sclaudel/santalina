@@ -1179,6 +1179,57 @@ body {
   .bar-row { grid-template-columns: 48px 1fr 80px; }
 }
 
+/* ── En-tête stats + bouton PDF ──────────────────────────────────────────── */
+.stats-page-header {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  margin-bottom: 20px;
+}
+.stats-page-header h1 { margin: 0; font-size: 22px; font-weight: 800; }
+.stats-pdf-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 600;
+  border: 1.5px solid var(--primary); color: var(--primary); background: var(--white);
+  cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+.stats-pdf-btn:hover { background: var(--primary); color: var(--white); }
+
+/* ── Taux de remplissage (barre) ─────────────────────────────────────────── */
+.fillrate-wrapper { display: flex; align-items: center; gap: 8px; width: 100%; }
+.fillrate-bar-track { flex: 1; height: 10px; background: var(--gray-200); border-radius: 6px; overflow: hidden; }
+.fillrate-bar-fill { height: 100%; border-radius: 6px; transition: width 0.6s ease; }
+.fillrate-value { font-size: 14px; font-weight: 700; white-space: nowrap; }
+.stats-total-card-fillrate { gap: 8px !important; }
+.stats-fillrate-label { font-size: 11px !important; }
+
+/* ── Carte jauge ─────────────────────────────────────────────────────────── */
+.stats-total-card-gauge {
+  min-width: 180px !important;
+  padding: 12px 16px !important;
+}
+
+/* ── Cartes record ───────────────────────────────────────────────────────── */
+.stats-total-card-record {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
+  border: 1.5px solid #fbbf24 !important;
+}
+.stats-total-card-record .stats-total-value { color: #b45309 !important; }
+.stats-record-date {
+  font-size: 11px; color: #92400e; font-weight: 600;
+  background: #fde68a; padding: 2px 8px; border-radius: 10px; white-space: nowrap;
+}
+
+/* ── Graphique courbes ───────────────────────────────────────────────────── */
+.line-chart-wrapper { width: 100%; overflow: hidden; }
+
+/* ── Filtres ─────────────────────────────────────────────────────────────── */
+.stats-filters {
+  display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 20px;
+}
+.stats-filters label {
+  display: flex; flex-direction: column; gap: 4px;
+  font-size: 12px; font-weight: 600; color: var(--gray-600);
+}
+
 /* ── Palanquée page ──────────────────────────────────────────────────────── */
 .palanquee-page {
   display: flex;

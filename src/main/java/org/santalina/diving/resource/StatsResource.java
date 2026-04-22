@@ -186,11 +186,37 @@ public class StatsResource {
                 .map(s -> (s.club != null && !s.club.isBlank()) ? s.club : null)
                 .filter(Objects::nonNull).distinct().count();
         double avgDiversPerSlot = totalSlots > 0 ? (double) totalDivers / totalSlots : 0.0;
+        int totalCapacity = slots.stream().mapToInt(s -> s.diverCount).sum();
+        double fillRate = totalCapacity > 0 ? (double) totalDivers / totalCapacity * 100.0 : 0.0;
+
+        // ── Record du jour ────────────────────────────────────────────────────
+        Map<String, Integer> diversByDay = new TreeMap<>();
+        for (DiveSlot s : slots) {
+            String dayKey = s.slotDate.toString();
+            diversByDay.merge(dayKey, diversBySlot.getOrDefault(s.id, 0), Integer::sum);
+        }
+        String bestDayDate   = "";
+        int    bestDayDivers = 0;
+        for (Map.Entry<String, Integer> e : diversByDay.entrySet()) {
+            if (e.getValue() > bestDayDivers) { bestDayDivers = e.getValue(); bestDayDate = e.getKey(); }
+        }
+
+        // ── Meilleur mois ─────────────────────────────────────────────────────
+        String bestMonthLabel   = "";
+        int    bestMonthDivers  = 0;
+        for (PeriodStat ps : statsByMonth) {
+            if (ps.divers() > bestMonthDivers) { bestMonthDivers = ps.divers(); bestMonthLabel = ps.label(); }
+        }
+
+        // ── Jours distincts avec créneau ──────────────────────────────────────
+        int totalUniqueDays = (int) slots.stream().map(s -> s.slotDate).distinct().count();
 
         return new StatsResponse(
                 statsByMonth, statsByYear, statsByClub, statsByType,
                 totalSlots, totalDivers, totalClubs, avgDiversPerSlot,
-                statsByDayOfWeek, statsByLevel, statsByDp);
+                statsByDayOfWeek, statsByLevel, statsByDp,
+                totalCapacity, fillRate,
+                bestDayDate, bestDayDivers, bestMonthLabel, bestMonthDivers, totalUniqueDays);
     }
 
     // ── Statistiques personnelles du Directeur de Plongée ─────────────────────
@@ -294,10 +320,36 @@ public class StatsResource {
         int myTotalSlots  = slots.size();
         int myTotalDivers = diversBySlot.values().stream().mapToInt(Integer::intValue).sum();
         double myAvgDiversPerSlot = myTotalSlots > 0 ? (double) myTotalDivers / myTotalSlots : 0.0;
+        int myTotalCapacity = slots.stream().mapToInt(s -> s.diverCount).sum();
+        double myFillRate = myTotalCapacity > 0 ? (double) myTotalDivers / myTotalCapacity * 100.0 : 0.0;
+
+        // ── Record du jour ────────────────────────────────────────────────────
+        Map<String, Integer> myDiversByDay = new TreeMap<>();
+        for (DiveSlot s : slots) {
+            String dayKey = s.slotDate.toString();
+            myDiversByDay.merge(dayKey, diversBySlot.getOrDefault(s.id, 0), Integer::sum);
+        }
+        String myBestDayDate   = "";
+        int    myBestDayDivers = 0;
+        for (Map.Entry<String, Integer> e : myDiversByDay.entrySet()) {
+            if (e.getValue() > myBestDayDivers) { myBestDayDivers = e.getValue(); myBestDayDate = e.getKey(); }
+        }
+
+        // ── Meilleur mois ─────────────────────────────────────────────────────
+        String myBestMonthLabel  = "";
+        int    myBestMonthDivers = 0;
+        for (PeriodStat ps : myByMonth) {
+            if (ps.divers() > myBestMonthDivers) { myBestMonthDivers = ps.divers(); myBestMonthLabel = ps.label(); }
+        }
+
+        // ── Jours distincts avec créneau ──────────────────────────────────────
+        int myTotalUniqueDays = (int) slots.stream().map(s -> s.slotDate).distinct().count();
 
         return new MyStatsResponse(
                 myByMonth, myByYear, myByClub, myByType,
                 myTotalSlots, myTotalDivers, myAvgDiversPerSlot,
-                myByDayOfWeek, myByLevel);
+                myByDayOfWeek, myByLevel,
+                myTotalCapacity, myFillRate,
+                myBestDayDate, myBestDayDivers, myBestMonthLabel, myBestMonthDivers, myTotalUniqueDays);
     }
 }
