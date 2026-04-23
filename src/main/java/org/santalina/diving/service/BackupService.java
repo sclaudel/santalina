@@ -22,6 +22,9 @@ public class BackupService {
     @Inject
     EntityManager em;
 
+    @Inject
+    AuthService authService;
+
     // ---- Exports ----
 
     /** Export configuration + utilisateurs (sans créneaux). */
@@ -308,6 +311,10 @@ public class BackupService {
             }
         }
         em.flush();
+
+        // 8. S'assurer qu'un admin existe toujours (au cas où le backup importé
+        //    ne contenait aucun utilisateur admin).
+        authService.ensureAdminExists();
 
         LOG.infof("Import terminé : %d config, %d users, %d slots, %d divers, %d palanquees, %d waitingList",
                 configCount, userCount, slotCount, diverCount, palanqueeCount, waitingListCount);

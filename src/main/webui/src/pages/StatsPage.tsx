@@ -9,6 +9,12 @@ import {
   drawPdfGroupedBars, ensureSpace, drawSectionTitle,
 } from '../utils/pdfCharts';
 
+/** Convertit "yyyy-MM" en "MM/yyyy" pour l'affichage. Laisse les autres valeurs inchangées. */
+function fmtMonthLabel(label: string): string {
+  const m = label.match(/^(\d{4})-(\d{2})$/);
+  return m ? `${m[2]}/${m[1]}` : label;
+}
+
 // ── Camembert SVG ─────────────────────────────────────────────────────────────
 const PIE_COLORS = [
   '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
@@ -284,7 +290,7 @@ function exportStatsToPdf(stats: StatsResponse, filterYear: string, filterMonth:
     ['Directeurs de plongée', stats.byDiveDirector.length],
     ['Moy. plongeurs / créneau', stats.avgDiversPerSlot.toFixed(1)],
   ];
-  if (stats.bestDayDate)    kpiBody.push(['Meilleure journée', `${stats.bestDayDate} (${stats.bestDayDivers} plg.)`]);
+  if (stats.bestDayDate)    kpiBody.push(['Meilleure journée', `${dayjs(stats.bestDayDate).format('DD/MM/YYYY')} (${stats.bestDayDivers} plg.)`]);
   if (stats.bestMonthLabel) kpiBody.push(['Meilleur mois',     `${stats.bestMonthLabel} (${stats.bestMonthDivers} plg.)`]);
 
   autoTable(doc, {
@@ -427,7 +433,7 @@ export function StatsPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const periodData  = filterMonth !== 'all' ? [] : (stats?.byMonth ?? []);
+  const periodData  = filterMonth !== 'all' ? [] : (stats?.byMonth ?? []).map(d => ({ ...d, label: fmtMonthLabel(d.label) }));
   const yearData    = stats?.byYear ?? [];
   const lineData    = filterYear !== 'all' ? periodData : yearData;
 
@@ -527,6 +533,7 @@ export function StatsPage() {
                 <span className="stats-total-icon">🥇</span>
                 <span className="stats-total-value">{stats.bestDayDivers}</span>
                 <span className="stats-total-label">Record du jour</span>
+                <span className="stats-record-desc">Nb max de plongées réalisées en une seule journée</span>
                 <span className="stats-record-date">{dayjs(stats.bestDayDate).format('DD/MM/YYYY')}</span>
               </div>
             )}
@@ -535,7 +542,8 @@ export function StatsPage() {
                 <span className="stats-total-icon">📆</span>
                 <span className="stats-total-value">{stats.bestMonthDivers}</span>
                 <span className="stats-total-label">Record du mois</span>
-                <span className="stats-record-date">{stats.bestMonthLabel}</span>
+                <span className="stats-record-desc">Nb max de plongées réalisées en un seul mois</span>
+                <span className="stats-record-date">{fmtMonthLabel(stats.bestMonthLabel)}</span>
               </div>
             )}
           </div>
@@ -681,7 +689,7 @@ export function StatsPage() {
                               <tbody>
                                 {dp.byMonth.map(row => (
                                   <tr key={row.label}>
-                                    <td>{row.label}</td>
+                                    <td>{fmtMonthLabel(row.label)}</td>
                                     <td>{row.directions}</td>
                                     <td>{row.avgDivers.toFixed(1)}</td>
                                   </tr>

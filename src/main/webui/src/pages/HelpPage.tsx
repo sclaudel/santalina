@@ -629,6 +629,43 @@ export function HelpPage() {
       ),
     },
 
+    // ── MES STATISTIQUES (DP + ADMIN) ────────────────────────────────────────
+    {
+      id: 'mes-statistiques',
+      icon: '📊',
+      title: 'Mes statistiques',
+      roles: ['ADMIN', 'DIVE_DIRECTOR'],
+      content: (
+        <>
+          <p>Chaque directeur de plongée peut consulter ses propres statistiques via le menu utilisateur → <strong>📊 Mes statistiques</strong>.</p>
+
+          <h4>Filtres de période</h4>
+          <ul>
+            <li><strong>Année</strong> — sélectionnez une année ou « Toutes ».</li>
+            <li><strong>Mois</strong> — disponible uniquement si une année est sélectionnée.</li>
+          </ul>
+
+          <h4>Indicateurs clés</h4>
+          <ul>
+            <li>Créneaux dirigés, plongeurs encadrés, capacité totale, jours de plongée.</li>
+            <li>Ratio moyen plongeurs / créneau et taux de remplissage (jauge).</li>
+            <li><strong>Record du jour</strong> — date (JJ/MM/AAAA) et nombre maximal de plongeurs en une journée.</li>
+            <li><strong>Record du mois</strong> — meilleur mois et nombre de plongeurs.</li>
+          </ul>
+
+          <h4>Visualisations</h4>
+          <ul>
+            <li>Courbe d'évolution mensuelle (si une année est sélectionnée) ou annuelle.</li>
+            <li>Répartition par club, par type de créneau, par jour de la semaine et par niveau de plongeur.</li>
+          </ul>
+
+          <h4>Export PDF</h4>
+          <p>Cliquez sur <strong>📄 Exporter PDF</strong> pour télécharger un rapport personnalisé incluant l'ensemble de vos statistiques.</p>
+          <div className="help-tip">💡 Les dates sont affichées au format JJ/MM/AAAA.</div>
+        </>
+      ),
+    },
+
     // ── STATISTIQUES (ADMIN) ─────────────────────────────────────────────────
     {
       id: 'statistiques',
@@ -645,16 +682,42 @@ export function HelpPage() {
             <li><strong>Mois</strong> — disponible uniquement si une année est sélectionnée. Permet de restreindre l'affichage à un mois précis.</li>
           </ul>
 
-          <h4>Visualisations disponibles</h4>
+          <h4>Indicateurs clés (KPI)</h4>
+          <p>Une rangée de cartes synthétise les chiffres du tableau de bord :</p>
           <ul>
-            <li><strong>Cartes de totaux</strong> — nombre de créneaux, plongées inscrites et ratio moyen plongeurs / créneau sur la période.</li>
-            <li><strong>Histogramme</strong> — évolution mensuelle (si une année est choisie) ou annuelle, avec les barres Plongées et Créneaux.</li>
-            <li><strong>Camemberts par club</strong> — répartition des plongées et des créneaux entre les clubs, avec les pourcentages affichés dans la légende.</li>
-            <li><strong>Camemberts par type</strong> — répartition par type de créneau (Exploration, Formation, Apnée…), avec les pourcentages.</li>
-            <li><strong>Tableaux de détail</strong> — chiffres bruts par club et par type pour une lecture précise.</li>
+            <li>Nombre de créneaux et de plongées inscrites.</li>
+            <li>Jours actifs (jours ayant au moins un créneau sur la période).</li>
+            <li>Taux de remplissage global (jauge).</li>
+            <li>Clubs et Directeurs de plongée actifs sur la période.</li>
+            <li>Ratio moyen plongeurs / créneau.</li>
+            <li><strong>Record du jour</strong> — date (JJ/MM/AAAA) et nombre maximal de plongeurs en une journée.</li>
+            <li><strong>Record du mois</strong> — meilleur mois et nombre de plongeurs.</li>
           </ul>
 
-          <div className="help-tip">💡 Survolez une tranche d'un camembert pour afficher le détail (nom, valeur et pourcentage exact) dans une infobulle.</div>
+          <h4>Évolution par période</h4>
+          <ul>
+            <li>Courbe d'évolution mensuelle (si une année est sélectionnée) ou annuelle.</li>
+            <li>Tableau récapitulatif avec les colonnes Période, Créneaux, Plongées.</li>
+          </ul>
+
+          <h4>Répartition</h4>
+          <ul>
+            <li><strong>Par club</strong> — barres proportionnelles Plongées et Créneaux, triées par nombre de plongées.</li>
+            <li><strong>Par type de créneau</strong> — même format (Exploration, Formation, Apnée…).</li>
+            <li><strong>Par jour de la semaine</strong> — barres groupées Créneaux / Plongées pour chaque jour.</li>
+            <li><strong>Par niveau de plongeur</strong> — barres proportionnelles du nombre d'inscriptions par niveau.</li>
+          </ul>
+
+          <h4>Par Directeur de Plongée</h4>
+          <p>Un accordéon liste chaque DP actif sur la période :</p>
+          <ul>
+            <li>Nombre total de directions et moyenne de plongeurs par session.</li>
+            <li>Courbe et tableau détaillés par année, puis par mois (si une année est filtrée).</li>
+          </ul>
+
+          <h4>Export PDF</h4>
+          <p>Cliquez sur <strong>📄 Exporter PDF</strong> pour télécharger un rapport complet incluant tous les indicateurs et graphiques de la période sélectionnée.</p>
+          <div className="help-tip">💡 Les dates sont toujours affichées au format JJ/MM/AAAA dans les rapports et les exports PDF.</div>
         </>
       ),
     },
@@ -939,6 +1002,27 @@ export function HelpPage() {
           { type: 'tip' as const, text: 'L\'éditeur WYSIWYG supporte le gras, l\'italique, le souligné, les titres H2/H3, les listes à puces et numérotées.' },
         ],
       },
+      {
+        icon: '📊', title: 'Mes statistiques',
+        items: [
+          { type: 'paragraph' as const, text: 'Chaque directeur de plongée peut consulter ses propres statistiques via Mes statistiques dans la barre de navigation.' },
+          { type: 'h4' as const, text: 'Filtres de période' },
+          { type: 'ul' as const, items: ['Année — sélectionnez une année ou « Toutes ».', 'Mois — disponible si une année est sélectionnée.'] },
+          { type: 'h4' as const, text: 'Indicateurs disponibles' },
+          { type: 'ul' as const, items: [
+            'Créneaux dirigés, plongeurs encadrés, capacité totale, jours de plongée.',
+            'Ratio moyen plongeurs / créneau, taux de remplissage.',
+            'Record du jour — date (JJ/MM/AAAA) et nombre maximal de plongeurs.',
+            'Record du mois — meilleur mois et nombre de plongeurs.',
+          ] },
+          { type: 'h4' as const, text: 'Visualisations' },
+          { type: 'ul' as const, items: [
+            'Courbe d\'évolution mensuelle ou annuelle.',
+            'Répartition par club, par type de créneau, par jour de la semaine et par niveau de plongeur.',
+          ] },
+          { type: 'tip' as const, text: 'Exportez vos statistiques en PDF depuis le bouton Exporter PDF.' },
+        ],
+      },
     ] : []),
     {
       icon: '🔐', title: 'Se connecter / S\'inscrire',
@@ -980,9 +1064,26 @@ export function HelpPage() {
           { type: 'paragraph' as const, text: 'Le tableau de bord des statistiques est accessible via Statistiques dans la barre de navigation (réservé aux administrateurs).' },
           { type: 'h4' as const, text: 'Filtres de période' },
           { type: 'ul' as const, items: ['Année — sélectionnez une année ou « Toutes » pour afficher toutes les données.', 'Mois — disponible uniquement si une année est sélectionnée.'] },
-          { type: 'h4' as const, text: 'Visualisations disponibles' },
-          { type: 'ul' as const, items: ['Cartes de totaux — nombre de créneaux, plongées inscrites et ratio moyen.', 'Histogramme — évolution mensuelle ou annuelle.', 'Camemberts par club — répartition des plongées et des créneaux entre les clubs.', 'Camemberts par type — répartition par type de créneau.', 'Tableaux de détail — chiffres bruts par club et par type.'] },
-          { type: 'tip' as const, text: 'Survolez une tranche d\'un camembert pour afficher le détail dans une infobulle.' },
+          { type: 'h4' as const, text: 'Indicateurs clés (KPI)' },
+          { type: 'ul' as const, items: [
+            'Créneaux, plongées inscrites, jours actifs, taux de remplissage.',
+            'Clubs actifs, directeurs de plongée actifs sur la période.',
+            'Ratio moyen plongeurs / créneau.',
+            'Record du jour — date (JJ/MM/AAAA) et nombre maximal de plongeurs.',
+            'Record du mois — meilleur mois et nombre de plongeurs.',
+          ] },
+          { type: 'h4' as const, text: 'Évolution par période' },
+          { type: 'ul' as const, items: ['Courbe mensuelle (si une année est filtrée) ou annuelle.', 'Tableau Période / Créneaux / Plongées.'] },
+          { type: 'h4' as const, text: 'Répartition' },
+          { type: 'ul' as const, items: [
+            'Par club — barres proportionnelles Plongées et Créneaux.',
+            'Par type de créneau.',
+            'Par jour de la semaine — barres groupées.',
+            'Par niveau de plongeur.',
+          ] },
+          { type: 'h4' as const, text: 'Par Directeur de Plongée' },
+          { type: 'ul' as const, items: ['Nombre de directions et moyenne plongeurs / session.', 'Détail par année et par mois en accordéon.'] },
+          { type: 'tip' as const, text: 'Utilisez le bouton Exporter PDF pour télécharger un rapport complet de la période sélectionnée.' },
         ],
       },
       {
