@@ -61,18 +61,22 @@ export function drawPdfPropBars(
   if (filtered.length === 0) return y;
 
   const total = filtered.reduce((s, d) => s + d[valueKey], 0);
-  const lblW  = 55;
-  const barX  = x + lblW + 3;
-  const barW  = width - lblW - 42;
+  // Largeurs proportionnelles à la largeur disponible pour éviter barW négatif
+  const valW  = Math.min(32, width * 0.22);   // colonne valeur à droite
+  const lblW  = Math.min(58, width * 0.42);   // colonne label à gauche
+  const barX  = x + lblW + 2;
+  const barW  = width - lblW - 2 - valW;
   const rowH  = 11;
+  // Nb max de caractères pour le label selon la largeur disponible (~1.5mm/char à 7.5pt)
+  const maxChars = Math.max(8, Math.floor(lblW / 1.5));
 
   filtered.slice(0, 12).forEach((d, i) => {
     const pct   = d[valueKey] / total;
     const fillW = pct * barW;
     const color = PDF_COLORS[i % PDF_COLORS.length];
 
-    // Label (tronqué si trop long)
-    const lbl = d.label.length > 22 ? d.label.slice(0, 21) + '…' : d.label;
+    // Label (tronqué selon la largeur réelle disponible)
+    const lbl = d.label.length > maxChars ? d.label.slice(0, maxChars - 1) + '…' : d.label;
     doc.setFontSize(7.5);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(80, 80, 80);
@@ -91,7 +95,7 @@ export function drawPdfPropBars(
     // Valeur + %
     doc.setFontSize(7);
     doc.setTextColor(80, 80, 80);
-    doc.text(`${d[valueKey]} (${(pct * 100).toFixed(0)} %)`, barX + barW + 3, y + 5.5);
+    doc.text(`${d[valueKey]} (${(pct * 100).toFixed(0)} %)`, barX + barW + 2, y + 5.5);
 
     y += rowH;
   });

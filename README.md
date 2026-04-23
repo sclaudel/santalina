@@ -28,7 +28,8 @@ Application de réservation de créneaux de plongée en lac, développée avec *
 - **Normalisation des données** : prénoms capitalisés, emails en minuscules
 - **Docker-ready** : Dockerfile multi-stage + docker-compose
 - **Double base de données** : H2 fichier (dev) / PostgreSQL (prod)
-- **Statistiques** (ADMIN) : tableau de bord avec camemberts, histogrammes et tableaux
+- **Statistiques** (ADMIN) : tableau de bord avec KPI (records du jour/mois en JJ/MM/AAAA), courbe d'évolution, barres proportionnelles, par DP et export PDF
+- **Mes statistiques** (DIVE_DIRECTOR + ADMIN) : statistiques personnelles avec filtre période et export PDF
 - **Sauvegarde / restauration** : export JSON complet ou config+utilisateurs, import avec normalisation automatique
 - **Mode maintenance** (ADMIN) : désactivation des connexions non-admin en un clic
 - **Rapport périodique d'inscriptions** (ADMIN) : envoi automatique d'un fichier CSV des nouvelles inscriptions trié par club d'appartenance, avec période paramétrable (hebdomadaire, mensuel, etc.) ; le mail informe explicitement le destinataire qu'il peut signaler au CODEP tout plongeur hors de son club ; déclenchement manuel sur période personnalisée avec filtre par club, envoi par e-mail ou téléchargement direct
@@ -136,6 +137,7 @@ docker compose up --build
 | `POST` | `/api/config/report-email-send` | ADMIN | Envoyer le rapport manuellement (période + destinataires) |
 | `GET` | `/api/config/report-email-download?from=&to=` | ADMIN | Télécharger le rapport CSV sur une période |
 | `GET` | `/api/stats?from=YYYY-MM-DD&to=YYYY-MM-DD` | ADMIN | Statistiques agrégées (période optionnelle) |
+| `GET` | `/api/stats/my?from=YYYY-MM-DD&to=YYYY-MM-DD` | ADMIN, DIVE_DIRECTOR | Statistiques personnelles du DP connecté |
 
 Documentation Swagger : **http://localhost:8085/q/swagger-ui**
 
@@ -176,34 +178,50 @@ Il est possible de partager des liens vers une date ou un créneau précis, util
 
 ---
 
-## 📊 Statistiques (ADMIN)
+## 📊 Statistiques
 
-Accessible via le **menu utilisateur → 📊 Statistiques** (réservé au rôle `ADMIN`).
+### Statistiques globales (ADMIN)
 
-### Filtres disponibles
+Accessible via **📊 Statistiques** dans la barre de navigation (rôle `ADMIN`).
+
+#### Filtres disponibles
 - **Année** : toutes les années ou une année spécifique
 - **Mois** : tous les mois ou un mois spécifique (si une année est sélectionnée)
 
-### Visualisations
+#### Indicateurs clés (KPI)
+| Indicateur | Description |
+|------------|-------------|
+| Créneaux | Nombre total de créneaux sur la période |
+| Plongées inscrites | Nombre total d'inscriptions |
+| Jours actifs | Jours avec au moins un créneau |
+| Taux de remplissage | Jauge capacité utilisée / capacité totale |
+| Clubs actifs | Clubs représentés sur la période |
+| Directeurs de plongée | DP ayant dirigé au moins un créneau |
+| Ratio moyen | Moyenne plongeurs / créneau |
+| Record du jour | Date (JJ/MM/AAAA) et nombre maximal de plongeurs en une journée |
+| Record du mois | Meilleur mois et nombre de plongeurs |
+
+#### Visualisations
 | Vue | Description |
 |-----|-------------|
-| Cartes de totaux | Nombre de créneaux, plongées inscrites, ratio moyen plongeurs/créneau |
-| Histogramme | Évolution par mois ou par année (barres Plongées + Créneaux) |
-| Camemberts par club | Répartition des plongées et des créneaux par club, avec % |
-| Camemberts par type | Répartition des plongées et des créneaux par type de créneau, avec % |
-| Tableaux de détail | Chiffres bruts par club et par type de créneau |
+| Courbe d'évolution | Mensuelle (si année filtrée) ou annuelle |
+| Par club | Barres proportionnelles Plongées + Créneaux |
+| Par type de créneau | Barres proportionnelles Plongées + Créneaux |
+| Par jour de la semaine | Barres groupées Créneaux / Plongées |
+| Par niveau de plongeur | Barres proportionnelles des inscriptions |
+| Par Directeur de Plongée | Accordéon : directions, moy. plongeurs/session, détail par année/mois |
 
-### Structure de la réponse `/api/stats`
-```json
-{
-  "byMonth":  [{ "label": "2026-03", "slots": 12, "divers": 48 }],
-  "byYear":   [{ "label": "2026",    "slots": 45, "divers": 180 }],
-  "byClub":   [{ "label": "Club A",  "slots": 20, "divers": 80 }],
-  "byType":   [{ "label": "Lac",     "slots": 30, "divers": 120 }],
-  "totalSlots":  45,
-  "totalDivers": 180
-}
-```
+#### Export PDF
+Bouton **📄 Exporter PDF** disponible dans la page — génère un rapport complet de la période.
+
+---
+
+### Mes statistiques (ADMIN + DIVE_DIRECTOR)
+
+Accessible via **📊 Mes statistiques** dans la barre de navigation (rôles `ADMIN` et `DIVE_DIRECTOR`).
+
+Mêmes filtres et indicateurs que les statistiques globales, mais restreints aux créneaux créés par l'utilisateur connecté.
+Inclut un export PDF personnalisé.
 
 ---
 
