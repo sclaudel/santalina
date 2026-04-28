@@ -6,6 +6,7 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.santalina.diving.service.ConfigService;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -111,5 +112,58 @@ class ConfigServiceTest {
         assertNotNull(config);
         // La valeur retournée doit être cohérente avec le getter direct
         assertEquals(configService.isMaintenanceMode(), config.maintenanceMode());
+    }
+
+    // ── Date d'activation du rappel fiche de sécurité ───────────────────────
+
+    @Test
+    @TestTransaction
+    void updateNotifSettings_shouldAutoSetActivationDate_whenFirstEnabled() {
+        // On s'assure qu'aucune date n'est définie avant le test
+        configService.updateNotifSettings(true, true, true, true, true,
+                false, 3, "corps du rappel", null);
+        // Activer le rappel pour la première fois → la date doit être auto-définie à aujourd'hui
+        var config = configService.updateNotifSettings(true, true, true, true, true,
+                true, 3, "corps du rappel", null);
+
+        assertNotNull(config.safetyReminderActivationDate(),
+                "La date d'activation doit être définie dans la réponse");
+        assertFalse(config.safetyReminderActivationDate().isBlank(),
+                "La date d'activation ne doit pas être vide");
+        assertEquals(LocalDate.now().toString(), config.safetyReminderActivationDate(),
+                "La date d'activation doit correspondre à aujourd'hui");
+    }
+
+    @Test
+    @TestTransaction
+    void updateNotifSettings_shouldNotOverrideActivationDate_whenAlreadySet() {
+        // Premier enable : date = aujourd'hui
+        configService.updateNotifSettings(true, true, true, true, true,
+                true, 3, "corps", null);
+        String firstDate = configService.getConfig().safetyReminderActivationDate();
+        assertNotNull(firstDate);
+
+        // Deuxième appel avec enabled=true sans passer de date : la date ne doit pas changer
+        var config = configService.updateNotifSettings(true, true, true, true, true,
+                true, 5, "nouveau corps", null);
+
+        assertEquals(firstDate, config.safetyReminderActivationDate(),
+                "La date d'activation ne doit pas être réécrasée si elle est déjà définie");
+    }
+
+    @Test
+    @TestTransaction
+    void updateNotifSettings_shouldOverrideActivationDate_whenExplicitlyProvided() {
+        // Premier enable
+        configService.updateNotifSettings(true, true, true, true, true,
+                true, 3, "corps", null);
+
+        // Fournir une nouvelle date explicite
+        String newDate = "2026-01-01";
+        var config = configService.updateNotifSettings(true, true, true, true, true,
+                true, 3, "corps", newDate);
+
+        assertEquals(newDate, config.safetyReminderActivationDate(),
+                "La date d'activation doit être mise à jour quand une valeur explicite est fournie");
     }
 }

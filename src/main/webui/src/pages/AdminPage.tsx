@@ -75,6 +75,7 @@ export function AdminPage() {
   const [safetyReminderDelayDays, setSafetyReminderDelayDays] = useState(3);
   const [safetyReminderEmailBody, setSafetyReminderEmailBody] = useState('');
   const [safetyReminderEmailBodyKey, setSafetyReminderEmailBodyKey] = useState(0);
+  const [safetyReminderActivationDate, setSafetyReminderActivationDate] = useState<string>('');
   const [notifSettingsLoading, setNotifSettingsLoading] = useState(false);
 
   // Rapport périodique d'inscriptions par e-mail
@@ -162,6 +163,7 @@ export function AdminPage() {
       setSafetyReminderDelayDays(c.safetyReminderDelayDays ?? 3);
       setSafetyReminderEmailBody(c.safetyReminderEmailBody ?? '');
       setSafetyReminderEmailBodyKey(k => k + 1);
+      setSafetyReminderActivationDate(c.safetyReminderActivationDate ?? '');
       setReportEmailEnabled(c.reportEmailEnabled ?? false);
       setReportEmailPeriodDays(c.reportEmailPeriodDays ?? 7);
       setReportEmailRecipients(c.reportEmailRecipients ?? '');
@@ -429,8 +431,10 @@ export function AdminPage() {
         notifSafetyReminderEnabled: notifSafetyReminder,
         safetyReminderDelayDays: safetyReminderDelayDays,
         safetyReminderEmailBody: safetyReminderEmailBody,
+        safetyReminderActivationDate: safetyReminderActivationDate || undefined,
       });
       setConfig(updated);
+      setSafetyReminderActivationDate(updated.safetyReminderActivationDate ?? '');
       setMsg('Paramètres de notifications enregistrés.');
     } catch (err: unknown) { setError(getErrorMessage(err)); }
     finally { setNotifSettingsLoading(false); }
@@ -868,6 +872,20 @@ export function AdminPage() {
         {notifSafetyReminder && (
           <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 8, padding: 16, marginBottom: 20 }}>
             <h4 style={{ margin: '0 0 12px', color: '#92400e', fontSize: 14 }}>⚙️ Configuration du rappel fiche de sécurité</h4>
+            <div className="form-group" style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 13 }}>
+                Date d'activation
+                <span style={{ fontWeight: 400, color: '#6b7280', marginLeft: 6 }}>
+                  (seuls les créneaux à partir de cette date recevront un rappel)
+                </span>
+              </label>
+              <input
+                type="date"
+                value={safetyReminderActivationDate}
+                onChange={e => setSafetyReminderActivationDate(e.target.value)}
+                style={{ width: 180 }}
+              />
+            </div>
             <div className="form-group" style={{ marginBottom: 12 }}>
               <label style={{ fontSize: 13 }}>Délai après la sortie (en jours)</label>
               <input

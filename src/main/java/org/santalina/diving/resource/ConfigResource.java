@@ -167,7 +167,8 @@ public class ConfigResource {
                 request.notifDpNewRegEnabled(),
                 request.notifSafetyReminderEnabled(),
                 request.safetyReminderDelayDays(),
-                request.safetyReminderEmailBody()
+                request.safetyReminderEmailBody(),
+                request.safetyReminderActivationDate()
         );
     }
 

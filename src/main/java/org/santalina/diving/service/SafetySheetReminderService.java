@@ -40,10 +40,13 @@ public class SafetySheetReminderService {
 
         int delayDays = configService.getSafetyReminderDelayDays();
         LocalDate cutoff = LocalDate.now().minusDays(delayDays);
+        LocalDate activationDate = configService.getSafetyReminderActivationDate();
 
         // Créneaux dont la date est <= cutoff et pour lesquels le rappel n'a pas encore été envoyé
-        List<DiveSlot> slots = DiveSlot.list(
-                "slotDate <= ?1 AND reminderSentAt IS NULL", cutoff);
+        // Si une date d'activation est définie, on exclut les créneaux antérieurs à cette date.
+        List<DiveSlot> slots = activationDate != null
+                ? DiveSlot.list("slotDate <= ?1 AND slotDate >= ?2 AND reminderSentAt IS NULL", cutoff, activationDate)
+                : DiveSlot.list("slotDate <= ?1 AND reminderSentAt IS NULL", cutoff);
 
         int sent = 0;
         int skipped = 0;

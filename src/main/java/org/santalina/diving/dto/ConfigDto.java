@@ -37,6 +37,7 @@ public class ConfigDto {
             boolean notifSafetyReminderEnabled,
             int safetyReminderDelayDays,
             String safetyReminderEmailBody,
+            String safetyReminderActivationDate,
             boolean maintenanceMode,
             boolean reportEmailEnabled,
             int reportEmailPeriodDays,
@@ -90,7 +91,8 @@ public class ConfigDto {
             @NotNull Boolean notifDpNewRegEnabled,
             @NotNull Boolean notifSafetyReminderEnabled,
             @NotNull @Min(1) @jakarta.validation.constraints.Max(30) Integer safetyReminderDelayDays,
-            String safetyReminderEmailBody
+            String safetyReminderEmailBody,
+            String safetyReminderActivationDate
     ) {}
 
     public record UpdateReportEmailSettingsRequest(

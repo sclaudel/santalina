@@ -135,6 +135,7 @@ export const adminService = {
     notifSafetyReminderEnabled: boolean;
     safetyReminderDelayDays: number;
     safetyReminderEmailBody: string;
+    safetyReminderActivationDate?: string;
   }): Promise<AppConfig> {
     const res = await api.put<AppConfig>('/config/notification-settings', settings);
     return res.data;
