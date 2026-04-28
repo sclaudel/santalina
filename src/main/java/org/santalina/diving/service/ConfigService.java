@@ -7,6 +7,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -46,9 +47,10 @@ public class ConfigService {
     private static final String KEY_MAINTENANCE_MODE           = "maintenance.mode";
 
     // -- Rappel fiche de sécurité --
-    private static final String KEY_NOTIF_SAFETY_REMINDER      = "notif.safety_reminder.enabled";
-    private static final String KEY_SAFETY_REMINDER_DELAY_DAYS = "notif.safety_reminder.delay_days";
-    private static final String KEY_SAFETY_REMINDER_EMAIL_BODY = "notif.safety_reminder.email_body";
+    private static final String KEY_NOTIF_SAFETY_REMINDER           = "notif.safety_reminder.enabled";
+    private static final String KEY_SAFETY_REMINDER_DELAY_DAYS      = "notif.safety_reminder.delay_days";
+    private static final String KEY_SAFETY_REMINDER_EMAIL_BODY      = "notif.safety_reminder.email_body";
+    private static final String KEY_SAFETY_REMINDER_ACTIVATION_DATE = "notif.safety_reminder.activation_date";
 
     // -- Rapport périodique d'inscriptions --
     private static final String KEY_REPORT_EMAIL_ENABLED     = "report.email.enabled";
@@ -186,6 +188,12 @@ public class ConfigService {
     public String getSafetyReminderEmailBody() {
         return getStringValue(KEY_SAFETY_REMINDER_EMAIL_BODY, DEFAULT_SAFETY_REMINDER_BODY);
     }
+    /** Retourne la date d'activation du rappel, ou {@code null} si non définie. */
+    public LocalDate getSafetyReminderActivationDate() {
+        String raw = getStringValue(KEY_SAFETY_REMINDER_ACTIVATION_DATE, "");
+        if (raw == null || raw.isBlank()) return null;
+        try { return LocalDate.parse(raw); } catch (Exception ignored) { return null; }
+    }
 
     // -- Getters rapport périodique --
     public boolean isReportEmailEnabled() {
@@ -225,6 +233,7 @@ public class ConfigService {
                 isNotifSafetyReminderEnabled(),
                 getSafetyReminderDelayDays(),
                 getSafetyReminderEmailBody(),
+                getSafetyReminderActivationDate() != null ? getSafetyReminderActivationDate().toString() : "",
                 isMaintenanceMode(),
                 isReportEmailEnabled(),
                 getReportEmailPeriodDays(),
@@ -359,7 +368,8 @@ public class ConfigService {
     public ConfigResponse updateNotifSettings(
             boolean registration, boolean approved, boolean cancelled,
             boolean movedToWl, boolean dpNewReg,
-            boolean safetyReminder, int safetyReminderDelayDays, String safetyReminderEmailBody) {
+            boolean safetyReminder, int safetyReminderDelayDays, String safetyReminderEmailBody,
+            String safetyReminderActivationDate) {
         forceUpsert(KEY_NOTIF_REGISTRATION, String.valueOf(registration));
         forceUpsert(KEY_NOTIF_APPROVED,     String.valueOf(approved));
         forceUpsert(KEY_NOTIF_CANCELLED,    String.valueOf(cancelled));
@@ -368,6 +378,16 @@ public class ConfigService {
         forceUpsert(KEY_NOTIF_SAFETY_REMINDER,      String.valueOf(safetyReminder));
         forceUpsert(KEY_SAFETY_REMINDER_DELAY_DAYS, String.valueOf(safetyReminderDelayDays));
         forceUpsert(KEY_SAFETY_REMINDER_EMAIL_BODY, safetyReminderEmailBody != null ? safetyReminderEmailBody.trim() : DEFAULT_SAFETY_REMINDER_BODY);
+        // Si une date d'activation est fournie explicitement, on l'enregistre
+        if (safetyReminderActivationDate != null && !safetyReminderActivationDate.isBlank()) {
+            try {
+                LocalDate.parse(safetyReminderActivationDate.trim()); // validation format
+                forceUpsert(KEY_SAFETY_REMINDER_ACTIVATION_DATE, safetyReminderActivationDate.trim());
+            } catch (Exception ignored) {}
+        } else if (safetyReminder && getSafetyReminderActivationDate() == null) {
+            // Auto-set uniquement si aucune date n'est encore définie et que le rappel est activé
+            forceUpsert(KEY_SAFETY_REMINDER_ACTIVATION_DATE, LocalDate.now().toString());
+        }
         return getConfig();
     }
 
@@ -411,9 +431,10 @@ public class ConfigService {
         upsertIfMissing(KEY_NOTIF_CANCELLED,    "true");
         upsertIfMissing(KEY_NOTIF_MOVED_TO_WL,  "true");
         upsertIfMissing(KEY_NOTIF_DP_NEW_REG,   "true");
-        upsertIfMissing(KEY_NOTIF_SAFETY_REMINDER,      "false");
-        upsertIfMissing(KEY_SAFETY_REMINDER_DELAY_DAYS, "3");
-        upsertIfMissing(KEY_SAFETY_REMINDER_EMAIL_BODY, DEFAULT_SAFETY_REMINDER_BODY);
+        upsertIfMissing(KEY_NOTIF_SAFETY_REMINDER,           "false");
+        upsertIfMissing(KEY_SAFETY_REMINDER_DELAY_DAYS,        "3");
+        upsertIfMissing(KEY_SAFETY_REMINDER_EMAIL_BODY,        DEFAULT_SAFETY_REMINDER_BODY);
+        upsertIfMissing(KEY_SAFETY_REMINDER_ACTIVATION_DATE,   "");
         upsertIfMissing(KEY_MAINTENANCE_MODE,           "false");
         upsertIfMissing(KEY_REPORT_EMAIL_ENABLED,       "false");
         upsertIfMissing(KEY_REPORT_EMAIL_PERIOD_DAYS,   "7");
