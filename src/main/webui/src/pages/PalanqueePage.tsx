@@ -1217,22 +1217,6 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                 🤿 {dive.label ?? `Plongée ${dive.diveIndex}`}
               </button>
               <button
-                className="dive-tab-export"
-                disabled={exporting}
-                title={`Exporter la fiche de sécurité — ${dive.label ?? `Plongée ${dive.diveIndex}`}`}
-                onClick={async () => {
-                  if (!slot) return;
-                  setExporting(true);
-                  try {
-                    const { exportFicheSecuriteAvecPalanquees } = await import('../utils/exportFicheSecuriteAvecPalanquees');
-                    const pals = palanquees.filter(p => p.slotDiveId === dive.id);
-                    const label = dive.label ?? `Plongée ${dive.diveIndex}`;
-                    await exportFicheSecuriteAvecPalanquees(slot, allDivers, pals, label, dive.startTime, dive.endTime);
-                  } catch (err) { console.error(err); }
-                  finally { setExporting(false); }
-                }}
-              >{exporting ? '…' : '📥'}</button>
-              <button
                 className="dive-tab-delete"
                 onClick={() => handleDeleteDive(dive.id)}
                 title={`Supprimer ${dive.label ?? `Plongée ${dive.diveIndex}`}`}
@@ -1284,6 +1268,24 @@ export function PalanqueePage({ slotId, onBack }: Props) {
               onChange={e => handleDiveTimeChange(dive.id, 'endTime', e.target.value)}
               title="Heure de fin de la plongée"
             />
+            <button
+              className="palanquee-export-btn"
+              disabled={exporting || allDivers.length === 0}
+              title={`Exporter la fiche de sécurité — ${dive.label ?? `Plongée ${dive.diveIndex}`}`}
+              onClick={async () => {
+                if (!slot) return;
+                setExporting(true);
+                try {
+                  const { exportFicheSecuriteAvecPalanquees } = await import('../utils/exportFicheSecuriteAvecPalanquees');
+                  const pals = palanquees.filter(p => p.slotDiveId === dive.id);
+                  const label = dive.label ?? `Plongée ${dive.diveIndex}`;
+                  await exportFicheSecuriteAvecPalanquees(slot, allDivers, pals, label, dive.startTime, dive.endTime);
+                } catch (err) { console.error(err); }
+                finally { setExporting(false); }
+              }}
+            >
+              {exporting ? '…' : '📥 Fiche de sécurité'}
+            </button>
           </div>
         );
       })()}

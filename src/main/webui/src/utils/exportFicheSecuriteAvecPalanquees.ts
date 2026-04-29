@@ -78,6 +78,10 @@ function fillHeader(
     `Date : ${fmtDate(slot.slotDate)} ${startTime}–${endTime}\nClub : ${slot.club ?? ''}\nNom, Prénom et Brevet du DP : ${dpInfo}`;
 
   const startHour = parseInt(startTime.split(':')[0], 10);
+
+  // Appliquer le style de H4 (référence du template) à I4 pour un formatage identique
+  ws.getCell('I4').style = JSON.parse(JSON.stringify(ws.getCell('H4').style ?? {}));
+
   if (startHour < 13) {
     ws.getCell('H4').value = `AM\n${startTime} – ${endTime}`;
     ws.getCell('I4').value = 'PM';
