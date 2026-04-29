@@ -16,6 +16,9 @@ import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Path("/api/slots")
@@ -86,6 +89,59 @@ public class SlotResource {
         if (currentUser == null) throw new NotAuthorizedException("Utilisateur non trouvé");
         slotService.deleteSlot(id, currentUser);
         return Response.noContent().build();
+    }
+
+    @GET
+    @Path("/{id}/ics")
+    @PermitAll
+    @Produces("text/calendar")
+    public Response getCalendarIcs(@PathParam("id") Long id) {
+        org.santalina.diving.domain.DiveSlot slot = org.santalina.diving.domain.DiveSlot.findById(id);
+        if (slot == null) throw new NotFoundException("Créneau non trouvé");
+
+        String uid = "santalina-slot-" + slot.id + "@santalina";
+        String dtstamp = LocalDateTime.now(ZoneOffset.UTC)
+                .format(DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'"));
+        String dateStr = slot.slotDate.format(DateTimeFormatter.BASIC_ISO_DATE);
+        String startStr = dateStr + "T" + slot.startTime.format(DateTimeFormatter.ofPattern("HHmmss"));
+        String endStr   = dateStr + "T" + slot.endTime.format(DateTimeFormatter.ofPattern("HHmmss"));
+
+        String summary = icsEscape(
+                (slot.title != null && !slot.title.isBlank()) ? slot.title : "Plongée");
+        String description = slot.notes != null && !slot.notes.isBlank()
+                ? "DESCRIPTION:" + icsEscape(slot.notes) + "\r\n" : "";
+        String location = slot.club != null && !slot.club.isBlank()
+                ? "LOCATION:" + icsEscape(slot.club) + "\r\n" : "";
+
+        String ics = "BEGIN:VCALENDAR\r\n"
+                + "VERSION:2.0\r\n"
+                + "PRODID:-//Santalina//Santalina Diving//FR\r\n"
+                + "CALSCALE:GREGORIAN\r\n"
+                + "METHOD:PUBLISH\r\n"
+                + "BEGIN:VEVENT\r\n"
+                + "UID:" + uid + "\r\n"
+                + "DTSTAMP:" + dtstamp + "\r\n"
+                + "DTSTART;TZID=Europe/Paris:" + startStr + "\r\n"
+                + "DTEND;TZID=Europe/Paris:" + endStr + "\r\n"
+                + "SUMMARY:" + summary + "\r\n"
+                + description
+                + location
+                + "END:VEVENT\r\n"
+                + "END:VCALENDAR\r\n";
+
+        String filename = "creneau-" + slot.slotDate + ".ics";
+        return Response.ok(ics, "text/calendar; charset=utf-8")
+                .header("Content-Disposition", "inline; filename=\"" + filename + "\"")
+                .build();
+    }
+
+    /** Échappe les caractères spéciaux selon la RFC 5545 (ICAL TEXT). */
+    private static String icsEscape(String s) {
+        return s.replace("\\", "\\\\")
+                .replace(",", "\\,")
+                .replace(";", "\\;")
+                .replace("\r\n", "\\n")
+                .replace("\n", "\\n");
     }
 
     @PATCH

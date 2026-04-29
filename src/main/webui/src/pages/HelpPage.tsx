@@ -367,6 +367,52 @@ export function HelpPage() {
       ),
     },
 
+    // ── AJOUTER À L'AGENDA ────────────────────────────────────────────────────
+    {
+      id: 'agenda',
+      icon: '📅',
+      title: 'Ajouter un créneau à mon agenda',
+      content: (
+        <>
+          <p>
+            Chaque créneau peut être ajouté directement à votre application de calendrier personnel
+            (Google Agenda, Apple Calendrier, Outlook…) au format <strong>.ics</strong>.
+          </p>
+
+          <h4>Depuis la vue calendrier</h4>
+          <ol>
+            <li>Connectez-vous à votre compte.</li>
+            <li>Cliquez sur un créneau pour ouvrir le panneau de détails.</li>
+            <li>Dans l'en-tête du panneau, cliquez sur l'icône <strong>📅</strong> (à côté du lien 🔗 et du bouton de fermeture ✕).</li>
+            <li>Un fichier <code>.ics</code> est téléchargé automatiquement.</li>
+            <li>Ouvrez-le : votre application de calendrier l'importe automatiquement.</li>
+          </ol>
+
+          <h4>Depuis la page Organisation des palanquées (DP)</h4>
+          <ol>
+            <li>Ouvrez la page <strong>🤿 Organisation des palanquées</strong> du créneau.</li>
+            <li>Cliquez sur <strong>📅 Agenda</strong> dans la barre d'actions en haut.</li>
+          </ol>
+
+          <h4>Contenu de l'événement</h4>
+          <ul>
+            <li><strong>Titre</strong> — intitulé du créneau (ou « Plongée » s'il n'a pas de titre).</li>
+            <li><strong>Date / heure</strong> — horaires exacts du créneau, fuseau <code>Europe/Paris</code>.</li>
+            <li><strong>Lieu</strong> — club organisateur si renseigné.</li>
+            <li><strong>Description</strong> — notes du créneau si saisies.</li>
+          </ul>
+
+          <div className="help-tip">
+            💡 Le fichier .ics est compatible avec tous les calendriers standards : Google Agenda,
+            Apple Calendrier, Microsoft Outlook, Thunderbird et tout client supportant le format iCalendar (RFC 5545).
+          </div>
+          <div className="help-tip">
+            💡 Cette icône est accessible à tous les utilisateurs connectés (plongeur, directeur de plongée, administrateur).
+          </div>
+        </>
+      ),
+    },
+
     // ── INSCRIPTION LIBRE ─────────────────────────────────────────────────────
     {
       id: 'inscription-libre',

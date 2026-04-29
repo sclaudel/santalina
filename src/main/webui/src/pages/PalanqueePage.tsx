@@ -3,6 +3,7 @@ import { slotDiverService } from '../services/slotDiverService';
 import { palanqueeService } from '../services/palanqueeService';
 import { slotService } from '../services/slotService';
 import { waitingListService } from '../services/waitingListService';
+import { downloadSlotIcs } from '../utils/calendarExport';
 import { adminService } from '../services/adminService';
 import { authService } from '../services/authService';
 import { slotMailService } from '../services/slotMailService';
@@ -839,6 +840,14 @@ export function PalanqueePage({ slotId, onBack }: Props) {
             disabled={saving}
           >
             + Nouvelle palanquée
+          </button>
+          <button
+            className="palanquee-export-btn palanquee-export-btn--calendar"
+            onClick={() => slot && downloadSlotIcs(slot)}
+            disabled={!slot}
+            title="Télécharger le fichier .ics pour ajouter ce créneau à votre agenda"
+          >
+            📅 Agenda
           </button>
           <button
             className="palanquee-export-btn"

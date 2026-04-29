@@ -470,8 +470,7 @@ body {
   border: 1px solid #fecaca; border-radius: 4px; cursor: pointer; font-size: 12px;
 }
 .btn-delete-slot-tooltip:hover { background: var(--danger); color: var(--white); }
-.btn-export-fiche {
-  width: 100%; margin-top: 8px; padding: 6px; background: #eff6ff; color: #1e40af;
+.btn-export-fiche { width: 100%; margin-top: 8px; padding: 6px; background: #eff6ff; color: #1e40af;
   border: 1px solid #bfdbfe; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;
 }
 .btn-export-fiche:hover { background: #1e40af; color: var(--white); }
@@ -2118,6 +2117,8 @@ body {
   background: #2563eb;
 }
 .palanquee-export-btn--mail:hover:not(:disabled) { background: #1d4ed8; }
+.palanquee-export-btn--calendar { background: #0d9488; }
+.palanquee-export-btn--calendar:hover:not(:disabled) { background: #0f766e; }
 
 /* ========== MAIL MODAL SPECIFICS ========== */
 .mail-modal-missing {
