@@ -282,6 +282,7 @@ public class SlotService {
 
         slot.registrationOpen      = request.registrationOpen();
         slot.registrationOpensAt   = request.registrationOpensAt();
+        slot.requiresAttachments   = request.requiresAttachments();
         slot.persist();
 
         LOG.infof("Inscriptions libres %s (id=%d) par %s",

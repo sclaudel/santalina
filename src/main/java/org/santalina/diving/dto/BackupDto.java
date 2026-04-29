@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import org.santalina.diving.domain.RegistrationStatus;
 
 public class BackupDto {
 
@@ -63,7 +64,8 @@ public class BackupDto {
             Long createdById,
             LocalDateTime createdAt,
             boolean registrationOpen,
-            @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") LocalDateTime registrationOpensAt
+            @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") LocalDateTime registrationOpensAt,
+            boolean requiresAttachments
     ) {}
 
     public record DiverEntry(
@@ -107,7 +109,11 @@ public class BackupDto {
             LocalDateTime registeredAt,
             LocalDate medicalCertDate,
             boolean licenseConfirmed,
-            String club
+            String club,
+            RegistrationStatus registrationStatus,
+            String rejectionReason
+            // Note : medicalCertPath / licenseQrPath intentionnellement exclus
+            // (les fichiers ne sont pas sauvegardés dans le JSON)
     ) {}
 
     /** Réponse d'un import */

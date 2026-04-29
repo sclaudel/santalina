@@ -13,6 +13,17 @@ interface Props {
   config?: AppConfig;
 }
 
+const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'pdf', 'webp'];
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 Mo
+
+function validateFile(file: File | null, label: string): string | null {
+  if (!file) return `Le fichier « ${label} » est obligatoire.`;
+  if (file.size > MAX_FILE_SIZE) return `« ${label} » dépasse 5 Mo.`;
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+  if (!ALLOWED_EXTENSIONS.includes(ext)) return `« ${label} » doit être une image (JPG, PNG, WEBP) ou un PDF.`;
+  return null;
+}
+
 export function SelfRegistrationModal({ slot, onClose, onSuccess, config }: Props) {
   const storedUser = authService.getStoredUser();
   const isDP = storedUser?.role === 'DIVE_DIRECTOR';
@@ -31,8 +42,13 @@ export function SelfRegistrationModal({ slot, onClose, onSuccess, config }: Prop
   const [medicalCertDateText, setMedicalCertDateText] = useState('');
   const hiddenDateRef = useRef<HTMLInputElement>(null);
   const [licenseConfirmed, setLicenseConfirmed] = useState(false);
-  const [loading, setLoading]           = useState(false);
-  const [error, setError]               = useState<string | null>(null);
+
+  // Pièces jointes (uniquement si slot.requiresAttachments)
+  const [medicalCertFile, setMedicalCertFile] = useState<File | null>(null);
+  const [licenseQrFile,   setLicenseQrFile]   = useState<File | null>(null);
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState<string | null>(null);
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -79,12 +95,21 @@ export function SelfRegistrationModal({ slot, onClose, onSuccess, config }: Prop
       return;
     }
 
+    // Validation des pièces jointes si requises
+    if (slot.requiresAttachments) {
+      const certErr = validateFile(medicalCertFile, 'certificat médical');
+      if (certErr) { setError(certErr); return; }
+      const qrErr = validateFile(licenseQrFile, 'QR code de la licence');
+      if (qrErr) { setError(qrErr); return; }
+    }
+
     setLoading(true);
     try {
       if (emailChanged) {
         await authService.updateEmail(trimmedEmail);
       }
-      await waitingListService.register(slot.id, {
+
+      const req = {
         firstName: storedUser?.firstName ?? '',
         lastName:  storedUser?.lastName  ?? '',
         email:     trimmedEmail,
@@ -95,7 +120,14 @@ export function SelfRegistrationModal({ slot, onClose, onSuccess, config }: Prop
         medicalCertDate,
         licenseConfirmed,
         club: storedUser?.club || undefined,
-      });
+      };
+
+      if (slot.requiresAttachments && medicalCertFile && licenseQrFile) {
+        await waitingListService.registerWithAttachments(slot.id, req, medicalCertFile, licenseQrFile);
+      } else {
+        await waitingListService.register(slot.id, req);
+      }
+
       onSuccess(emailChanged ? trimmedEmail : undefined);
     } catch (err) {
       setError(getErrorMessage(err));
@@ -126,6 +158,16 @@ export function SelfRegistrationModal({ slot, onClose, onSuccess, config }: Prop
         }}>
           <div style={{ fontWeight: 600 }}>{userName}</div>
         </div>
+
+        {slot.requiresAttachments && (
+          <div style={{
+            background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8,
+            padding: '10px 14px', marginBottom: 14, fontSize: 13, color: '#1e40af',
+          }}>
+            📎 Ce créneau exige le dépôt de votre <strong>certificat médical</strong> et du
+            {' '}<strong>QR code de votre licence FFESSM</strong> (JPEG, PNG, PDF ou WEBP · 5 Mo max).
+          </div>
+        )}
 
         {error && (
           <div className="alert alert-error" style={{ marginBottom: 12 }}>{error}</div>
@@ -236,6 +278,49 @@ export function SelfRegistrationModal({ slot, onClose, onSuccess, config }: Prop
               </div>
             </div>
           </div>
+
+          {/* ── Pièces jointes ───────────────────────────────────────── */}
+          {slot.requiresAttachments && (
+            <>
+              <div className="form-group" style={{ marginTop: 12 }}>
+                <label>
+                  Certificat médical{' '}
+                  <span style={{ color: '#ef4444' }}>*</span>
+                  <span style={{ fontWeight: 'normal', color: '#6b7280' }}> (JPG, PNG, PDF, WEBP · 5 Mo)</span>
+                </label>
+                <input
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.pdf,.webp,image/*,application/pdf"
+                  onChange={e => setMedicalCertFile(e.target.files?.[0] ?? null)}
+                  required
+                />
+                {medicalCertFile && (
+                  <span style={{ fontSize: 12, color: '#16a34a' }}>
+                    ✔ {medicalCertFile.name}
+                  </span>
+                )}
+              </div>
+
+              <div className="form-group" style={{ marginTop: 12 }}>
+                <label>
+                  QR code de la licence FFESSM{' '}
+                  <span style={{ color: '#ef4444' }}>*</span>
+                  <span style={{ fontWeight: 'normal', color: '#6b7280' }}> (JPG, PNG, PDF, WEBP · 5 Mo)</span>
+                </label>
+                <input
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.pdf,.webp,image/*,application/pdf"
+                  onChange={e => setLicenseQrFile(e.target.files?.[0] ?? null)}
+                  required
+                />
+                {licenseQrFile && (
+                  <span style={{ fontSize: 12, color: '#16a34a' }}>
+                    ✔ {licenseQrFile.name}
+                  </span>
+                )}
+              </div>
+            </>
+          )}
 
           <div className="form-group" style={{ marginTop: 12 }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 'normal' }}>

@@ -404,6 +404,25 @@ export function HelpPage() {
             <li>Cliquez sur <strong>M'inscrire sur la liste d'attente</strong>.</li>
             <li>Un <strong>e-mail de confirmation</strong> est envoyé à l'adresse renseignée.</li>
           </ol>
+
+          <h4>Créneau avec pièces jointes obligatoires</h4>
+          <p>
+            Certains créneaux exigent que le plongeur fournisse deux pièces jointes au moment de l'inscription :
+          </p>
+          <ul>
+            <li><strong>📄 Certificat médical</strong> — scan lisible du certificat médical en cours de validité.</li>
+            <li><strong>🪪 QR code de la licence FFESSM</strong> — capture d'écran ou photo du QR code disponible sur l'espace adhérent FFESSM.</li>
+          </ul>
+          <p>
+            Lorsque ces pièces jointes sont requises, deux champs d'envoi de fichier apparaissent en bas du formulaire d'inscription.
+            Formats acceptés : JPG, PNG, PDF, WebP — taille max. 5 Mo par fichier.
+          </p>
+          <div className="help-tip">
+            💡 Les pièces jointes sont vérifiées par le directeur de plongée avant validation de votre inscription.
+            Vous recevrez un e-mail selon le résultat de la vérification (dossier vérifié ✅ ou incomplet ⚠️).
+            En cas de dossier incomplet, votre inscription est <strong>annulée</strong> et vous serez invité(e) à vous réinscrire avec les documents corrects.
+          </div>
+
           <div className="help-tip">
             💡 Votre demande sera examinée par le directeur de plongée. Vous recevrez un e-mail de validation lorsqu'il aura accepté votre inscription.
           </div>
@@ -426,6 +445,10 @@ export function HelpPage() {
                 <li>Cochez <strong>Autoriser l'inscription libre des plongeurs</strong> pour ouvrir les inscriptions.</li>
                 <li>Renseignez optionnellement une <strong>date d'ouverture</strong> (les inscriptions ne seront acceptées qu'à partir de cette date/heure).</li>
                 <li>Sans date d'ouverture, les inscriptions sont actives immédiatement.</li>
+                <li>
+                  Cochez <strong>Exiger le certificat médical et le QR code de la licence</strong> pour obliger les plongeurs à joindre leurs pièces justificatives lors de l'inscription.
+                  Le directeur de plongée devra alors vérifier manuellement chaque dossier avant de valider l'inscription.
+                </li>
               </ul>
             </li>
             <li>Cliquez sur <strong>✓ Enregistrer</strong>.</li>
@@ -443,6 +466,25 @@ export function HelpPage() {
               Pour chaque entrée, vous voyez : nom, niveau, club d'appartenance (repris depuis le profil du plongeur), e-mail, nombre de plongées, date de la dernière plongée, niveau en préparation et commentaire éventuel.
             </li>
             <li>
+              Si des pièces jointes ont été fournies, des liens <strong>📄 Certificat médical</strong> et <strong>🪪 Licence FFESSM</strong> apparaissent.
+              Cliquez sur ces liens pour visualiser les documents dans un nouvel onglet.
+            </li>
+            <li>
+              Chaque dossier affiche un badge de statut :
+              <ul>
+                <li><strong>🕐 En attente de vérification</strong> — dossier soumis, non encore examiné.</li>
+                <li><strong>✅ Dossier vérifié</strong> — pièces jointes validées par le DP.</li>
+                <li><strong>⚠️ Dossier incomplet</strong> — le dossier a été rejeté ; l'inscription est supprimée et le plongeur est invité à se réinscrire avec les documents corrects.</li>
+              </ul>
+            </li>
+            <li>
+              Pour les créneaux avec pièces jointes obligatoires, utilisez les boutons :
+              <ul>
+                <li><strong>✅ Dossier OK</strong> — marque le dossier comme vérifié ; un e-mail de confirmation est envoyé au plongeur.</li>
+                <li><strong>⚠️ Incomplet</strong> — rejette le dossier ; vous pouvez saisir un motif optionnel (ex. : « Certificat illisible »). <strong>L'inscription est supprimée</strong> et les pièces jointes sont effacées. Un e-mail est envoyé au plongeur l'invitant à se réinscrire avec un dossier complet.</li>
+              </ul>
+            </li>
+            <li>
               Cliquez sur <strong>✓ Valider</strong> pour accepter la demande :
               le plongeur est transféré dans la liste des inscrits et reçoit un e-mail de confirmation après un délai de 15 minutes
               (pour laisser le temps au DP de réorganiser les palanquées avant que le plongeur soit notifié).
@@ -455,6 +497,9 @@ export function HelpPage() {
           </ol>
           <div className="help-tip">
             💡 Les plongeurs validés apparaissent dans la réserve <strong>Non assignés</strong> de la page d'organisation des palanquées.
+          </div>
+          <div className="help-tip">
+            💡 Les fichiers joints (certificat médical et QR code de licence) sont automatiquement supprimés 7 jours après la date du créneau pour des raisons de confidentialité.
           </div>
 
           <h4>Remettre un plongeur en liste d'attente</h4>

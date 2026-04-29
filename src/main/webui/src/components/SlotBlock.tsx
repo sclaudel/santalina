@@ -164,6 +164,7 @@ export function SlotBlock({
   const [regOpensAt, setRegOpensAt]     = useState(
     slot.registrationOpensAt ? slot.registrationOpensAt.slice(0, 16) : ''
   );
+  const [regRequiresAttachments, setRegRequiresAttachments] = useState(slot.requiresAttachments ?? false);
   const [regSaving, setRegSaving]       = useState(false);
   const [regError, setRegError]         = useState('');
   const [regSuccess, setRegSuccess]     = useState('');
@@ -491,6 +492,7 @@ export function SlotBlock({
       await waitingListService.updateRegistration(slot.id, {
         registrationOpen: regOpen,
         registrationOpensAt: regOpensAt ? regOpensAt + ':00' : null,
+        requiresAttachments: regRequiresAttachments,
       });
       setEditingReg(false);
       setRegSuccess(regOpen ? '✓ Inscriptions libres activées' : '✓ Inscriptions libres désactivées');
@@ -1038,6 +1040,7 @@ export function SlotBlock({
               onClick={() => {
                 setRegOpen(slot.registrationOpen);
                 setRegOpensAt(slot.registrationOpensAt ? slot.registrationOpensAt.slice(0, 16) : '');
+                setRegRequiresAttachments(slot.requiresAttachments ?? false);
                 setRegError('');
                 setEditingReg(true);
               }}
@@ -1064,6 +1067,16 @@ export function SlotBlock({
                     onChange={e => setRegOpensAt(e.target.value)}
                   />
                 </div>
+              )}
+              {regOpen && (
+                <label className="diver-director-checkbox" style={{ marginBottom: 8 }}>
+                  <input
+                    type="checkbox"
+                    checked={regRequiresAttachments}
+                    onChange={e => setRegRequiresAttachments(e.target.checked)}
+                  />
+                  <span>Exiger le certificat médical et le QR code de la licence</span>
+                </label>
               )}
               <div className="diver-form-actions" style={{ marginTop: 6 }}>
                 <button type="submit" disabled={regSaving} className="btn-diver-save">

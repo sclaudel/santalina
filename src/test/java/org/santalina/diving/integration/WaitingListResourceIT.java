@@ -400,6 +400,217 @@ class WaitingListResourceIT {
         }
     }
 
+    // ── Tests statut (PATCH /{entryId}/status) ────────────────────────────────
+
+    @Test
+    @TestSecurity(user = "admin@test.com", roles = {"ADMIN"})
+    void updateStatus_shouldReturn200_whenVerified() {
+        DiveSlot slot = createSlot(true);
+        try {
+            WaitingListEntry entry = createEntry(slot.id);
+
+            given()
+                .contentType(ContentType.JSON)
+                .body("{\"status\":\"VERIFIED\"}")
+                .when().patch("/api/slots/{slotId}/waiting-list/{entryId}/status",
+                        slot.id, entry.id)
+                .then()
+                .statusCode(200)
+                .body("registrationStatus", equalTo("VERIFIED"));
+        } finally {
+            cleanup(slot.id);
+        }
+    }
+
+    @Test
+    @TestSecurity(user = "admin@test.com", roles = {"ADMIN"})
+    void updateStatus_shouldReturn204_whenIncomplete_andDeleteEntry() {
+        DiveSlot slot = createSlot(true);
+        try {
+            WaitingListEntry entry = createEntry(slot.id);
+
+            given()
+                .contentType(ContentType.JSON)
+                .body("{\"status\":\"INCOMPLETE\",\"reason\":\"Certificat illisible\"}")
+                .when().patch("/api/slots/{slotId}/waiting-list/{entryId}/status",
+                        slot.id, entry.id)
+                .then()
+                .statusCode(204);
+
+            // Vérifier que l'entrée a été supprimée
+            given()
+                .when().get("/api/slots/{slotId}/waiting-list", slot.id)
+                .then()
+                .statusCode(200)
+                .body("size()", equalTo(0));
+        } finally {
+            cleanup(slot.id);
+        }
+    }
+
+    @Test
+    @TestSecurity(user = "unknown_diver@test.com", roles = {"DIVER"})
+    void updateStatus_shouldReturn403_forDiver() {
+        DiveSlot slot = createSlot(true);
+        try {
+            WaitingListEntry entry = createEntry(slot.id);
+
+            given()
+                .contentType(ContentType.JSON)
+                .body("{\"status\":\"VERIFIED\"}")
+                .when().patch("/api/slots/{slotId}/waiting-list/{entryId}/status",
+                        slot.id, entry.id)
+                .then()
+                .statusCode(403);
+        } finally {
+            cleanup(slot.id);
+        }
+    }
+
+    @Test
+    @TestSecurity(user = "admin@test.com", roles = {"ADMIN"})
+    void updateStatus_shouldReturn400_whenStatusInvalid() {
+        DiveSlot slot = createSlot(true);
+        try {
+            WaitingListEntry entry = createEntry(slot.id);
+
+            given()
+                .contentType(ContentType.JSON)
+                .body("{\"status\":\"INVALID_STATUS\"}")
+                .when().patch("/api/slots/{slotId}/waiting-list/{entryId}/status",
+                        slot.id, entry.id)
+                .then()
+                .statusCode(400);
+        } finally {
+            cleanup(slot.id);
+        }
+    }
+
+    @Test
+    @TestSecurity(user = "admin@test.com", roles = {"ADMIN"})
+    void updateStatus_shouldReturn404_whenEntryNotFound() {
+        DiveSlot slot = createSlot(true);
+        try {
+            given()
+                .contentType(ContentType.JSON)
+                .body("{\"status\":\"VERIFIED\"}")
+                .when().patch("/api/slots/{slotId}/waiting-list/999999/status", slot.id)
+                .then()
+                .statusCode(404);
+        } finally {
+            cleanup(slot.id);
+        }
+    }
+
+    // ── Tests pièces jointes dans la réponse ──────────────────────────────────
+
+    @Test
+    @TestSecurity(user = "admin@test.com", roles = {"ADMIN"})
+    void getWaitingList_shouldIncludeRegistrationStatusField() {
+        DiveSlot slot = createSlot(true);
+        try {
+            createEntry(slot.id);
+
+            given()
+                .when().get("/api/slots/{slotId}/waiting-list", slot.id)
+                .then()
+                .statusCode(200)
+                .body("[0].registrationStatus", equalTo("PENDING_VERIFICATION"))
+                .body("[0].hasMedicalCert", equalTo(false))
+                .body("[0].hasLicenseQr", equalTo(false));
+        } finally {
+            cleanup(slot.id);
+        }
+    }
+
+    // ── Tests inscription avec pièces jointes requises (validation backend) ───
+
+    @Test
+    @TestSecurity(user = "diver@test.com", roles = {"DIVER"})
+    void register_shouldReturn201_whenSlotRequiresAttachments_andFilesProvided() {
+        DiveSlot slot = createSlotWithAttachments();
+        try {
+            byte[] smallPng = new byte[]{(byte)0x89,'P','N','G',0x0D,0x0A,0x1A,0x0A};
+
+            given()
+                .contentType("multipart/form-data")
+                .multiPart("data", """
+                    {"firstName":"Bob","lastName":"DUPONT",
+                     "email":"bob_att@test.com","emailConfirm":"bob_att@test.com",
+                     "level":"N2","numberOfDives":10,
+                     "lastDiveDate":"2025-03-15",
+                     "medicalCertDate":"2099-07-01",
+                     "licenseConfirmed":true}
+                    """, "application/json")
+                .multiPart("medicalCert", "cert.png", smallPng, "image/png")
+                .multiPart("licenseQr",   "qr.png",   smallPng, "image/png")
+                .when().post("/api/slots/{slotId}/waiting-list/with-attachments", slot.id)
+                .then()
+                .statusCode(201)
+                .body("email", equalTo("bob_att@test.com"))
+                .body("hasMedicalCert", equalTo(true))
+                .body("hasLicenseQr", equalTo(true));
+        } finally {
+            cleanup(slot.id);
+        }
+    }
+
+    @Test
+    @TestSecurity(user = "diver@test.com", roles = {"DIVER"})
+    void register_shouldReturn400_whenSlotRequiresAttachments_butUsesJsonEndpoint() {
+        DiveSlot slot = createSlotWithAttachments();
+        try {
+            given()
+                .contentType(ContentType.JSON)
+                .body("""
+                    {"firstName":"Bob","lastName":"DUPONT",
+                     "email":"bob_no_att@test.com","emailConfirm":"bob_no_att@test.com",
+                     "level":"N2","numberOfDives":10,
+                     "lastDiveDate":"2025-03-15",
+                     "medicalCertDate":"2099-07-01",
+                     "licenseConfirmed":true}
+                    """)
+                .when().post("/api/slots/{slotId}/waiting-list", slot.id)
+                .then()
+                .statusCode(400);
+        } finally {
+            cleanup(slot.id);
+        }
+    }
+
+    @Transactional
+    DiveSlot createSlotWithAttachments() {
+        User creator = new User();
+        creator.email        = "dp_att_test_" + System.nanoTime() + "@test.com";
+        creator.firstName    = "DP";
+        creator.lastName     = "ATT";
+        creator.passwordHash = "x";
+        creator.role         = UserRole.DIVE_DIRECTOR;
+        creator.roles        = java.util.Set.of(UserRole.DIVE_DIRECTOR);
+        creator.persist();
+
+        DiveSlot slot = new DiveSlot();
+        slot.slotDate              = LocalDate.of(2099, 8, 15);
+        slot.startTime             = LocalTime.of(9, 0);
+        slot.endTime               = LocalTime.of(12, 0);
+        slot.diverCount            = 8;
+        slot.createdBy             = creator;
+        slot.registrationOpen      = true;
+        slot.requiresAttachments   = true;
+        slot.persist();
+
+        SlotDiver dp = new SlotDiver();
+        dp.slot       = slot;
+        dp.firstName  = "DP";
+        dp.lastName   = "ATT";
+        dp.level      = "MF1";
+        dp.email      = creator.email;
+        dp.isDirector = true;
+        dp.persist();
+
+        return slot;
+    }
+
     @Transactional
     WaitingListEntry createEntryWithClub(Long slotId, String club) {
         DiveSlot slot = DiveSlot.findById(slotId);

@@ -9,7 +9,7 @@ import { slotMailService } from '../services/slotMailService';
 import { exportDiverListCsv } from '../utils/exportDiverList';
 import { RichTextEditor } from '../components/RichTextEditor';
 import { DpOrganizerMailer } from '../utils/dpMailDefaults';
-import type { DiveSlot, SlotDiver, Palanquee, WaitingListEntry } from '../types';
+import type { DiveSlot, SlotDiver, Palanquee, WaitingListEntry, RegistrationStatus } from '../types';
 
 // ── constantes ──────────────────────────────────────────────────────────────
 const LEVEL_COLORS: Record<string, string> = {
@@ -275,6 +275,11 @@ export function PalanqueePage({ slotId, onBack }: Props) {
   const [cancelingId, setCancelingId]     = useState<number | null>(null);
   const [wlError, setWlError]             = useState('');
   const [movingToWlId, setMovingToWlId]   = useState<number | null>(null);
+
+  // Mise à jour statut de vérification
+  const [statusUpdatingId, setStatusUpdatingId]           = useState<number | null>(null);
+  const [incompleteReasonId, setIncompleteReasonId]       = useState<number | null>(null);
+  const [incompleteReason, setIncompleteReason]           = useState('');
 
   // renaming state: palanqueeId → draft name
   const [renamingId, setRenamingId]     = useState<number | null>(null);
@@ -663,6 +668,50 @@ export function PalanqueePage({ slotId, onBack }: Props) {
     }
   }, [slotId]);
 
+  const openAttachment = useCallback(async (slotId: number, entryId: number, type: 'medical-cert' | 'license-qr') => {
+    const token = localStorage.getItem('token');
+    const url = waitingListService.getAttachmentUrl(slotId, entryId, type);
+    try {
+      const res = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        alert('Impossible d\'ouvrir le fichier.');
+        return;
+      }
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const win = window.open(blobUrl, '_blank');
+      // Libérer l'URL objet après que l'onglet l'a chargée
+      if (win) {
+        win.addEventListener('load', () => URL.revokeObjectURL(blobUrl), { once: true });
+      }
+    } catch {
+      alert('Erreur lors de l\'ouverture du fichier.');
+    }
+  }, []);
+
+  const handleUpdateStatus = useCallback(async (entryId: number, status: RegistrationStatus, reason?: string) => {
+    setStatusUpdatingId(entryId);
+    setWlError('');
+    try {
+      if (status === 'INCOMPLETE') {
+        await waitingListService.updateStatus(slotId, entryId, status, reason);
+        setWaitingList(prev => prev.filter(e => e.id !== entryId));
+      } else {
+        const updated = await waitingListService.updateStatus(slotId, entryId, status, reason);
+        setWaitingList(prev => prev.map(e => e.id === entryId ? updated : e));
+      }
+      setIncompleteReasonId(null);
+      setIncompleteReason('');
+    } catch (err: unknown) {
+      const m = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setWlError(m || 'Erreur lors de la mise à jour du statut');
+    } finally {
+      setStatusUpdatingId(null);
+    }
+  }, [slotId]);
+
   const handleMoveToWaitingList = useCallback(async (diverId: number) => {
     if (!window.confirm('Remettre ce plongeur en liste d’attente ?')) return;
     setMovingToWlId(diverId);
@@ -890,6 +939,85 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                         💬 <em>{entry.comment}</em>
                       </div>
                     )}
+
+                    {/* Statut de vérification */}
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 6, flexWrap: 'wrap' }}>
+                      {entry.registrationStatus === 'VERIFIED' && (
+                        <span style={{ background: '#dcfce7', color: '#166534', borderRadius: 4, padding: '2px 8px', fontSize: 12, fontWeight: 600 }}>
+                          ✅ Dossier vérifié
+                        </span>
+                      )}
+                      {entry.registrationStatus === 'INCOMPLETE' && (
+                        <span style={{ background: '#fef3c7', color: '#92400e', borderRadius: 4, padding: '2px 8px', fontSize: 12, fontWeight: 600 }}>
+                          ⚠️ Dossier incomplet
+                        </span>
+                      )}
+                      {entry.registrationStatus === 'PENDING_VERIFICATION' && (
+                        <span style={{ background: '#e0f2fe', color: '#0369a1', borderRadius: 4, padding: '2px 8px', fontSize: 12 }}>
+                          🔍 Vérification en attente
+                        </span>
+                      )}
+                      {entry.rejectionReason && entry.registrationStatus === 'INCOMPLETE' && (
+                        <span style={{ color: '#92400e', fontSize: 12 }}>
+                          — {entry.rejectionReason}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Pièces jointes */}
+                    {(entry.hasMedicalCert || entry.hasLicenseQr) && (
+                      <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+                        {entry.hasMedicalCert && (
+                          <button
+                            type="button"
+                            onClick={() => openAttachment(Number(slotId), entry.id, 'medical-cert')}
+                            style={{ fontSize: 12, color: '#1e40af', textDecoration: 'underline', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+                            title="Ouvrir le certificat médical"
+                          >
+                            📄 Certificat médical
+                          </button>
+                        )}
+                        {entry.hasLicenseQr && (
+                          <button
+                            type="button"
+                            onClick={() => openAttachment(Number(slotId), entry.id, 'license-qr')}
+                            style={{ fontSize: 12, color: '#1e40af', textDecoration: 'underline', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+                            title="Ouvrir le QR code de la licence"
+                          >
+                            🪪 Licence FFESSM
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Formulaire motif incomplet */}
+                    {incompleteReasonId === entry.id && (
+                      <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <textarea
+                          value={incompleteReason}
+                          onChange={e => setIncompleteReason(e.target.value)}
+                          placeholder="Motif (ex : certificat médical illisible…)"
+                          rows={2}
+                          style={{ resize: 'vertical', fontSize: 13 }}
+                        />
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button
+                            className="btn-wl-cancel"
+                            style={{ background: '#d97706', borderColor: '#d97706', color: '#fff' }}
+                            disabled={statusUpdatingId === entry.id}
+                            onClick={() => handleUpdateStatus(entry.id, 'INCOMPLETE', incompleteReason.trim() || undefined)}
+                          >
+                            {statusUpdatingId === entry.id ? '…' : '⚠️ Confirmer incomplet'}
+                          </button>
+                          <button
+                            className="btn-wl-cancel"
+                            onClick={() => { setIncompleteReasonId(null); setIncompleteReason(''); }}
+                          >
+                            Annuler
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="palanquee-wl-entry-actions">
@@ -903,6 +1031,28 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                     >
                       {approvingId === entry.id ? '…' : '✓ Valider'}
                     </button>
+                    {(entry.hasMedicalCert || entry.hasLicenseQr) && entry.registrationStatus !== 'VERIFIED' && (
+                      <button
+                        className="btn-wl-approve"
+                        style={{ background: '#16a34a', borderColor: '#16a34a' }}
+                        disabled={statusUpdatingId === entry.id}
+                        onClick={() => handleUpdateStatus(entry.id, 'VERIFIED')}
+                        title="Marquer le dossier comme vérifié et valide"
+                      >
+                        {statusUpdatingId === entry.id ? '…' : '✅ Dossier OK'}
+                      </button>
+                    )}
+                    {(entry.hasMedicalCert || entry.hasLicenseQr) && entry.registrationStatus !== 'INCOMPLETE' && (
+                      <button
+                        className="btn-wl-cancel"
+                        style={{ background: '#d97706', borderColor: '#d97706', color: '#fff' }}
+                        disabled={statusUpdatingId === entry.id}
+                        onClick={() => { setIncompleteReasonId(entry.id); setIncompleteReason(''); }}
+                        title="Marquer le dossier comme incomplet (avec motif)"
+                      >
+                        ⚠️ Incomplet
+                      </button>
+                    )}
                     <button
                       className="btn-wl-cancel"
                       disabled={cancelingId === entry.id}

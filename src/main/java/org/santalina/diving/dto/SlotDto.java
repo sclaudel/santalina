@@ -60,7 +60,8 @@ public class SlotDto {
             List<SlotDiverResponse> divers,
             boolean registrationOpen,
             @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") LocalDateTime registrationOpensAt,
-            long waitingListCount
+            long waitingListCount,
+            boolean requiresAttachments
     ) {
         public static SlotResponse from(DiveSlot slot) {
             List<SlotDiverResponse> divers = SlotDiver.findBySlot(slot.id)
@@ -81,7 +82,8 @@ public class SlotDto {
                     divers,
                     slot.registrationOpen,
                     slot.registrationOpensAt,
-                    waitingListCount
+                    waitingListCount,
+                    slot.requiresAttachments
             );
         }
     }

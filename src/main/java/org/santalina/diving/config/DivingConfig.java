@@ -46,4 +46,12 @@ public interface DivingConfig {
     @WithName("base-url")
     @WithDefault("http://localhost:8085")
     String baseUrl();
+
+    /**
+     * Répertoire racine pour le stockage des fichiers (pièces jointes, etc.).
+     * En production Docker, monté comme volume : {@code app_data:/deployments/data}.
+     */
+    @WithName("data-dir")
+    @WithDefault("./data")
+    String dataDir();
 }

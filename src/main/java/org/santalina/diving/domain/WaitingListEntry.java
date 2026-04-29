@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.santalina.diving.domain.RegistrationStatus;
 
 /**
  * Entrée dans la liste d'attente pour l'auto-inscription sur un créneau.
@@ -65,6 +66,32 @@ public class WaitingListEntry extends PanacheEntityBase {
 
     @Column(name = "registered_at", nullable = false)
     public LocalDateTime registeredAt = LocalDateTime.now();
+
+    // ---- Pièces jointes & statut d'inscription ----
+
+    /**
+     * Statut de vérification du dossier par le DP.
+     * {@code PENDING_VERIFICATION} par défaut ; défini par le DP via l'endpoint dédié.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "registration_status", nullable = false, length = 30)
+    public RegistrationStatus registrationStatus = RegistrationStatus.PENDING_VERIFICATION;
+
+    /** Motif de rejet saisi par le DP (null si non renseigné). */
+    @Column(name = "rejection_reason", columnDefinition = "TEXT")
+    public String rejectionReason;
+
+    /** Chemin relatif (depuis le répertoire data) du certificat médical uploadé. */
+    @Column(name = "medical_cert_path", length = 500)
+    public String medicalCertPath;
+
+    /** Chemin relatif (depuis le répertoire data) du QR code de la licence uploadé. */
+    @Column(name = "license_qr_path", length = 500)
+    public String licenseQrPath;
+
+    /** Date/heure de suppression des pièces jointes (null = non supprimées). */
+    @Column(name = "attachments_deleted_at")
+    public LocalDateTime attachmentsDeletedAt;
 
     // ---- Panache finders ----
 

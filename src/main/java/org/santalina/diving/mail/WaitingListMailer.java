@@ -339,6 +339,73 @@ public class WaitingListMailer {
         return true;
     }
 
+    // =========================================================================
+    // Mail au plongeur : dossier incomplet (DP a marqué INCOMPLETE)
+    // =========================================================================
+
+    public void sendRegistrationIncomplete(WaitingListEntry entry, DiveSlot slot, String reason) {
+        if (entry.email == null || entry.email.isBlank()) return;
+
+        String siteName  = configService.getSiteName();
+        String slotLabel = slotLabel(slot);
+        String subject   = "[" + siteName + "] Dossier incomplet \u2014 " + slotLabel;
+
+        String reasonBlock = (reason != null && !reason.isBlank())
+                ? "<p style=\"background:#fef3c7;border-left:4px solid #d97706;padding:12px 16px;margin:16px 0;\">"
+                  + "<strong>Motif :</strong> " + reason + "</p>"
+                : "";
+
+        String body = "<!DOCTYPE html>\n<html lang=\"fr\">\n<head>\n  <meta charset=\"UTF-8\" />\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n</head>\n<body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;\">"
+            + "<h2 style=\"color:#d97706;\">\u26a0\ufe0f Dossier incomplet</h2>"
+            + "<p>Bonjour <strong>" + entry.firstName + " " + entry.lastName + "</strong>,</p>"
+            + "<p>Le directeur de plong\u00e9e a examin\u00e9 votre dossier pour le cr\u00e9neau suivant "
+            + "et l'a marqu\u00e9 comme <strong>incomplet</strong>.</p>"
+            + "<table style=\"border-collapse:collapse;width:100%;margin:16px 0;\">"
+            + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Cr\u00e9neau :</td><td style=\"padding:4px 8px;\"><strong>" + slotLabel + "</strong></td></tr>"
+            + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Date :</td><td style=\"padding:4px 8px;\">" + slot.slotDate + "</td></tr>"
+            + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Horaire :</td><td style=\"padding:4px 8px;\">" + slot.startTime + " \u2013 " + slot.endTime + "</td></tr>"
+            + "</table>"
+            + reasonBlock
+            + "<p>Votre inscription a \u00e9t\u00e9 <strong>annul\u00e9e</strong>. Nous vous invitons \u00e0 vous r\u00e9inscrire avec un dossier complet si les inscriptions sont toujours ouvertes sur ce cr\u00e9neau.</p>"
+            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, <a href=\"" + config.baseUrl() + "/?goto=profile#notifications\" style=\"color:#9ca3af;\">modifiez vos pr\u00e9f\u00e9rences de notification</a> dans votre profil.</p>"
+            + "<hr style=\"border:1px solid #e5e7eb;margin-top:30px;\"/>"
+            + "<p style=\"color:#6b7280;font-size:12px;\">Syst\u00e8me de r\u00e9servation \u2014 " + siteName + "</p>"
+            + "</body></html>";
+
+        if (!shouldSend(configService.isNotifRegistrationEnabled(), "registration_incomplete", entry.email, subject, body)) return;
+        sendSingle(entry.email, subject, body);
+    }
+
+    // =========================================================================
+    // Mail au plongeur : dossier vérifié et validé (DP a marqué VERIFIED)
+    // =========================================================================
+
+    public void sendRegistrationVerified(WaitingListEntry entry, DiveSlot slot) {
+        if (entry.email == null || entry.email.isBlank()) return;
+
+        String siteName  = configService.getSiteName();
+        String slotLabel = slotLabel(slot);
+        String subject   = "[" + siteName + "] Dossier v\u00e9rifi\u00e9 \u2014 " + slotLabel;
+
+        String body = "<!DOCTYPE html>\n<html lang=\"fr\">\n<head>\n  <meta charset=\"UTF-8\" />\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n</head>\n<body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;\">"
+            + "<h2 style=\"color:#16a34a;\">\u2705 Dossier v\u00e9rifi\u00e9</h2>"
+            + "<p>Bonjour <strong>" + entry.firstName + " " + entry.lastName + "</strong>,</p>"
+            + "<p>Le directeur de plong\u00e9e a <strong>v\u00e9rifi\u00e9 et valid\u00e9</strong> votre dossier pour le cr\u00e9neau suivant.</p>"
+            + "<table style=\"border-collapse:collapse;width:100%;margin:16px 0;\">"
+            + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Cr\u00e9neau :</td><td style=\"padding:4px 8px;\"><strong>" + slotLabel + "</strong></td></tr>"
+            + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Date :</td><td style=\"padding:4px 8px;\">" + slot.slotDate + "</td></tr>"
+            + "<tr><td style=\"padding:4px 8px;color:#6b7280;\">Horaire :</td><td style=\"padding:4px 8px;\">" + slot.startTime + " \u2013 " + slot.endTime + "</td></tr>"
+            + "</table>"
+            + "<p>Votre demande reste enregistr\u00e9e. Le directeur de plong\u00e9e vous informera si votre place est confirm\u00e9e.</p>"
+            + "<p style=\"color:#9ca3af;font-size:11px;margin-top:20px;\">\uD83D\uDCA1 Pour ne plus recevoir ce type de notification, <a href=\"" + config.baseUrl() + "/?goto=profile#notifications\" style=\"color:#9ca3af;\">modifiez vos pr\u00e9f\u00e9rences de notification</a> dans votre profil.</p>"
+            + "<hr style=\"border:1px solid #e5e7eb;margin-top:30px;\"/>"
+            + "<p style=\"color:#6b7280;font-size:12px;\">Syst\u00e8me de r\u00e9servation \u2014 " + siteName + "</p>"
+            + "</body></html>";
+
+        if (!shouldSend(configService.isNotifRegistrationEnabled(), "registration_verified", entry.email, subject, body)) return;
+        sendSingle(entry.email, subject, body);
+    }
+
     private String slotLabel(DiveSlot slot) {
         return (slot.title != null && !slot.title.isBlank())
                 ? slot.title
