@@ -110,6 +110,7 @@ export interface DiveSlot {
   registrationOpen: boolean;
   registrationOpensAt: string | null; // ISO datetime or null
   waitingListCount?: number;
+  requiresAttachments: boolean;
 }
 
 export interface SlotRequest {
@@ -290,6 +291,8 @@ export const PREPARED_LEVELS = [
   'PA20','PA40','PA60','PN','PNC','PB1','PB2','PV1','PV2'
 ] as const;
 
+export type RegistrationStatus = 'PENDING_VERIFICATION' | 'VERIFIED' | 'INCOMPLETE';
+
 export interface WaitingListEntry {
   id: number;
   slotId: number;
@@ -305,6 +308,10 @@ export interface WaitingListEntry {
   medicalCertDate?: string;  // YYYY-MM-DD
   licenseConfirmed?: boolean;
   club?: string;
+  registrationStatus: RegistrationStatus;
+  rejectionReason?: string | null;
+  hasMedicalCert: boolean;
+  hasLicenseQr: boolean;
 }
 
 export interface WaitingListRequest {
@@ -325,4 +332,5 @@ export interface WaitingListRequest {
 export interface UpdateRegistrationRequest {
   registrationOpen: boolean;
   registrationOpensAt?: string | null; // ISO datetime or null
+  requiresAttachments: boolean;
 }

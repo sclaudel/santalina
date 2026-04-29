@@ -1,9 +1,11 @@
 package org.santalina.diving.dto;
 
+import org.santalina.diving.domain.RegistrationStatus;
 import org.santalina.diving.domain.WaitingListEntry;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -66,7 +68,11 @@ public class WaitingListDto {
             LocalDate medicalCertDate,
             boolean licenseConfirmed,
             @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") LocalDateTime registeredAt,
-            String club
+            String club,
+            RegistrationStatus registrationStatus,
+            String rejectionReason,
+            boolean hasMedicalCert,
+            boolean hasLicenseQr
     ) {
         public static WaitingListResponse from(WaitingListEntry e) {
             return new WaitingListResponse(
@@ -83,16 +89,30 @@ public class WaitingListDto {
                     e.medicalCertDate,
                     e.licenseConfirmed,
                     e.registeredAt,
-                    e.club
+                    e.club,
+                    e.registrationStatus,
+                    e.rejectionReason,
+                    e.medicalCertPath != null && e.attachmentsDeletedAt == null,
+                    e.licenseQrPath   != null && e.attachmentsDeletedAt == null
             );
         }
     }
+
+    /**
+     * Requête de mise à jour du statut d'une inscription (DP / ADMIN uniquement).
+     * Si {@code status} est {@code INCOMPLETE}, le champ {@code reason} est recommandé.
+     */
+    public record StatusUpdateRequest(
+            @NotNull RegistrationStatus status,
+            String reason
+    ) {}
 
     /**
      * Requête de mise à jour des paramètres d'inscription du créneau (DP uniquement).
      */
     public record UpdateRegistrationRequest(
             boolean registrationOpen,
-            @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") LocalDateTime registrationOpensAt
+            @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") LocalDateTime registrationOpensAt,
+            boolean requiresAttachments
     ) {}
 }

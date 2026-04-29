@@ -58,6 +58,13 @@ public class DiveSlot extends PanacheEntityBase {
     @Column(name = "reminder_sent_at")
     public LocalDateTime reminderSentAt;
 
+    /**
+     * Indique que ce créneau exige que les plongeurs auto-inscrits joignent
+     * leur certificat médical et le QR code de leur licence.
+     */
+    @Column(name = "requires_attachments", nullable = false)
+    public boolean requiresAttachments = false;
+
     @Column(name = "created_at", nullable = false)
     public LocalDateTime createdAt = LocalDateTime.now();
 

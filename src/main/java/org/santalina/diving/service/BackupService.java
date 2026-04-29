@@ -172,6 +172,7 @@ public class BackupService {
                 slot.club               = s.club();
                 slot.registrationOpen   = s.registrationOpen();
                 slot.registrationOpensAt = s.registrationOpensAt();
+                slot.requiresAttachments = s.requiresAttachments();
                 slot.createdAt          = s.createdAt() != null ? s.createdAt() : LocalDateTime.now();
                 slot.updatedAt          = LocalDateTime.now();
                 // Lier au créateur si possible
@@ -306,6 +307,11 @@ public class BackupService {
                 entry.medicalCertDate = we.medicalCertDate();
                 entry.licenseConfirmed = we.licenseConfirmed();
                 entry.club          = we.club();
+                entry.registrationStatus = we.registrationStatus() != null
+                        ? we.registrationStatus()
+                        : org.santalina.diving.domain.RegistrationStatus.PENDING_VERIFICATION;
+                entry.rejectionReason = we.rejectionReason();
+                // medicalCertPath / licenseQrPath non restaurés (fichiers absents après restore)
                 entry.persist();
                 waitingListCount++;
             }
@@ -341,7 +347,7 @@ public class BackupService {
         return new SlotEntry(s.id, s.slotDate, s.startTime, s.endTime,
                 s.diverCount, s.title, s.notes, s.slotType, s.club,
                 s.createdBy != null ? s.createdBy.id : null, s.createdAt,
-                s.registrationOpen, s.registrationOpensAt);
+                s.registrationOpen, s.registrationOpensAt, s.requiresAttachments);
     }
 
     private DiverEntry toDiverEntry(SlotDiver d) {
@@ -361,7 +367,9 @@ public class BackupService {
         return new WaitingListBackupEntry(e.id, e.slot != null ? e.slot.id : null,
                 e.firstName, e.lastName, e.email, e.level,
                 e.numberOfDives, e.lastDiveDate, e.preparedLevel, e.comment, e.registeredAt,
-                e.medicalCertDate, e.licenseConfirmed, e.club);
+                e.medicalCertDate, e.licenseConfirmed, e.club,
+                e.registrationStatus, e.rejectionReason);
+        // medicalCertPath / licenseQrPath exclus intentionnellement
     }
 }
 

@@ -167,4 +167,78 @@ class WaitingListMailerTest {
                 .anyMatch(v -> v.contains(BASE_URL + "/?goto=profile")),
                 "Le header List-Unsubscribe du mail DP doit pointer vers /profile");
     }
+
+    // ── sendRegistrationIncomplete ───────────────────────────────────────────
+
+    @Test
+    void sendRegistrationIncomplete_htmlShouldContainDoctype() {
+        mailer.sendRegistrationIncomplete(buildEntry(), buildSlot(), "Certificat illisible");
+
+        String html = mailbox.getMailsSentTo(DIVER_EMAIL).get(0).getHtml();
+        assertTrue(html.contains("<!DOCTYPE html>"), "Le mail doit contenir <!DOCTYPE html>");
+    }
+
+    @Test
+    void sendRegistrationIncomplete_shouldContainReason() {
+        mailer.sendRegistrationIncomplete(buildEntry(), buildSlot(), "Photo floue");
+
+        String html = mailbox.getMailsSentTo(DIVER_EMAIL).get(0).getHtml();
+        assertTrue(html.contains("Photo floue"), "Le motif de rejet doit figurer dans le mail");
+    }
+
+    @Test
+    void sendRegistrationIncomplete_shouldWorkWithoutReason() {
+        mailer.sendRegistrationIncomplete(buildEntry(), buildSlot(), null);
+
+        assertFalse(mailbox.getMailsSentTo(DIVER_EMAIL).isEmpty(),
+                "Un mail doit être envoyé même sans motif");
+    }
+
+    @Test
+    void sendRegistrationIncomplete_shouldContainListUnsubscribeHeader() {
+        mailer.sendRegistrationIncomplete(buildEntry(), buildSlot(), null);
+
+        var mail = mailbox.getMailsSentTo(DIVER_EMAIL).get(0);
+        assertTrue(mail.getHeaders().get("List-Unsubscribe").stream()
+                .anyMatch(v -> v.contains(BASE_URL + "/?goto=profile")),
+                "Le header List-Unsubscribe doit pointer vers /profile");
+    }
+
+    @Test
+    void sendRegistrationIncomplete_shouldNotSendWhenGlobalDisabled() {
+        when(configService.isNotifRegistrationEnabled()).thenReturn(false);
+        mailer.sendRegistrationIncomplete(buildEntry(), buildSlot(), "test");
+
+        assertTrue(mailbox.getMailsSentTo(DIVER_EMAIL).isEmpty(),
+                "Aucun mail ne doit être envoyé si la notification globale est désactivée");
+    }
+
+    // ── sendRegistrationVerified ─────────────────────────────────────────────
+
+    @Test
+    void sendRegistrationVerified_htmlShouldContainDoctype() {
+        mailer.sendRegistrationVerified(buildEntry(), buildSlot());
+
+        String html = mailbox.getMailsSentTo(DIVER_EMAIL).get(0).getHtml();
+        assertTrue(html.contains("<!DOCTYPE html>"), "Le mail doit contenir <!DOCTYPE html>");
+    }
+
+    @Test
+    void sendRegistrationVerified_shouldContainListUnsubscribeHeader() {
+        mailer.sendRegistrationVerified(buildEntry(), buildSlot());
+
+        var mail = mailbox.getMailsSentTo(DIVER_EMAIL).get(0);
+        assertTrue(mail.getHeaders().get("List-Unsubscribe").stream()
+                .anyMatch(v -> v.contains(BASE_URL + "/?goto=profile")),
+                "Le header List-Unsubscribe doit pointer vers /profile");
+    }
+
+    @Test
+    void sendRegistrationVerified_shouldNotSendWhenGlobalDisabled() {
+        when(configService.isNotifRegistrationEnabled()).thenReturn(false);
+        mailer.sendRegistrationVerified(buildEntry(), buildSlot());
+
+        assertTrue(mailbox.getMailsSentTo(DIVER_EMAIL).isEmpty(),
+                "Aucun mail ne doit être envoyé si la notification globale est désactivée");
+    }
 }
