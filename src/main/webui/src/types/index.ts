@@ -193,6 +193,7 @@ export interface ImportResult {
   diversRestored: number;
   palanqueesRestored: number;
   waitingListRestored: number;
+  slotDivesRestored?: number;
 }
 
 // CSV import/export
@@ -275,7 +276,27 @@ export interface Palanquee {
   position: number;
   depth?: string;
   duration?: string;
+  slotDiveId?: number | null;
   divers: SlotDiver[];
+}
+
+export interface SlotDive {
+  id: number;
+  slotId: number;
+  diveIndex: number;
+  label?: string | null;
+  startTime?: string | null;  // HH:mm
+  endTime?: string | null;    // HH:mm
+  depth?: string | null;
+  duration?: string | null;
+}
+
+export interface SlotDiveRequest {
+  label?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
+  depth?: string | null;
+  duration?: string | null;
 }
 
 // ── Liste d'attente ──────────────────────────────────────────────────────────

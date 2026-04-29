@@ -1192,7 +1192,9 @@ export function AdminPage() {
                 <span style={{ marginLeft: 8, opacity: 0.8 }}>
                   ({importResult.configRestored} config, {importResult.usersRestored} utilisateurs,
                   {importResult.slotsRestored} créneaux, {importResult.diversRestored} plongeurs,
-                  {importResult.palanqueesRestored} palanquées, {importResult.waitingListRestored} liste d'attente)
+                  {importResult.palanqueesRestored} palanquées, {importResult.waitingListRestored} liste d'attente
+                  {importResult.slotDivesRestored !== undefined && importResult.slotDivesRestored > 0
+                    ? `, ${importResult.slotDivesRestored} plongées` : ''})
                 </span>
               )}
             </div>

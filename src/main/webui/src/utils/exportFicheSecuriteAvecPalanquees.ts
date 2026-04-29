@@ -60,6 +60,8 @@ function fillHeader(
   ws: ExcelJS.Worksheet,
   slot: DiveSlot,
   allDivers: SlotDiver[],
+  diveStartTime?: string | null,
+  diveEndTime?: string | null,
 ) {
   const director   = allDivers.find(d => d.isDirector);
   const dirName    = director ? `${director.lastName.toUpperCase()} ${cap(director.firstName)}` : '';
@@ -67,16 +69,21 @@ function fillHeader(
   const dirLicense = director?.licenseNumber ?? '';
   const dpInfo     = [dirName, dirLevel, dirLicense].filter(Boolean).join(' - ');
 
-  ws.getCell('B4').value =
-    `Date : ${fmtDate(slot.slotDate)} ${slot.startTime}–${slot.endTime}\nClub : ${slot.club ?? ''}\nNom, Prénom et Brevet du DP : ${dpInfo}`;
+  // Horaire : utiliser celui de la plongée si défini, sinon celui du créneau
+  // .slice(0,5) pour ne garder que HH:mm (le backend renvoie HH:mm:ss)
+  const startTime = (diveStartTime ?? slot.startTime).slice(0, 5);
+  const endTime   = (diveEndTime   ?? slot.endTime).slice(0, 5);
 
-  const startHour = parseInt(slot.startTime.split(':')[0], 10);
+  ws.getCell('B4').value =
+    `Date : ${fmtDate(slot.slotDate)} ${startTime}–${endTime}\nClub : ${slot.club ?? ''}\nNom, Prénom et Brevet du DP : ${dpInfo}`;
+
+  const startHour = parseInt(startTime.split(':')[0], 10);
   if (startHour < 13) {
-    ws.getCell('H4').value = `AM\n${slot.startTime} – ${slot.endTime}`;
+    ws.getCell('H4').value = `AM\n${startTime} – ${endTime}`;
     ws.getCell('I4').value = 'PM';
   } else {
     ws.getCell('H4').value = 'AM';
-    ws.getCell('I4').value = `PM\n${slot.startTime} – ${slot.endTime}`;
+    ws.getCell('I4').value = `PM\n${startTime} – ${endTime}`;
   }
 
   ws.getCell('J4').value = `Nb Plongeurs\n${allDivers.length} / ${slot.diverCount}`;
@@ -231,6 +238,9 @@ export async function exportFicheSecuriteAvecPalanquees(
   slot: DiveSlot,
   allDivers: SlotDiver[],
   palanquees: Palanquee[],
+  diveLabel?: string,
+  diveStartTime?: string | null,
+  diveEndTime?: string | null,
 ): Promise<void> {
   // ── Construire la liste des groupes à exporter ────────────────────────────
   const assignedIds = new Set(palanquees.flatMap(p => p.divers.map(d => d.id)));
@@ -242,14 +252,14 @@ export async function exportFicheSecuriteAvecPalanquees(
     duration: p.duration,
   }));
 
-  // Plongeurs non assignés → groupe sans label (affiché après les palanquées)
-  const unassigned = allDivers
-    .filter(d => !assignedIds.has(d.id))
-    .sort((a, b) => a.lastName.localeCompare(b.lastName));
-
-  // Les non-assignés remplissent des groupes de 4 supplémentaires
-  for (let i = 0; i < unassigned.length; i += MAX_DIVERS_PER_GROUP) {
-    exportGroups.push({ label: '', divers: unassigned.slice(i, i + MAX_DIVERS_PER_GROUP) });
+  // Plongeurs non assignés : inclus seulement s'il n'y a aucune palanquée définie
+  if (palanquees.length === 0) {
+    const unassigned = allDivers
+      .filter(d => !assignedIds.has(d.id))
+      .sort((a, b) => a.lastName.localeCompare(b.lastName));
+    for (let i = 0; i < unassigned.length; i += MAX_DIVERS_PER_GROUP) {
+      exportGroups.push({ label: '', divers: unassigned.slice(i, i + MAX_DIVERS_PER_GROUP) });
+    }
   }
 
   const totalPages = Math.max(1, Math.ceil(exportGroups.length / MAX_GROUPS_PER_PAGE));
@@ -281,7 +291,7 @@ export async function exportFicheSecuriteAvecPalanquees(
 
   // ── Page 1 ────────────────────────────────────────────────────────────────
   ws1.name = 'Fiche sécurité (palanquées)';
-  fillHeader(ws1, slot, allDivers);
+  fillHeader(ws1, slot, allDivers, diveStartTime, diveEndTime);
 
   const page1Groups = Array.from({ length: MAX_GROUPS_PER_PAGE }, (_, i) => exportGroups[i]);
   fillSheetGroups(ws1, page1Groups, modelStyles, modelHeight);
@@ -290,13 +300,13 @@ export async function exportFicheSecuriteAvecPalanquees(
     ws1.getCell('J33').value = `Notes : ${slot.notes}`;
   }
 
-  // ── Pages supplémentaires ─────────────────────────────────────────────────
+  // ── Pages supplémentaires ──────────────────────────────────────────────────────
   for (let page = 2; page <= totalPages; page++) {
     const offset     = (page - 1) * MAX_GROUPS_PER_PAGE;
     const pageGroups = Array.from({ length: MAX_GROUPS_PER_PAGE }, (_, i) => exportGroups[offset + i]);
     const wsNew      = extraSheets[page - 2];
 
-    fillHeader(wsNew, slot, allDivers);
+    fillHeader(wsNew, slot, allDivers, diveStartTime, diveEndTime);
     fillSheetGroups(wsNew, pageGroups, modelStyles, modelHeight);
   }
 
@@ -313,9 +323,10 @@ export async function exportFicheSecuriteAvecPalanquees(
 
   // ── Export ────────────────────────────────────────────────────────────────
   const buffer = await wb.xlsx.writeBuffer();
+  const suffix = diveLabel ? `-${diveLabel.replace(/[^a-zA-Z0-9\u00C0-\u024F-]/g, '_')}` : '';
   downloadBlob(
     new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
-    `${slot.slotDate}-${slot.startTime.replace(':', '-')}-Fiche-securite-Saint-Lin.xlsx`,
+    `${slot.slotDate}-${slot.startTime.replace(':', '-')}${suffix}-Fiche-securite-Saint-Lin.xlsx`,
   );
 }
 

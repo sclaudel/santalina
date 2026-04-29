@@ -28,6 +28,10 @@ public class Palanquee extends PanacheEntityBase {
     @Column
     public String duration;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "slot_dive_id")
+    public SlotDive slotDive;
+
     public static List<Palanquee> findBySlot(Long slotId) {
         return list("slot.id = ?1 ORDER BY position, id", slotId);
     }

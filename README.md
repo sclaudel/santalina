@@ -24,6 +24,7 @@ Application de réservation de créneaux de plongée en lac, développée avec *
 - **Liste d'attente** : inscription libre, validation/refus par le DP responsable
 - **Inscriptions libres** : le DP assigné peut ouvrir les inscriptions avec date d'ouverture optionnelle
 - **Organisation des palanquées** : drag-and-drop, gestion des aptitudes, export Excel fiche de sécurité, export CSV
+- **Plongées multiples par créneau** : découpage optionnel d'un créneau en plusieurs plongées distinctes (matin/après-midi…), filtrage du tableau des palanquées par plongée, horaires par plongée, aptitudes différentes par plongée, fiches de sécurité individuelles par plongée
 - **Mail d'organisation** (DIVE_DIRECTOR) : envoi groupé depuis la page Palanquées — plongeurs en BCC, DP en CC, Reply-To = DP ; éditeur WYSIWYG avec variables `{siteName}`, `{slotDate}`, `{dpName}`… ; modèle personnalisable par DP dans son profil
 - **Normalisation des données** : prénoms capitalisés, emails en minuscules
 - **Docker-ready** : Dockerfile multi-stage + docker-compose
@@ -124,6 +125,11 @@ docker compose up --build
 | `PUT` | `/api/slots/{id}/palanquees/{pid}` | ADMIN, DIVE_DIRECTOR | Modifier une palanquée |
 | `DELETE` | `/api/slots/{id}/palanquees/{pid}` | ADMIN, DIVE_DIRECTOR | Supprimer une palanquée |
 | `POST` | `/api/slots/{id}/mail/organization` | ADMIN, DIVE_DIRECTOR | Envoyer le mail d'organisation aux plongeurs |
+| `GET` | `/api/slots/{id}/dives` | ADMIN, DIVE_DIRECTOR | Plongées du créneau |
+| `POST` | `/api/slots/{id}/dives` | ADMIN, DIVE_DIRECTOR | Créer une plongée |
+| `PATCH` | `/api/slots/{id}/dives/{diveId}` | ADMIN, DIVE_DIRECTOR | Modifier une plongée |
+| `DELETE` | `/api/slots/{id}/dives/{diveId}` | ADMIN, DIVE_DIRECTOR | Supprimer une plongée (détache les palanquées) |
+| `PUT` | `/api/slots/{id}/dives/assign` | ADMIN, DIVE_DIRECTOR | Assigner/désassigner une palanquée à une plongée |
 | `GET` | `/api/users/me` | Authentifié | Mon profil |
 | `PUT` | `/api/users/me` | Authentifié | Modifier profil |
 | `PUT` | `/api/users/me/dp-email-template` | ADMIN, DIVE_DIRECTOR | Enregistrer le modèle d'email DP |
@@ -140,6 +146,32 @@ docker compose up --build
 | `GET` | `/api/stats/my?from=YYYY-MM-DD&to=YYYY-MM-DD` | ADMIN, DIVE_DIRECTOR | Statistiques personnelles du DP connecté |
 
 Documentation Swagger : **http://localhost:8085/q/swagger-ui**
+
+---
+
+## 🤿 Plongées multiples par créneau
+
+Il est possible de découper un créneau en **plusieurs plongées distinctes** (ex. matin / après-midi), chaque palanquée pouvant être rattachée à une plongée spécifique.
+
+### Utilisation
+1. Ouvrir la page **Palanquées** d'un créneau.
+2. Cliquer sur **+ Organiser en plusieurs plongées** (ou **+ Plongée** si des plongées existent déjà) pour créer une nouvelle plongée.
+3. Chaque plongée créée apparaît sous forme d'onglet (**Toutes / Plongée 1 / Plongée 2 / …**).
+4. Pour rattacher une palanquée à une plongée, utiliser le sélecteur **Plongée** affiché dans l'en-tête de la colonne de la palanquée.
+5. L'onglet actif filtre le tableau de bord — seules les palanquées de la plongée sélectionnée sont affichées.
+6. **Horaire par plongée** : lorsqu'un onglet de plongée est actif, une barre 🕐 Horaire s'affiche sous les onglets. Saisir l'heure de début et de fin de la plongée ; ces horaires sont repris dans la fiche de sécurité exportée pour cette plongée.
+7. **Aptitudes par plongée** : depuis un onglet de plongée, les aptitudes modifiées (double-clic) sont enregistrées spécifiquement pour cette plongée. Un même plongeur peut avoir des aptitudes différentes selon la plongée (ex. PE20 le matin, PA40 l'après-midi).
+8. **Export Excel** :
+   - Bouton 📥 sur l'onglet d'une plongée → exporte la **fiche de sécurité de cette plongée** (palanquées + horaires + aptitudes spécifiques).
+   - Bouton 📥 **Liste globale** sur l'onglet Toutes → exporte la **liste complète des inscrits** sans organisation en palanquées.
+9. Pour supprimer une plongée, cliquer sur **✕** dans son onglet (les palanquées sont détachées mais pas supprimées).
+
+### Rétrocompatibilité
+- Les palanquées sans plongée assignée restent visibles dans l'onglet **Toutes**.
+- La fonctionnalité est optionnelle : un créneau sans plongée fonctionne exactement comme avant.
+
+### Sauvegarde / restauration
+Les plongées sont incluses dans l'export JSON complet et restaurées automatiquement lors de l'import.
 
 ---
 
@@ -231,7 +263,7 @@ Inclut un export PDF personnalisé.
 src/main/
 ├── java/org/santalina/diving/
 │   ├── config/          # DivingConfig (@ConfigProperty)
-│   ├── domain/          # Entités JPA (User, DiveSlot, SlotDiver, WaitingListEntry, Palanquee, AppConfigEntry)
+│   ├── domain/          # Entités JPA (User, DiveSlot, SlotDiver, WaitingListEntry, Palanquee, SlotDive, AppConfigEntry)
 │   ├── dto/             # Records Java (request/response)
 │   ├── exception/       # GlobalExceptionMapper
 │   ├── mail/            # PasswordResetMailer, ActivationMailer, WaitingListMailer, RegistrationReportMailer, DpOrganizerMailer

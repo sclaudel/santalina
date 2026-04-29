@@ -19,7 +19,8 @@ public class BackupDto {
             List<SlotEntry> slots,        // null si type="config-users"
             List<DiverEntry> divers,      // null si type="config-users"
             List<PalanqueeEntry> palanquees, // null si type="config-users"
-            List<WaitingListBackupEntry> waitingListEntries // null si type="config-users"
+            List<WaitingListBackupEntry> waitingListEntries, // null si type="config-users"
+            List<SlotDiveEntry> slotDives // null si type="config-users"
     ) {}
 
     public record ConfigEntry(
@@ -92,6 +93,19 @@ public class BackupDto {
             String name,
             int position,
             String depth,
+            String duration,
+            Long slotDiveId,
+            List<Long> memberDiverIds  // IDs originaux des plongeurs, ordonnés par position
+    ) {}
+
+    public record SlotDiveEntry(
+            Long id,
+            Long slotId,
+            int diveIndex,
+            String label,
+            LocalTime startTime,
+            LocalTime endTime,
+            String depth,
             String duration
     ) {}
 
@@ -125,7 +139,8 @@ public class BackupDto {
             int slotsRestored,
             int diversRestored,
             int palanqueesRestored,
-            int waitingListRestored
+            int waitingListRestored,
+            int slotDivesRestored
     ) {}
 }
 
