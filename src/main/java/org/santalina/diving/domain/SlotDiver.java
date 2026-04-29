@@ -54,13 +54,6 @@ public class SlotDiver extends PanacheEntityBase {
     @Column(name = "added_at", nullable = false)
     public LocalDateTime addedAt = LocalDateTime.now();
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "palanquee_id")
-    public Palanquee palanquee;
-
-    @Column(name = "palanquee_position", nullable = false)
-    public int palanqueePosition = 0;
-
     public static List<SlotDiver> findBySlot(Long slotId) {
         return list("slot.id", slotId);
     }
@@ -81,10 +74,6 @@ public class SlotDiver extends PanacheEntityBase {
     public static boolean existsBySlotAndName(Long slotId, String firstName, String lastName) {
         return count("slot.id = ?1 and lower(firstName) = lower(?2) and lower(lastName) = lower(?3)",
                 slotId, firstName, lastName) > 0;
-    }
-
-    public static List<SlotDiver> findByPalanquee(Long palanqueeId) {
-        return list("palanquee.id = ?1 ORDER BY palanqueePosition, id", palanqueeId);
     }
 
     public static boolean existsBySlotAndNameExcluding(Long slotId, String firstName, String lastName, Long excludeId) {

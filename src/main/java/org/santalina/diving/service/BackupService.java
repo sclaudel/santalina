@@ -41,7 +41,7 @@ public class BackupService {
 
         LOG.infof("Export config-users : %d entrées de config, %d utilisateurs", config.size(), users.size());
         return new BackupData(BACKUP_VERSION, "config-users", LocalDateTime.now(),
-                config, users, null, null, null, null);
+                config, users, null, null, null, null, null);
     }
 
     /** Export complet (config + utilisateurs + créneaux + plongeurs). */
@@ -76,10 +76,15 @@ public class BackupService {
                 .map(this::toWaitingListEntry)
                 .collect(Collectors.toList());
 
-        LOG.infof("Export full : %d config, %d users, %d slots, %d divers, %d palanquees, %d waitingList",
-                config.size(), users.size(), slots.size(), divers.size(), palanquees.size(), waitingList.size());
+        List<SlotDiveEntry> slotDives = SlotDive.<SlotDive>listAll()
+                .stream()
+                .map(this::toSlotDiveEntry)
+                .collect(Collectors.toList());
+
+        LOG.infof("Export full : %d config, %d users, %d slots, %d divers, %d palanquees, %d waitingList, %d slotDives",
+                config.size(), users.size(), slots.size(), divers.size(), palanquees.size(), waitingList.size(), slotDives.size());
         return new BackupData(BACKUP_VERSION, "full", LocalDateTime.now(),
-                config, users, slots, divers, palanquees, waitingList);
+                config, users, slots, divers, palanquees, waitingList, slotDives);
     }
 
     // ---- Import ----
@@ -94,8 +99,10 @@ public class BackupService {
 
         // 1. Vider dans l'ordre des dépendances
         em.createNativeQuery("DELETE FROM waiting_list_entries").executeUpdate();
+        em.createNativeQuery("DELETE FROM palanquee_members").executeUpdate();
         em.createNativeQuery("DELETE FROM slot_divers").executeUpdate();
         em.createNativeQuery("DELETE FROM palanquees").executeUpdate();
+        em.createNativeQuery("DELETE FROM slot_dives").executeUpdate();
         em.createNativeQuery("DELETE FROM dive_slots").executeUpdate();
         em.createNativeQuery("DELETE FROM user_roles").executeUpdate();
         em.createNativeQuery("DELETE FROM users").executeUpdate();
@@ -231,6 +238,38 @@ public class BackupService {
         }
 
         // 6. Restaurer les palanquées et réassigner les plongeurs
+        // D'abord restaurer les slot_dives afin que les palanquées puissent y être liées
+        java.util.Map<Long, SlotDive> slotDiveIdMap = new java.util.HashMap<>();
+        int slotDiveCount = 0;
+        if (backup.slotDives() != null && backup.slots() != null) {
+            for (SlotDiveEntry sde : backup.slotDives()) {
+                final Long origSlotId = sde.slotId();
+                SlotEntry origSlot = backup.slots().stream()
+                        .filter(s -> origSlotId.equals(s.id()))
+                        .findFirst().orElse(null);
+                if (origSlot == null) continue;
+
+                DiveSlot linkedSlot = DiveSlot.find(
+                        "slotDate = ?1 and startTime = ?2 and endTime = ?3",
+                        origSlot.slotDate(), origSlot.startTime(), origSlot.endTime())
+                        .firstResult();
+                if (linkedSlot == null) continue;
+
+                SlotDive sd = new SlotDive();
+                sd.slot      = linkedSlot;
+                sd.diveIndex = sde.diveIndex();
+                sd.label     = sde.label();
+                sd.startTime = sde.startTime();
+                sd.endTime   = sde.endTime();
+                sd.depth     = sde.depth();
+                sd.duration  = sde.duration();
+                sd.persist();
+                slotDiveIdMap.put(sde.id(), sd);
+                slotDiveCount++;
+            }
+        }
+        em.flush();
+
         int palanqueeCount = 0;
         if (backup.palanquees() != null && backup.slots() != null) {
             for (PalanqueeEntry pe : backup.palanquees()) {
@@ -253,22 +292,47 @@ public class BackupService {
                 pal.position = pe.position();
                 pal.depth    = pe.depth();
                 pal.duration = pe.duration();
+                if (pe.slotDiveId() != null) {
+                    pal.slotDive = slotDiveIdMap.get(pe.slotDiveId());
+                }
                 pal.persist();
                 palanqueeCount++;
 
                 // Réassigner les plongeurs de cette palanquée
-                final Long origPalId = pe.id();
-                if (backup.divers() != null) {
+                if (pe.memberDiverIds() != null && !pe.memberDiverIds().isEmpty()) {
+                    // Nouveau format : liste d'IDs originaux ordonnée
+                    for (int pos = 0; pos < pe.memberDiverIds().size(); pos++) {
+                        final Long origDiverId = pe.memberDiverIds().get(pos);
+                        DiverEntry de = backup.divers() == null ? null :
+                                backup.divers().stream()
+                                        .filter(d -> origDiverId.equals(d.id()))
+                                        .findFirst().orElse(null);
+                        if (de == null) continue;
+                        SlotDiver sd = SlotDiver.find(
+                                "slot = ?1 and firstName = ?2 and lastName = ?3",
+                                linkedSlot, de.firstName(), de.lastName()).firstResult();
+                        if (sd != null) {
+                            PalanqueeMember m = new PalanqueeMember();
+                            m.palanquee = pal;
+                            m.diver     = sd;
+                            m.position  = pos;
+                            m.persist();
+                        }
+                    }
+                } else if (backup.divers() != null) {
+                    // Ancien format : palanqueeId sur DiverEntry
+                    final Long origPalId = pe.id();
                     for (DiverEntry de : backup.divers()) {
                         if (origPalId.equals(de.palanqueeId())) {
-                            // Retrouver le plongeur restauré par slot + nom
                             SlotDiver sd = SlotDiver.find(
                                     "slot = ?1 and firstName = ?2 and lastName = ?3",
-                                    linkedSlot, de.firstName(), de.lastName())
-                                    .firstResult();
+                                    linkedSlot, de.firstName(), de.lastName()).firstResult();
                             if (sd != null) {
-                                sd.palanquee = pal;
-                                sd.palanqueePosition = de.palanqueePosition();
+                                PalanqueeMember m = new PalanqueeMember();
+                                m.palanquee = pal;
+                                m.diver     = sd;
+                                m.position  = de.palanqueePosition();
+                                m.persist();
                             }
                         }
                     }
@@ -322,13 +386,13 @@ public class BackupService {
         //    ne contenait aucun utilisateur admin).
         authService.ensureAdminExists();
 
-        LOG.infof("Import terminé : %d config, %d users, %d slots, %d divers, %d palanquees, %d waitingList",
-                configCount, userCount, slotCount, diverCount, palanqueeCount, waitingListCount);
+        LOG.infof("Import terminé : %d config, %d users, %d slots, %d divers, %d palanquees, %d waitingList, %d slotDives",
+                configCount, userCount, slotCount, diverCount, palanqueeCount, waitingListCount, slotDiveCount);
 
         return new ImportResult(true,
-                String.format("Import réussi : %d config, %d utilisateurs, %d créneaux, %d plongeurs, %d palanquées, %d liste d'attente",
-                        configCount, userCount, slotCount, diverCount, palanqueeCount, waitingListCount),
-                configCount, userCount, slotCount, diverCount, palanqueeCount, waitingListCount);
+                String.format("Import réussi : %d config, %d utilisateurs, %d créneaux, %d plongeurs, %d palanquées, %d liste d'attente, %d plongées",
+                        configCount, userCount, slotCount, diverCount, palanqueeCount, waitingListCount, slotDiveCount),
+                configCount, userCount, slotCount, diverCount, palanqueeCount, waitingListCount, slotDiveCount);
     }
 
     // ---- Mappeurs ----
@@ -354,13 +418,21 @@ public class BackupService {
         return new DiverEntry(d.id, d.slot != null ? d.slot.id : null,
                 d.firstName, d.lastName, d.level, d.email, d.phone,
                 d.isDirector, d.aptitudes, d.licenseNumber,
-                d.palanquee != null ? d.palanquee.id : null, d.palanqueePosition,
+                null, 0,  // palanqueeId/position : usageés via PalanqueeEntry.memberDiverIds
                 d.medicalCertDate, d.comment, d.club);
     }
 
     private PalanqueeEntry toPalanqueeEntry(Palanquee p) {
+        List<Long> memberDiverIds = PalanqueeMember.findByPalanquee(p.id)
+                .stream().map(m -> m.diver.id).collect(Collectors.toList());
         return new PalanqueeEntry(p.id, p.slot != null ? p.slot.id : null,
-                p.name, p.position, p.depth, p.duration);
+                p.name, p.position, p.depth, p.duration,
+                p.slotDive != null ? p.slotDive.id : null, memberDiverIds);
+    }
+
+    private SlotDiveEntry toSlotDiveEntry(SlotDive d) {
+        return new SlotDiveEntry(d.id, d.slot != null ? d.slot.id : null,
+                d.diveIndex, d.label, d.startTime, d.endTime, d.depth, d.duration);
     }
 
     private WaitingListBackupEntry toWaitingListEntry(WaitingListEntry e) {

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { slotDiverService } from '../services/slotDiverService';
 import { palanqueeService } from '../services/palanqueeService';
+import { slotDiveService } from '../services/slotDiveService';
 import { slotService } from '../services/slotService';
 import { waitingListService } from '../services/waitingListService';
 import { downloadSlotIcs } from '../utils/calendarExport';
@@ -10,7 +11,7 @@ import { slotMailService } from '../services/slotMailService';
 import { exportDiverListCsv } from '../utils/exportDiverList';
 import { RichTextEditor } from '../components/RichTextEditor';
 import { DpOrganizerMailer } from '../utils/dpMailDefaults';
-import type { DiveSlot, SlotDiver, Palanquee, WaitingListEntry, RegistrationStatus } from '../types';
+import type { DiveSlot, SlotDiver, Palanquee, SlotDive, WaitingListEntry, RegistrationStatus } from '../types';
 
 // ── constantes ──────────────────────────────────────────────────────────────
 const LEVEL_COLORS: Record<string, string> = {
@@ -266,6 +267,9 @@ export function PalanqueePage({ slotId, onBack }: Props) {
   const [slot, setSlot]             = useState<DiveSlot | null>(null);
   const [allDivers, setAllDivers]   = useState<SlotDiver[]>([]);
   const [palanquees, setPalanquees] = useState<Palanquee[]>([]);
+  const [slotDives, setSlotDives]   = useState<SlotDive[]>([]);
+  // null = toutes les plongées (pas de filtre), number = ID de la plongée active
+  const [activeDiveId, setActiveDiveId] = useState<number | null>(null);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState('');
   const [draggedId, setDraggedId]   = useState<number | null>(null);
@@ -324,14 +328,16 @@ export function PalanqueePage({ slotId, onBack }: Props) {
   const loadAll = useCallback(async () => {
     setError('');
     try {
-      const [slotData, diversData, pData] = await Promise.all([
+      const [slotData, diversData, pData, divesData] = await Promise.all([
         slotService.getById(slotId),
         slotDiverService.getBySlot(slotId),
         palanqueeService.getBySlot(slotId),
+        slotDiveService.getBySlot(slotId).catch(() => [] as SlotDive[]),
       ]);
       setSlot(slotData);
       setAllDivers(diversData);
       setPalanquees(pData);
+      setSlotDives(divesData);
       // Charger la liste d'attente en silence (peut échouer si non autorisé)
       try {
         const wl = await waitingListService.getWaitingList(slotId);
@@ -395,26 +401,48 @@ export function PalanqueePage({ slotId, onBack }: Props) {
 
   // ── changement d'aptitudes inline sur le post-it ───────────────────────────
   const handleAptitudesChange = useCallback(async (diverId: number, newAptitudes: string) => {
-    const diver = allDivers.find(d => d.id === diverId);
-    if (!diver || diver.aptitudes === newAptitudes) return;
-    const updater = (d: SlotDiver) => d.id === diverId ? { ...d, aptitudes: newAptitudes || undefined } : d;
-    setAllDivers(prev => prev.map(updater));
-    setPalanquees(prev => prev.map(p => ({ ...p, divers: p.divers.map(updater) })));
-    try {
-      await slotDiverService.update(slotId, diverId, {
-        firstName:  diver.firstName,
-        lastName:   diver.lastName,
-        level:      diver.level,
-        email:      diver.email,
-        phone:      diver.phone,
-        isDirector: diver.isDirector,
-        aptitudes:  newAptitudes || undefined,
-        licenseNumber: diver.licenseNumber,
-      });
-    } catch {
-      await loadAll();
+    // Si une plongée est active et le plongeur est dans une palanquée de cette plongée,
+    // on met à jour les aptitudes spécifiques à cette plongée (PalanqueeMember).
+    // Sinon (pool ou onglet "Toutes"), on met à jour les aptitudes globales du SlotDiver.
+    const palanqueeInCurrentDive = activeDiveId !== null
+      ? palanquees.find(p => p.slotDiveId === activeDiveId && p.divers.some(d => d.id === diverId))
+      : null;
+
+    if (palanqueeInCurrentDive) {
+      const member = palanqueeInCurrentDive.divers.find(d => d.id === diverId);
+      if (member?.aptitudes === (newAptitudes || undefined)) return;
+      // Mise à jour optimiste dans la palanquée uniquement
+      setPalanquees(prev => prev.map(p =>
+        p.id === palanqueeInCurrentDive.id
+          ? { ...p, divers: p.divers.map(d => d.id === diverId ? { ...d, aptitudes: newAptitudes || undefined } : d) }
+          : p
+      ));
+      try {
+        await palanqueeService.updateMemberAptitudes(slotId, palanqueeInCurrentDive.id, diverId, newAptitudes || undefined);
+      } catch { await loadAll(); }
+    } else {
+      // Aptitudes globales (comportement d'origine)
+      const diver = allDivers.find(d => d.id === diverId);
+      if (!diver || diver.aptitudes === newAptitudes) return;
+      const updater = (d: SlotDiver) => d.id === diverId ? { ...d, aptitudes: newAptitudes || undefined } : d;
+      setAllDivers(prev => prev.map(updater));
+      setPalanquees(prev => prev.map(p => ({ ...p, divers: p.divers.map(updater) })));
+      try {
+        await slotDiverService.update(slotId, diverId, {
+          firstName:  diver.firstName,
+          lastName:   diver.lastName,
+          level:      diver.level,
+          email:      diver.email,
+          phone:      diver.phone,
+          isDirector: diver.isDirector,
+          aptitudes:  newAptitudes || undefined,
+          licenseNumber: diver.licenseNumber,
+        });
+      } catch {
+        await loadAll();
+      }
     }
-  }, [allDivers, slotId, loadAll]);
+  }, [allDivers, palanquees, activeDiveId, slotId, loadAll]);
 
   // Auto-scroll horizontal du board lors du drag vers les bords
   useEffect(() => {
@@ -474,9 +502,17 @@ export function PalanqueePage({ slotId, onBack }: Props) {
     if (renamingId !== null) renameInputRef.current?.focus();
   }, [renamingId]);
 
-  // ── calcul des non-assignés ───────────────────────────────────────────────
-  const assignedIds = new Set(palanquees.flatMap(p => p.divers.map(d => d.id)));
-  const unassigned  = allDivers.filter(d => !assignedIds.has(d.id));
+  // ── filtrage des palanquées par plongée active ────────────────────────────
+  // activeDiveId=null → toutes les palanquées
+  const filteredPalanquees = activeDiveId === null
+    ? palanquees
+    : palanquees.filter(p => p.slotDiveId === activeDiveId);
+
+  // ── calcul des non-assignés (pool propre à la plongée active) ─────────────
+  // En mode multi-plongée, chaque plongée a son propre pool : un plongeur
+  // dans dive 1 reste disponible dans le pool de dive 2.
+  const assignedInCurrentDive = new Set(filteredPalanquees.flatMap(p => p.divers.map(d => d.id)));
+  const unassigned  = allDivers.filter(d => !assignedInCurrentDive.has(d.id));
 
   // ── assignation commune (DnD + tap mobile) ───────────────────────────────
   const handleAssign = useCallback(async (
@@ -484,7 +520,12 @@ export function PalanqueePage({ slotId, onBack }: Props) {
     targetPalanqueeId: number | null,
     beforeDiverId: number | null = null,
   ) => {
-    const currentPalanquee = palanquees.find(p => p.divers.some(d => d.id === diverId));
+    // En mode plongée active, on cherche la palanquée courante uniquement dans
+    // le contexte de cette plongée (un plongeur peut être dans plusieurs plongées)
+    const contextPals = activeDiveId === null
+      ? palanquees
+      : palanquees.filter(p => p.slotDiveId === activeDiveId);
+    const currentPalanquee = contextPals.find(p => p.divers.some(d => d.id === diverId));
     const currentPalanqueeId = currentPalanquee?.id ?? null;
     const diver = allDivers.find(d => d.id === diverId);
     if (!diver) return;
@@ -522,7 +563,10 @@ export function PalanqueePage({ slotId, onBack }: Props) {
     }));
 
     try {
-      await palanqueeService.assign(slotId, diverId, targetPalanqueeId);
+      // En mode multi-plongée, passer fromPalanqueeId pour ne désassigner que de
+      // cette plongée-ci (le plongeur reste dans les autres plongées)
+      const fromId = targetPalanqueeId === null ? currentPalanqueeId : null;
+      await palanqueeService.assign(slotId, diverId, targetPalanqueeId, fromId);
       if (targetPalanqueeId !== null) {
         const updatedPal = palanquees.find(p => p.id === targetPalanqueeId)!;
         const without = updatedPal.divers.filter(d => d.id !== diverId);
@@ -535,7 +579,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
         await palanqueeService.reorder(slotId, targetPalanqueeId, finalOrder.map(d => d.id));
       }
     } catch { await loadAll(); }
-  }, [allDivers, palanquees, slotId, loadAll]);
+  }, [allDivers, palanquees, activeDiveId, slotId, loadAll]);
 
   // ── drag & drop ───────────────────────────────────────────────────────────
   const handleDragStart = (diverId: number) => {
@@ -579,11 +623,58 @@ export function PalanqueePage({ slotId, onBack }: Props) {
     try {
       const newName = `Palanquée ${palanquees.length + 1}`;
       const created = await palanqueeService.create(slotId, newName);
+      // Auto-assigner à la plongée active si applicable
+      if (activeDiveId !== null) {
+        await slotDiveService.assignPalanquee(slotId, created.id, activeDiveId);
+        created.slotDiveId = activeDiveId;
+      }
       setPalanquees(prev => [...prev, created]);
     } catch {
       setError('Impossible de créer la palanquée.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  // ── plongées multiples ────────────────────────────────────────────────────
+
+  const handleAddDive = async () => {
+    setSaving(true);
+    try {
+      const diveNumber = slotDives.length + 1;
+      const created = await slotDiveService.create(slotId, { label: `Plongée ${diveNumber}` });
+      setSlotDives(prev => [...prev, created]);
+      setActiveDiveId(created.id);
+    } catch {
+      setError('Impossible de créer la plongée.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteDive = async (diveId: number) => {
+    const dive = slotDives.find(d => d.id === diveId);
+    const diveLabel = dive?.label ?? `Plongée ${dive?.diveIndex}`;
+    const palanqueesForDive = palanquees.filter(p => p.slotDiveId === diveId);
+    if (palanqueesForDive.length > 0) {
+      if (!window.confirm(`Supprimer « ${diveLabel} » ? Ses ${palanqueesForDive.length} palanquée(s) ne seront plus associées à une plongée.`)) return;
+    }
+    try {
+      await slotDiveService.delete(slotId, diveId);
+      setSlotDives(prev => prev.filter(d => d.id !== diveId).map((d, i) => ({ ...d, diveIndex: i + 1 })));
+      setPalanquees(prev => prev.map(p => p.slotDiveId === diveId ? { ...p, slotDiveId: null } : p));
+      if (activeDiveId === diveId) setActiveDiveId(null);
+    } catch {
+      setError('Impossible de supprimer la plongée.');
+    }
+  };
+
+  const handleAssignPalanqueeToDive = async (palanqueeId: number, newDiveId: number | null) => {
+    try {
+      await slotDiveService.assignPalanquee(slotId, palanqueeId, newDiveId);
+      setPalanquees(prev => prev.map(p => p.id === palanqueeId ? { ...p, slotDiveId: newDiveId } : p));
+    } catch {
+      await loadAll();
     }
   };
 
@@ -638,6 +729,28 @@ export function PalanqueePage({ slotId, onBack }: Props) {
       await palanqueeService.rename(slotId, palanqueeId, pal.name, pal.depth, duration || undefined);
     } catch { await loadAll(); }
   }, [palanquees, slotId, loadAll]);
+
+  // ── horaire de plongée ───────────────────────────────────────────────────
+
+  const handleDiveTimeChange = useCallback(async (
+    diveId: number,
+    field: 'startTime' | 'endTime',
+    value: string,
+  ) => {
+    const dive = slotDives.find(d => d.id === diveId);
+    if (!dive) return;
+    const updated = { ...dive, [field]: value || null };
+    setSlotDives(prev => prev.map(d => d.id === diveId ? updated : d));
+    try {
+      await slotDiveService.update(slotId, diveId, {
+        label: dive.label,
+        startTime: field === 'startTime' ? (value || null) : dive.startTime,
+        endTime:   field === 'endTime'   ? (value || null) : dive.endTime,
+        depth:     dive.depth,
+        duration:  dive.duration,
+      });
+    } catch { await loadAll(); }
+  }, [slotDives, slotId, loadAll]);
 
   // ── liste d'attente ──────────────────────────────────────────────────────
 
@@ -740,7 +853,13 @@ export function PalanqueePage({ slotId, onBack }: Props) {
     setExporting(true);
     try {
       const { exportFicheSecuriteAvecPalanquees } = await import('../utils/exportFicheSecuriteAvecPalanquees');
-      await exportFicheSecuriteAvecPalanquees(slot, allDivers, palanquees);
+      if (slotDives.length > 0) {
+        // Mode multi-plongées : exporter uniquement la liste globale des plongeurs (sans palanquées)
+        await exportFicheSecuriteAvecPalanquees(slot, allDivers, []);
+      } else {
+        // Mode plongée unique : exporter la fiche de sécurité avec palanquées
+        await exportFicheSecuriteAvecPalanquees(slot, allDivers, palanquees);
+      }
     } catch (err) {
       console.error('Export palanquées :', err);
     } finally {
@@ -861,9 +980,11 @@ export function PalanqueePage({ slotId, onBack }: Props) {
             className="palanquee-export-btn"
             onClick={handleExportExcel}
             disabled={exporting || allDivers.length === 0}
-            title="Exporter la fiche de sécurité Excel avec les palanquées"
+            title={slotDives.length > 0
+              ? 'Exporter la liste globale des plongeurs inscrits (Excel)'
+              : 'Exporter la fiche de sécurité avec les palanquées (Excel)'}
           >
-            {exporting ? '…' : '📥 Export Excel'}
+            {exporting ? '…' : slotDives.length > 0 ? '📥 Liste globale' : '📥 Fiche de sécurité'}
           </button>
           <button
             className="palanquee-export-btn palanquee-export-btn--mail"
@@ -1078,6 +1199,97 @@ export function PalanqueePage({ slotId, onBack }: Props) {
         </div>
       )}
 
+      {/* ── Onglets plongées multiples ── */}
+      {slotDives.length > 0 && (
+        <div className="dive-tabs">
+          <button
+            className={`dive-tab${activeDiveId === null ? ' dive-tab--active' : ''}`}
+            onClick={() => setActiveDiveId(null)}
+          >
+            🌊 Toutes
+          </button>
+          {slotDives.map(dive => (
+            <span key={dive.id} className={`dive-tab-wrapper${activeDiveId === dive.id ? ' dive-tab-wrapper--active' : ''}`}>
+              <button
+                className={`dive-tab${activeDiveId === dive.id ? ' dive-tab--active' : ''}`}
+                onClick={() => setActiveDiveId(dive.id)}
+              >
+                🤿 {dive.label ?? `Plongée ${dive.diveIndex}`}
+              </button>
+              <button
+                className="dive-tab-delete"
+                onClick={() => handleDeleteDive(dive.id)}
+                title={`Supprimer ${dive.label ?? `Plongée ${dive.diveIndex}`}`}
+              >✕</button>
+            </span>
+          ))}
+          <button
+            className="dive-tab dive-tab--add"
+            onClick={handleAddDive}
+            disabled={saving}
+            title="Ajouter une plongée"
+          >
+            + Plongée
+          </button>
+        </div>
+      )}
+
+      {slotDives.length === 0 && (
+        <div className="dive-tabs-empty">
+          <button
+            className="dive-tab dive-tab--add"
+            onClick={handleAddDive}
+            disabled={saving}
+            title="Organiser ce créneau en plusieurs plongées (matin/après-midi…)"
+          >
+            + Organiser en plusieurs plongées
+          </button>
+        </div>
+      )}
+
+      {activeDiveId !== null && slotDives.length > 0 && (() => {
+        const dive = slotDives.find(d => d.id === activeDiveId);
+        if (!dive) return null;
+        return (
+          <div className="dive-time-bar">
+            <span className="dive-time-bar-label">🕐 Horaire :</span>
+            <input
+              type="time"
+              className="dive-time-input"
+              value={dive.startTime?.slice(0, 5) ?? ''}
+              onChange={e => handleDiveTimeChange(dive.id, 'startTime', e.target.value)}
+              title="Heure de début de la plongée"
+            />
+            <span className="dive-time-bar-sep">—</span>
+            <input
+              type="time"
+              className="dive-time-input"
+              value={dive.endTime?.slice(0, 5) ?? ''}
+              onChange={e => handleDiveTimeChange(dive.id, 'endTime', e.target.value)}
+              title="Heure de fin de la plongée"
+            />
+            <button
+              className="palanquee-export-btn"
+              disabled={exporting || allDivers.length === 0}
+              title={`Exporter la fiche de sécurité — ${dive.label ?? `Plongée ${dive.diveIndex}`}`}
+              onClick={async () => {
+                if (!slot) return;
+                setExporting(true);
+                try {
+                  const { exportFicheSecuriteAvecPalanquees } = await import('../utils/exportFicheSecuriteAvecPalanquees');
+                  const pals = palanquees.filter(p => p.slotDiveId === dive.id);
+                  const label = dive.label ?? `Plongée ${dive.diveIndex}`;
+                  await exportFicheSecuriteAvecPalanquees(slot, allDivers, pals, label, dive.startTime, dive.endTime);
+                } catch (err) { console.error(err); }
+                finally { setExporting(false); }
+              }}
+            >
+              {exporting ? '…' : '📥 Fiche de sécurité'}
+            </button>
+          </div>
+        );
+      })()}
+
       <div className="palanquee-hint">
         {isMobile
           ? <span>💡 Appuyez sur un plongeur pour le sélectionner, puis choisissez sa destination</span>
@@ -1115,9 +1327,9 @@ export function PalanqueePage({ slotId, onBack }: Props) {
       {/* ── Mobile : navigation + palanquée active ── */}
       {isMobile && (
         <div className="palanquee-mobile-view">
-          {palanquees.length === 0 ? (
+          {filteredPalanquees.length === 0 ? (
             <div className="palanquee-empty-state">
-              <p>Aucune palanquée créée.</p>
+              <p>Aucune palanquée créée{activeDiveId !== null ? ' pour cette plongée' : ''}.</p>
               <button className="palanquee-add-btn" onClick={handleAddPalanquee} disabled={saving}>
                 + Créer la première palanquée
               </button>
@@ -1132,7 +1344,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                   disabled={activePalIdx === 0}
                 >‹</button>
                 <div className="palanquee-mobile-nav-dots">
-                  {palanquees.map((_, i) => (
+                  {filteredPalanquees.map((_, i) => (
                     <button
                       key={i}
                       className={`palanquee-mobile-nav-dot${i === activePalIdx ? ' palanquee-mobile-nav-dot--active' : ''}`}
@@ -1142,14 +1354,14 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                 </div>
                 <button
                   className="palanquee-mobile-nav-btn"
-                  onClick={() => setActivePalIdx(i => Math.min(palanquees.length - 1, i + 1))}
-                  disabled={activePalIdx >= palanquees.length - 1}
+                  onClick={() => setActivePalIdx(i => Math.min(filteredPalanquees.length - 1, i + 1))}
+                  disabled={activePalIdx >= filteredPalanquees.length - 1}
                 >›</button>
               </div>
 
               {/* Palanquée active */}
-              {palanquees[activePalIdx] && (() => {
-                const p = palanquees[activePalIdx];
+              {filteredPalanquees[activePalIdx] && (() => {
+                const p = filteredPalanquees[activePalIdx];
                 const idx = activePalIdx;
                 return (
                   <div className="palanquee-column palanquee-column--mobile">
@@ -1167,15 +1379,35 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                           }}
                         />
                       ) : (
-                        <span
-                          className="palanquee-column-name"
-                          title="Appui long pour renommer"
-                          onDoubleClick={() => startRename(p)}
-                        >
-                          P{idx + 1} – {p.name}
-                        </span>
+                        <div className="palanquee-column-header-top">
+                          <span
+                            className="palanquee-column-name"
+                            title="Appui long pour renommer"
+                            onDoubleClick={() => startRename(p)}
+                          >
+                            P{idx + 1} – {p.name}
+                          </span>
+                          <button
+                            className="palanquee-delete-btn"
+                            onClick={() => handleDeletePalanquee(p.id)}
+                            title="Supprimer cette palanquée"
+                          >✕</button>
+                        </div>
                       )}
                       <div className="palanquee-column-params">
+                        {slotDives.length > 0 && (
+                          <select
+                            className="palanquee-param-select palanquee-param-select--dive"
+                            value={p.slotDiveId ?? ''}
+                            onChange={e => handleAssignPalanqueeToDive(p.id, e.target.value ? Number(e.target.value) : null)}
+                            title="Plongée associée"
+                          >
+                            <option value="">Plongée ▾</option>
+                            {slotDives.map(d => (
+                              <option key={d.id} value={d.id}>{d.label ?? `Plongée ${d.diveIndex}`}</option>
+                            ))}
+                          </select>
+                        )}
                         <select
                           className={`palanquee-param-select${!p.depth ? ' palanquee-param-select--empty' : ''}`}
                           value={p.depth ?? ''}
@@ -1195,11 +1427,6 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                           {DURATION_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
                         </select>
                       </div>
-                      <button
-                        className="palanquee-delete-btn"
-                        onClick={() => handleDeletePalanquee(p.id)}
-                        title="Supprimer cette palanquée"
-                      >✕</button>
                     </div>
                     <DropZone
                       palanqueeId={p.id}
@@ -1235,7 +1462,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
           className="palanquee-board"
           onDragEnd={() => { setDraggedId(null); setInsertTarget(null); }}
         >
-          {palanquees.map((p, idx) => (
+          {filteredPalanquees.map((p, idx) => (
             <div key={p.id} className="palanquee-column">
               <div className="palanquee-column-header">
                 {renamingId === p.id ? (
@@ -1251,15 +1478,35 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                     }}
                   />
                 ) : (
-                  <span
-                    className="palanquee-column-name"
-                    title="Double-clic pour renommer"
-                    onDoubleClick={() => startRename(p)}
-                  >
-                    P{idx + 1} – {p.name}
-                  </span>
+                  <div className="palanquee-column-header-top">
+                    <span
+                      className="palanquee-column-name"
+                      title="Double-clic pour renommer"
+                      onDoubleClick={() => startRename(p)}
+                    >
+                      P{idx + 1} – {p.name}
+                    </span>
+                    <button
+                      className="palanquee-delete-btn"
+                      onClick={() => handleDeletePalanquee(p.id)}
+                      title="Supprimer cette palanquée"
+                    >✕</button>
+                  </div>
                 )}
                 <div className="palanquee-column-params">
+                  {slotDives.length > 0 && (
+                    <select
+                      className="palanquee-param-select palanquee-param-select--dive"
+                      value={p.slotDiveId ?? ''}
+                      onChange={e => handleAssignPalanqueeToDive(p.id, e.target.value ? Number(e.target.value) : null)}
+                      title="Plongée associée"
+                    >
+                      <option value="">Plongée ▾</option>
+                      {slotDives.map(d => (
+                        <option key={d.id} value={d.id}>{d.label ?? `Plongée ${d.diveIndex}`}</option>
+                      ))}
+                    </select>
+                  )}
                   <select
                     className={`palanquee-param-select${!p.depth ? ' palanquee-param-select--empty' : ''}`}
                     value={p.depth ?? ''}
@@ -1279,11 +1526,6 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                     {DURATION_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
-                <button
-                  className="palanquee-delete-btn"
-                  onClick={() => handleDeletePalanquee(p.id)}
-                  title="Supprimer cette palanquée"
-                >✕</button>
               </div>
               <DropZone
                 palanqueeId={p.id}
@@ -1306,10 +1548,10 @@ export function PalanqueePage({ slotId, onBack }: Props) {
             </div>
           ))}
 
-          {palanquees.length === 0 && (
+          {filteredPalanquees.length === 0 && (
             <div className="palanquee-column palanquee-column--empty">
               <div className="palanquee-empty-state">
-                <p>Aucune palanquée créée.</p>
+                <p>Aucune palanquée créée{activeDiveId !== null ? ' pour cette plongée' : ''}.</p>
                 <button className="palanquee-add-btn" onClick={handleAddPalanquee} disabled={saving}>
                   + Créer la première palanquée
                 </button>
@@ -1320,9 +1562,9 @@ export function PalanqueePage({ slotId, onBack }: Props) {
       )}
 
       {/* Résumé bas de page */}
-      {palanquees.length > 0 && (
+      {filteredPalanquees.length > 0 && (
         <div className="palanquee-summary">
-          {palanquees.map((p, idx) => (
+          {filteredPalanquees.map((p, idx) => (
             <span key={p.id} className="palanquee-summary-chip">
               P{idx + 1} : {p.divers.length} plongeur{p.divers.length !== 1 ? 's' : ''}
             </span>
@@ -1334,7 +1576,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
       {isMobile && mobilePickedId !== null && (() => {
         const picked = allDivers.find(d => d.id === mobilePickedId);
         if (!picked) return null;
-        const isInPool = !palanquees.some(p => p.divers.some(d => d.id === mobilePickedId));
+        const isInPool = !filteredPalanquees.some(p => p.divers.some(d => d.id === mobilePickedId));
         return (
           <div className="palanquee-mobile-action-bar">
             <div className="palanquee-mobile-action-info">
@@ -1352,7 +1594,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                   📋 Non assignés
                 </button>
               )}
-              {palanquees.map((p, idx) => (
+              {filteredPalanquees.map((p, idx) => (
                 <button
                   key={p.id}
                   className={`palanquee-mobile-action-btn${idx === activePalIdx ? ' palanquee-mobile-action-btn--active' : ''}`}

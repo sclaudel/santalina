@@ -76,16 +76,23 @@ function fillHeader(
   const dirLicense = director?.licenseNumber ?? '';
   const dpInfo     = [dirName, dirLevel, dirLicense].filter(Boolean).join(' - ');
 
-  ws.getCell('B4').value =
-    `Date : ${fmtDate(slot.slotDate)} ${slot.startTime}–${slot.endTime}\nClub : ${slot.club ?? ''}\nNom, Prénom et Brevet du DP : ${dpInfo}`;
+  const startTime = slot.startTime.slice(0, 5);
+  const endTime   = slot.endTime.slice(0, 5);
 
-  const startHour = parseInt(slot.startTime.split(':')[0], 10);
+  ws.getCell('B4').value =
+    `Date : ${fmtDate(slot.slotDate)} ${startTime}–${endTime}\nClub : ${slot.club ?? ''}\nNom, Prénom et Brevet du DP : ${dpInfo}`;
+
+  const startHour = parseInt(startTime.split(':')[0], 10);
+
+  // Appliquer le style de H4 (référence du template) à I4 pour un formatage identique
+  ws.getCell('I4').style = JSON.parse(JSON.stringify(ws.getCell('H4').style ?? {}));
+
   if (startHour < 13) {
-    ws.getCell('H4').value = `AM\n${slot.startTime} – ${slot.endTime}`;
+    ws.getCell('H4').value = `AM\n${startTime} – ${endTime}`;
     ws.getCell('I4').value = 'PM';
   } else {
     ws.getCell('H4').value = 'AM';
-    ws.getCell('I4').value = `PM\n${slot.startTime} – ${slot.endTime}`;
+    ws.getCell('I4').value = `PM\n${startTime} – ${endTime}`;
   }
 
   // Libellé + valeur Nb Plongeurs dans la même cellule J4

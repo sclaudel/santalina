@@ -297,6 +297,7 @@ export function HelpPage() {
             <li>Sélectionnez parmi : <strong>PE12, PE20, PE40, PE60, PA12, PA20, PA40, PA60, E1, E2, E3, E4, GP</strong>.</li>
             <li>Choisissez <strong>— aucune —</strong> pour effacer l'aptitude.</li>
             <li>Les aptitudes saisies ici apparaissent dans la <strong>colonne D</strong> de la fiche de sécurité Excel exportée.</li>
+            <li>En mode <strong>plongées multiples</strong>, les aptitudes modifiées depuis l'onglet d'une plongée spécifique sont <strong>propres à cette plongée</strong> et apparaissent dans sa fiche de sécurité. Les aptitudes modifiées depuis l'onglet <strong>Toutes</strong> ou le pool mettent à jour les aptitudes globales du plongeur.</li>
           </ul>
           <h4>Définir la profondeur et le temps d'une palanquée</h4>
           <ul>
@@ -312,6 +313,59 @@ export function HelpPage() {
             <li>Ce bouton est <strong>masqué automatiquement</strong> lorsque les inscriptions sont fermées ou pas encore ouvertes sur le créneau.</li>
           </ul>
           <div className="help-tip">💡 Les modifications de niveau, aptitudes, profondeur et temps sont enregistrées immédiatement sur le serveur.</div>
+        </>
+      ),
+    },
+
+    // ── PLONGÉES MULTIPLES ────────────────────────────────────────────────────
+    {
+      id: 'plongees-multiples',
+      icon: '🤿',
+      title: 'Plongées multiples par créneau',
+      roles: ['ADMIN', 'DIVE_DIRECTOR'],
+      content: (
+        <>
+          <p>Il est possible de découper un créneau en <strong>plusieurs plongées distinctes</strong> (ex. matin / après-midi). Chaque palanquée peut être rattachée à une plongée spécifique, et le tableau de bord peut être filtré par plongée.</p>
+          <h4>Créer des plongées</h4>
+          <ol>
+            <li>Ouvrez la page <strong>🫧 Organisation des palanquées</strong> d'un créneau.</li>
+            <li>Cliquez sur <strong>+ Organiser en plusieurs plongées</strong> (si aucune plongée n'existe encore) ou sur <strong>+ Plongée</strong> pour ajouter une plongée supplémentaire.</li>
+            <li>Chaque plongée créée apparaît sous forme d'onglet au-dessus du tableau (<strong>Toutes / Plongée 1 / Plongée 2 / …</strong>).</li>
+          </ol>
+          <h4>Filtrer le tableau par plongée</h4>
+          <ul>
+            <li>Cliquez sur un onglet de plongée pour n'afficher que les palanquées qui lui sont rattachées.</li>
+            <li>L'onglet <strong>Toutes</strong> affiche l'ensemble des palanquées, quelle que soit leur plongée.</li>
+          </ul>
+          <h4>Rattacher une palanquée à une plongée</h4>
+          <ul>
+            <li>Lorsqu'au moins une plongée existe, un sélecteur <strong>Plongée ▾</strong> apparaît dans l'en-tête de chaque colonne palanquée.</li>
+            <li>Sélectionnez la plongée souhaitée (ou <em>— aucune —</em> pour ne pas associer la palanquée à une plongée particulière).</li>
+            <li>Les palanquées sans plongée associée restent visibles dans l'onglet <strong>Toutes</strong>.</li>
+          </ul>
+          <h4>Supprimer une plongée</h4>
+          <ul>
+            <li>Cliquez sur le <strong>✕</strong> affiché à droite du nom de la plongée dans son onglet.</li>
+            <li>Les palanquées liées sont <strong>détachées</strong> (non supprimées) et repassent dans l'onglet Toutes.</li>
+          </ul>
+          <h4>Renseigner l'horaire d'une plongée</h4>
+          <ul>
+            <li>Lorsqu'un onglet de plongée est actif, une barre <strong>🕐 Horaire</strong> apparaît sous les onglets avec deux champs de saisie : <strong>Début</strong> et <strong>Fin</strong>.</li>
+            <li>Saisissez l'heure de début et de fin de la plongée — la sauvegarde est immédiate.</li>
+            <li>Ces horaires remplacent les horaires généraux du créneau dans la fiche de sécurité Excel exportée pour cette plongée.</li>
+          </ul>
+          <h4>Aptitudes par plongée</h4>
+          <ul>
+            <li>En activant un onglet de plongée, les aptitudes modifiées depuis le tableau (double-clic sur la zone aptitudes) sont <strong>enregistrées spécifiquement pour cette plongée</strong>.</li>
+            <li>Ces aptitudes spécifiques apparaissent dans la fiche de sécurité Excel exportée pour cette plongée uniquement.</li>
+            <li>Un même plongeur peut ainsi avoir des aptitudes différentes selon la plongée (ex. PE40 le matin, PA40 l'après-midi).</li>
+          </ul>
+          <h4>Export Excel par plongée</h4>
+          <ul>
+            <li>Cliquez sur le bouton <strong>📥</strong> à droite du nom d'un onglet de plongée pour exporter la <strong>fiche de sécurité de cette plongée</strong> (palanquées, horaires et aptitudes spécifiques).</li>
+            <li>Sur l'onglet <strong>Toutes</strong>, le bouton <strong>📥 Liste globale</strong> exporte la <strong>liste complète des inscrits</strong> du créneau sans organisation en palanquées.</li>
+          </ul>
+          <div className="help-tip">💡 Cette fonctionnalité est entièrement optionnelle. Un créneau sans plongée définie fonctionne exactement comme avant.</div>
         </>
       ),
     },
