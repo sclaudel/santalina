@@ -259,4 +259,114 @@ class SlotResourceIT {
             cleanupUser("admin_proxy3@test.com");
         }
     }
+
+    // ── Ajout à l'agenda (.ics) ──────────────────────────────────────────────
+
+    @Transactional
+    DiveSlot createSlotForIcs() {
+        DiveSlot slot = new DiveSlot();
+        slot.slotDate   = java.time.LocalDate.of(2099, 7, 15);
+        slot.startTime  = java.time.LocalTime.of(9, 0);
+        slot.endTime    = java.time.LocalTime.of(12, 0);
+        slot.diverCount = 6;
+        slot.title      = "Sortie ICS";
+        slot.notes      = "Notes de test";
+        slot.club       = "Club Test";
+        slot.persist();
+        return slot;
+    }
+
+    @Transactional
+    void deleteSlotById(Long id) {
+        DiveSlot s = DiveSlot.findById(id);
+        if (s != null) s.delete();
+    }
+
+    @Test
+    void getCalendarIcs_shouldReturn200_withoutAuthentication() {
+        DiveSlot slot = createSlotForIcs();
+        try {
+            given()
+                .when().get("/api/slots/{id}/ics", slot.id)
+                .then()
+                .statusCode(200)
+                .contentType(org.hamcrest.Matchers.containsString("text/calendar"))
+                .body(org.hamcrest.Matchers.containsString("BEGIN:VCALENDAR"))
+                .body(org.hamcrest.Matchers.containsString("BEGIN:VEVENT"))
+                .body(org.hamcrest.Matchers.containsString("END:VEVENT"))
+                .body(org.hamcrest.Matchers.containsString("SUMMARY:Sortie ICS"))
+                .body(org.hamcrest.Matchers.containsString("DTSTART;TZID=Europe/Paris:20990715T090000"))
+                .body(org.hamcrest.Matchers.containsString("DTEND;TZID=Europe/Paris:20990715T120000"))
+                .body(org.hamcrest.Matchers.containsString("LOCATION:Club Test"))
+                .body(org.hamcrest.Matchers.containsString("DESCRIPTION:Notes de test"));
+        } finally {
+            deleteSlotById(slot.id);
+        }
+    }
+
+    @Transactional
+    DiveSlot createSlotForIcsNoTitle() {
+        DiveSlot slot = new DiveSlot();
+        slot.slotDate   = java.time.LocalDate.of(2099, 7, 16);
+        slot.startTime  = java.time.LocalTime.of(9, 0);
+        slot.endTime    = java.time.LocalTime.of(12, 0);
+        slot.diverCount = 6;
+        slot.title      = null;
+        slot.persist();
+        return slot;
+    }
+
+    @Test
+    void getCalendarIcs_shouldReturn200_withDefaultTitle_whenTitleIsNull() {
+        DiveSlot slot = createSlotForIcsNoTitle();
+        try {
+            given()
+                .when().get("/api/slots/{id}/ics", slot.id)
+                .then()
+                .statusCode(200)
+                .body(org.hamcrest.Matchers.containsString("SUMMARY:Plongée"));
+        } finally {
+            deleteSlotById(slot.id);
+        }
+    }
+
+    @Test
+    void getCalendarIcs_shouldReturn404_whenSlotNotFound() {
+        given()
+            .when().get("/api/slots/999999/ics")
+            .then()
+            .statusCode(404);
+    }
+
+    @Test
+    void getCalendarIcs_shouldContainContentDispositionHeader() {
+        DiveSlot slot = createSlotForIcs();
+        try {
+            given()
+                .when().get("/api/slots/{id}/ics", slot.id)
+                .then()
+                .statusCode(200)
+                .header("Content-Disposition",
+                        org.hamcrest.Matchers.allOf(
+                            org.hamcrest.Matchers.containsString("inline"),
+                            org.hamcrest.Matchers.containsString("creneau-2099-07-15.ics")));
+        } finally {
+            deleteSlotById(slot.id);
+        }
+    }
+
+    @Test
+    @TestSecurity(user = "diver_ics@test.com", roles = {"DIVER"})
+    void getCalendarIcs_shouldReturn200_whenAuthenticatedAsDiver() {
+        DiveSlot slot = createSlotForIcs();
+        try {
+            given()
+                .when().get("/api/slots/{id}/ics", slot.id)
+                .then()
+                .statusCode(200)
+                .body(org.hamcrest.Matchers.containsString("BEGIN:VCALENDAR"));
+        } finally {
+            deleteSlotById(slot.id);
+        }
+    }
 }

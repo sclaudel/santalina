@@ -8,6 +8,7 @@ import { palanqueeService } from '../services/palanqueeService';
 import { waitingListService } from '../services/waitingListService';
 import { useAuth } from '../context/AuthContext';
 import { getSlotTypeStyle } from '../utils/slotTypeColors';
+import { downloadSlotIcs } from '../utils/calendarExport';
 import { SelfRegistrationModal } from './SelfRegistrationModal';
 
 
@@ -595,6 +596,13 @@ export function SlotBlock({
         <span className="slot-tooltip-title">{currentTitle || 'Créneau de plongée'}</span>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
           <span className="slot-tooltip-time">{slot.startTime}–{slot.endTime}</span>
+          {currentUserId != null && (
+            <button
+              className="slot-tooltip-close"
+              title="Ajouter à mon agenda (.ics)"
+              onClick={() => downloadSlotIcs(slot)}
+            >📅</button>
+          )}
           <button
             className="slot-tooltip-close"
             title="Copier le lien vers ce créneau"
