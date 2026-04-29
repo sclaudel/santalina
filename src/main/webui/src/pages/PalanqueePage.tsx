@@ -783,6 +783,9 @@ export function PalanqueePage({ slotId, onBack }: Props) {
   }, [slotId]);
 
   const openAttachment = useCallback(async (slotId: number, entryId: number, type: 'medical-cert' | 'license-qr') => {
+    // Ouvrir la fenêtre de façon synchrone (réponse directe au clic utilisateur)
+    // pour éviter que les bloqueurs de popups (Opera, DuckDuckGo…) ne la bloquent.
+    const win = window.open('', '_blank');
     const token = localStorage.getItem('token');
     const url = waitingListService.getAttachmentUrl(slotId, entryId, type);
     try {
@@ -790,17 +793,21 @@ export function PalanqueePage({ slotId, onBack }: Props) {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) {
+        win?.close();
         alert('Impossible d\'ouvrir le fichier.');
         return;
       }
       const blob = await res.blob();
       const blobUrl = URL.createObjectURL(blob);
-      const win = window.open(blobUrl, '_blank');
-      // Libérer l'URL objet après que l'onglet l'a chargée
       if (win) {
+        win.location.href = blobUrl;
+        // Libérer l'URL objet après chargement
         win.addEventListener('load', () => URL.revokeObjectURL(blobUrl), { once: true });
+      } else {
+        URL.revokeObjectURL(blobUrl);
       }
     } catch {
+      win?.close();
       alert('Erreur lors de l\'ouverture du fichier.');
     }
   }, []);
