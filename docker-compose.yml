@@ -6,6 +6,7 @@ services:
     container_name: santalina-db
     restart: unless-stopped
     environment:
+      TZ: Europe/Paris
       POSTGRES_DB: santalina
       POSTGRES_USER: santalina
       POSTGRES_PASSWORD: santalina_secret
@@ -29,6 +30,7 @@ services:
     ports:
       - "8085:8085"
     environment:
+      TZ: Europe/Paris
       QUARKUS_PROFILE: prod
       JDBC_URL: jdbc:postgresql://db:5432/santalina
       DB_USER: santalina

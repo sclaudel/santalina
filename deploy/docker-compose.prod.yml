@@ -11,6 +11,7 @@ services:
         max-size: "10m"
         max-file: "5"
     environment:
+      TZ: Europe/Paris
       POSTGRES_DB: santalina
       POSTGRES_USER: santalina
       POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -32,6 +33,7 @@ services:
     restart: unless-stopped
     logging: *default-logging
     environment:
+      TZ: Europe/Paris
       QUARKUS_PROFILE: prod
       JDBC_URL: jdbc:postgresql://db:5432/santalina
       DB_USER: santalina
