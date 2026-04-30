@@ -140,6 +140,7 @@ class BackupResourceIT {
                     .body("slots", notNullValue())
                     .body("divers", notNullValue())
                     .body("palanquees", notNullValue())
+                    .body("slotDives", notNullValue())
                     .body("waitingListEntries", not(empty()));
         } finally {
             cleanup(slot.id);
@@ -307,5 +308,76 @@ class BackupResourceIT {
     String findUserClub(String email) {
         User u = User.findByEmail(email);
         return u != null ? u.club : null;
+    }
+
+    /**
+     * Vérifie que l'import d'un backup complet incluant des plongées (slotDives) les restaure correctement.
+     */
+    @Test
+    @Order(9)
+    @TestSecurity(user = "admin@test.com", roles = {"ADMIN"})
+    void importBackup_withSlotDives_shouldRestoreSlotDives() {
+        String payload = """
+                {
+                    "version": "1.0",
+                    "type": "full",
+                    "exportedAt": "2099-01-01T00:00:00",
+                    "config": [],
+                    "users": [],
+                    "slots": [
+                        {
+                            "id": 9002,
+                            "slotDate": "2099-11-15",
+                            "startTime": "08:00:00",
+                            "endTime": "17:00:00",
+                            "diverCount": 10,
+                            "title": "Créneau multi-plongées",
+                            "notes": null,
+                            "slotType": null,
+                            "club": null,
+                            "createdById": null,
+                            "createdAt": "2099-01-01T00:00:00",
+                            "registrationOpen": false,
+                            "registrationOpensAt": null,
+                            "requiresAttachments": false
+                        }
+                    ],
+                    "divers": [],
+                    "palanquees": [],
+                    "slotDives": [
+                        {
+                            "id": 1,
+                            "slotId": 9002,
+                            "diveIndex": 1,
+                            "label": "Plongée matin",
+                            "startTime": "09:00:00",
+                            "endTime": "12:00:00",
+                            "depth": "20m",
+                            "duration": "40'"
+                        },
+                        {
+                            "id": 2,
+                            "slotId": 9002,
+                            "diveIndex": 2,
+                            "label": "Plongée après-midi",
+                            "startTime": "14:00:00",
+                            "endTime": "17:00:00",
+                            "depth": "30m",
+                            "duration": "45'"
+                        }
+                    ],
+                    "waitingListEntries": []
+                }
+                """;
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(payload)
+                .when().post("/api/admin/backup/import")
+                .then()
+                .statusCode(200)
+                .body("success", equalTo(true))
+                .body("slotsRestored", equalTo(1))
+                .body("slotDivesRestored", equalTo(2));
     }
 }

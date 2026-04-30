@@ -173,6 +173,26 @@ class SlotDiveResourceIT {
     }
 
     @Test
+    @TestSecurity(user = "dp_create_times@test.com", roles = {"DIVE_DIRECTOR"})
+    void createDive_shouldPersistStartTimeAndEndTime() {
+        DiveSlot slot = createSlotWithDp("dp_create_times@test.com");
+        try {
+            given()
+                .contentType(ContentType.JSON)
+                .body("""
+                      {"label":"Matin","startTime":"09:00","endTime":"12:00"}
+                      """)
+                .when().post("/api/slots/" + slot.id + "/dives")
+                .then()
+                .statusCode(201)
+                .body("startTime", equalTo("09:00:00"))
+                .body("endTime", equalTo("12:00:00"));
+        } finally {
+            cleanup(slot.id);
+        }
+    }
+
+    @Test
     @TestSecurity(user = "dp_create2@test.com", roles = {"DIVE_DIRECTOR"})
     void createDive_shouldAutoIncrementDiveIndex() {
         DiveSlot slot = createSlotWithDp("dp_create2@test.com");

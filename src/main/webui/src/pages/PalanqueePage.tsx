@@ -642,7 +642,12 @@ export function PalanqueePage({ slotId, onBack }: Props) {
     setSaving(true);
     try {
       const diveNumber = slotDives.length + 1;
-      const created = await slotDiveService.create(slotId, { label: `Plongée ${diveNumber}` });
+      // Pré-remplir les horaires avec ceux du créneau pour éviter la confusion visuelle
+      const created = await slotDiveService.create(slotId, {
+        label: `Plongée ${diveNumber}`,
+        startTime: slot?.startTime ?? null,
+        endTime: slot?.endTime ?? null,
+      });
       setSlotDives(prev => [...prev, created]);
       setActiveDiveId(created.id);
     } catch {

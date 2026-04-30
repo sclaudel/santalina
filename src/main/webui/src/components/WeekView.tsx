@@ -36,7 +36,6 @@ export function WeekView({ weekStart, config, onSelectDay, onAdd, onOpenPalanque
   useEffect(() => { load(); }, [load]);
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Supprimer ce créneau ?')) return;
     await slotService.delete(id);
     load();
   };

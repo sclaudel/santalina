@@ -128,7 +128,8 @@ export function HelpPage() {
           <ol>
             <li>Cliquez sur le créneau pour ouvrir le panneau de détails.</li>
             <li>Faites défiler vers le bas et cliquez sur <strong>🗑 Supprimer le créneau</strong>.</li>
-            <li>La suppression est immédiate.</li>
+            <li>Une fenêtre de confirmation vous est présentée avant la suppression définitive.</li>
+            <li>Cliquez sur <strong>OK</strong> pour confirmer. La suppression est immédiate.</li>
           </ol>
           <div className="help-warning">⚠️ Cette action est irréversible. Tous les plongeurs inscrits sur ce créneau seront également supprimés.</div>
         </>
@@ -228,9 +229,14 @@ export function HelpPage() {
           <p>Une <strong>fiche de sécurité Excel</strong> peut être générée pour chaque créneau. Elle récapitule les plongeurs inscrits et les informations du directeur de plongée.</p>
           <ol>
             <li>Cliquez sur le créneau pour ouvrir le panneau de détails.</li>
-            <li>Cliquez sur <strong>📊 Exporter fiche de sécurité (Excel)</strong>.</li>
-            <li>Le fichier <code>.xlsx</code> est téléchargé automatiquement.</li>
+            <li>Cliquez sur le bouton d'export (libellé variable selon la situation) :</li>
           </ol>
+          <ul>
+            <li><strong>📊 Exporter fiche de sécurité (Excel)</strong> — aucune palanquée définie : exporte une fiche simple avec la liste des plongeurs inscrits.</li>
+            <li><strong>📥 Exporter fiche de sécurité avec palanquées (Excel)</strong> — des palanquées sont organisées sur une seule plongée : exporte une fiche avec les palanquées.</li>
+            <li><strong>📥 Exporter N fiches de sécurité (Excel)</strong> — plusieurs plongées distinctes avec des palanquées : télécharge <em>N</em> fichiers Excel (un par plongée), espacés de quelques instants pour éviter les blocages du navigateur.</li>
+          </ul>
+          <div className="help-tip">💡 Lorsque plusieurs fiches sont téléchargées, votre navigateur peut vous demander d'autoriser les téléchargements multiples. Acceptez pour obtenir tous les fichiers.</div>
           <h4>Contenu de la fiche</h4>
           <ul>
             <li><strong>Cellule B4</strong> — Date, club et informations du directeur sur une seule ligne : <code>NOM Prénom - Niveau - N°Licence</code> (la licence n'apparaît que si elle est renseignée).</li>
@@ -351,6 +357,7 @@ export function HelpPage() {
           <h4>Renseigner l'horaire d'une plongée</h4>
           <ul>
             <li>Lorsqu'un onglet de plongée est actif, une barre <strong>🕐 Horaire</strong> apparaît sous les onglets avec deux champs de saisie : <strong>Début</strong> et <strong>Fin</strong>.</li>
+            <li>Ces champs sont <strong>prérenseignés avec les horaires du créneau</strong> lors de la création d'une plongée. Vous pouvez les ajuster librement.</li>
             <li>Saisissez l'heure de début et de fin de la plongée — la sauvegarde est immédiate.</li>
             <li>Ces horaires remplacent les horaires généraux du créneau dans la fiche de sécurité Excel exportée pour cette plongée.</li>
           </ul>
@@ -1081,7 +1088,11 @@ export function HelpPage() {
         icon: '📊', title: 'Exporter la fiche de sécurité',
         items: [
           { type: 'paragraph' as const, text: 'Une fiche de sécurité Excel peut être générée pour chaque créneau. Elle récapitule les plongeurs inscrits et les informations du directeur de plongée.' },
-          { type: 'ol' as const, items: ['Cliquez sur le créneau pour ouvrir le panneau de détails.', 'Cliquez sur Exporter fiche de sécurité (Excel).', 'Le fichier .xlsx est téléchargé automatiquement.'] },
+          { type: 'ul' as const, items: [
+            '📊 Exporter fiche de sécurité (Excel) — aucune palanquée définie : fiche simple.',
+            '📥 Exporter fiche de sécurité avec palanquées (Excel) — palanquées organisées sur une seule plongée.',
+            '📥 Exporter N fiches de sécurité (Excel) — plusieurs plongées distinctes : télécharge N fichiers Excel, un par plongée.',
+          ] },
           { type: 'h4' as const, text: 'Contenu de la fiche' },
           { type: 'ul' as const, items: ['Cellule B4 — Date, club et infos DP : NOM Prénom - Niveau - N°Licence.', 'Colonnes A–C — Nom, prénom et niveau de chaque plongeur.', 'Colonne D — Aptitudes du plongeur (PE20, PA40, GP…) si renseignées dans l\'organisation des palanquées.', 'Si des palanquées sont organisées, chaque palanquée est dans un tableau séparé.'] },
           { type: 'h4' as const, text: 'Export CSV' },
