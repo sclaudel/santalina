@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import type { SafetySheetFile } from '../types';
 import { slotSafetySheetService } from '../services/slotSafetySheetService';
 import { useAuth } from '../context/AuthContext';
@@ -129,9 +130,10 @@ export function SafetySheetModal({ slotId, slotDate, isDP, onClose, onUploaded }
 
   const canUpload = isDP && sheets.length + selectedFiles.length < MAX_FILES;
 
-  return (
+  return createPortal(
     <div
       className="modal-overlay"
+      style={{ zIndex: 200000 }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       role="dialog"
       aria-modal="true"
@@ -273,6 +275,7 @@ export function SafetySheetModal({ slotId, slotDate, isDP, onClose, onUploaded }
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
