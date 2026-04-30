@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
@@ -280,7 +279,7 @@ public class SlotSafetySheetResource {
         String ext          = getExtension(upload.fileName());
         String storedName   = UUID.randomUUID() + "." + ext;
         String relativePath = "attachments/safety-sheets/" + slot.id + "/" + storedName;
-        Path   target       = Paths.get(divingConfig.dataDir()).resolve(relativePath);
+        java.nio.file.Path target = Paths.get(divingConfig.dataDir()).resolve(relativePath);
 
         try {
             Files.createDirectories(target.getParent());
@@ -308,7 +307,7 @@ public class SlotSafetySheetResource {
     private void buildZip(List<SlotSafetySheet> sheets, OutputStream out) throws IOException {
         try (ZipOutputStream zip = new ZipOutputStream(out)) {
             for (SlotSafetySheet sheet : sheets) {
-                Path file = Paths.get(divingConfig.dataDir()).resolve(sheet.filePath);
+                java.nio.file.Path file = Paths.get(divingConfig.dataDir()).resolve(sheet.filePath);
                 if (!Files.exists(file)) {
                     LOG.warnf("Fichier introuvable lors du ZIP : %s", file);
                     continue;
@@ -323,10 +322,10 @@ public class SlotSafetySheetResource {
     private void deleteFile(String relativePath) {
         if (relativePath == null || relativePath.isBlank()) return;
         try {
-            Path p = Paths.get(divingConfig.dataDir()).resolve(relativePath);
+            java.nio.file.Path p = Paths.get(divingConfig.dataDir()).resolve(relativePath);
             Files.deleteIfExists(p);
             // Supprimer le répertoire parent s'il est vide
-            Path parent = p.getParent();
+            java.nio.file.Path parent = p.getParent();
             if (parent != null && Files.isDirectory(parent)) {
                 try (var stream = Files.list(parent)) {
                     if (stream.findAny().isEmpty()) Files.delete(parent);
