@@ -1110,7 +1110,7 @@ export function HelpPage() {
           { type: 'h4' as const, text: 'Répartir les plongeurs' },
           { type: 'ul' as const, items: ['Glissez-déposez une fiche vers une palanquée ou vers "+ Nouvelle palanquée".', 'Pour retirer un plongeur d\'une palanquée, glissez-le vers la zone Non assignés.', 'Sur mobile, sélectionnez un plongeur puis choisissez une palanquée ou « Réserve » pour le remettre dans la zone non assignée.'] },
           { type: 'h4' as const, text: 'Modifier le niveau ou les aptitudes' },
-          { type: 'ul' as const, items: ['Double-cliquez sur le niveau affiché pour le modifier.', 'Double-cliquez sur la zone aptitudes pour sélectionner : PE12–PE60, PA12–PA60, E1–E4, GP.', 'Les aptitudes apparaissent en colonne D de l\'export Excel.'] },
+          { type: 'ul' as const, items: ['Double-cliquez sur le niveau affiché pour le modifier.', 'Cliquez sur l\'icône ✎ à droite des aptitudes pour ouvrir la liste déroulante : PE12–PE60, PA12–PA60, E1–E4, GP. L\'option « — aucune — » efface l\'aptitude. Sur mobile l\'icône est toujours visible ; sur ordinateur elle apparaît au survol de la fiche.', 'Les aptitudes apparaissent en colonne D de l\'export Excel.'] },
           { type: 'tip' as const, text: 'Les modifications de niveau et d\'aptitudes sont enregistrées immédiatement sur le serveur.' },
         ],
       },
