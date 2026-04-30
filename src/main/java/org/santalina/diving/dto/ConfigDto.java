@@ -43,7 +43,9 @@ public class ConfigDto {
             int reportEmailPeriodDays,
             String reportEmailRecipients,
             String reportEmailLastSent,
-            String defaultOrganizerMailTemplate
+            String defaultOrganizerMailTemplate,
+            String safetySheetNotificationEmails,
+            String safetySheetViewerEmails
     ) {}
 
     public record UpdateMaxRecurringMonthsRequest(
@@ -110,5 +112,10 @@ public class ConfigDto {
 
     public record UpdateOrganizerMailTemplateRequest(
             String template
+    ) {}
+
+    public record UpdateSafetySheetConfigRequest(
+            String safetySheetNotificationEmails,
+            String safetySheetViewerEmails
     ) {}
 }

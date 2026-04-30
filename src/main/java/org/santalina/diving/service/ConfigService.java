@@ -60,6 +60,10 @@ public class ConfigService {
 
     private static final String KEY_DEFAULT_ORGANIZER_MAIL_TEMPLATE = "dp.organizer.mail.template.default";
 
+    // -- Fiches de sécurité --
+    private static final String KEY_SAFETY_SHEET_NOTIFICATION_EMAILS = "safety.sheet.notification.emails";
+    private static final String KEY_SAFETY_SHEET_VIEWER_EMAILS       = "safety.sheet.viewer.emails";
+
     private static final String DEFAULT_SAFETY_REMINDER_BODY =
         "Ce rappel vous est envoyé car vous êtes le directeur de plongée du créneau du {slotDate} sur le site {siteName}.\n\n" +
         "Pensez à transmettre la fiche de sécurité remplie à votre club si ce n'est pas encore fait.";
@@ -213,6 +217,14 @@ public class ConfigService {
         return getStringValue(KEY_DEFAULT_ORGANIZER_MAIL_TEMPLATE, "");
     }
 
+    public String getSafetySheetNotificationEmails() {
+        return getStringValue(KEY_SAFETY_SHEET_NOTIFICATION_EMAILS, "");
+    }
+
+    public String getSafetySheetViewerEmails() {
+        return getStringValue(KEY_SAFETY_SHEET_VIEWER_EMAILS, "");
+    }
+
     public ConfigResponse getConfig() {
         return new ConfigResponse(
                 getMaxDivers(), getSlotMinHours(), getSlotMaxHours(),
@@ -239,7 +251,9 @@ public class ConfigService {
                 getReportEmailPeriodDays(),
                 getReportEmailRecipients(),
                 getReportEmailLastSent(),
-                getDefaultOrganizerMailTemplate()
+                getDefaultOrganizerMailTemplate(),
+                getSafetySheetNotificationEmails(),
+                getSafetySheetViewerEmails()
         );
     }
 
@@ -317,6 +331,13 @@ public class ConfigService {
     @Transactional
     public ConfigResponse updateDefaultOrganizerMailTemplate(String template) {
         forceUpsert(KEY_DEFAULT_ORGANIZER_MAIL_TEMPLATE, template != null ? template : "");
+        return getConfig();
+    }
+
+    @Transactional
+    public ConfigResponse updateSafetySheetConfig(String notificationEmails, String viewerEmails) {
+        forceUpsert(KEY_SAFETY_SHEET_NOTIFICATION_EMAILS, notificationEmails != null ? notificationEmails.trim() : "");
+        forceUpsert(KEY_SAFETY_SHEET_VIEWER_EMAILS,       viewerEmails       != null ? viewerEmails.trim()       : "");
         return getConfig();
     }
 
@@ -441,6 +462,8 @@ public class ConfigService {
         upsertIfMissing(KEY_REPORT_EMAIL_RECIPIENTS,    "");
         upsertIfMissing(KEY_REPORT_EMAIL_LAST_SENT,     "");
         upsertIfMissing(KEY_DEFAULT_ORGANIZER_MAIL_TEMPLATE, "");
+        upsertIfMissing(KEY_SAFETY_SHEET_NOTIFICATION_EMAILS, "");
+        upsertIfMissing(KEY_SAFETY_SHEET_VIEWER_EMAILS,       "");
     }
 
     // ---- Helpers privés ----

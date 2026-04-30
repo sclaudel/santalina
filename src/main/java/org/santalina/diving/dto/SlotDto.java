@@ -2,6 +2,7 @@ package org.santalina.diving.dto;
 
 import org.santalina.diving.domain.DiveSlot;
 import org.santalina.diving.domain.SlotDiver;
+import org.santalina.diving.domain.SlotSafetySheet;
 import org.santalina.diving.domain.WaitingListEntry;
 import org.santalina.diving.dto.SlotDiverDto.SlotDiverResponse;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -61,7 +62,8 @@ public class SlotDto {
             boolean registrationOpen,
             @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") LocalDateTime registrationOpensAt,
             long waitingListCount,
-            boolean requiresAttachments
+            boolean requiresAttachments,
+            boolean hasSafetySheets
     ) {
         public static SlotResponse from(DiveSlot slot) {
             List<SlotDiverResponse> divers = SlotDiver.findBySlot(slot.id)
@@ -83,7 +85,8 @@ public class SlotDto {
                     slot.registrationOpen,
                     slot.registrationOpensAt,
                     waitingListCount,
-                    slot.requiresAttachments
+                    slot.requiresAttachments,
+                    SlotSafetySheet.countBySlot(slot.id) > 0
             );
         }
     }
