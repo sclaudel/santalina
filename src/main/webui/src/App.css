@@ -1587,17 +1587,47 @@ body {
   background: #fff;
   cursor: pointer;
 }
+.palanquee-postit-apt-wrapper {
+  position: relative;
+}
 .palanquee-postit-aptitudes {
   font-size: 10px;
   margin-top: 2px;
   color: #0369a1;
   font-weight: 600;
-  cursor: default;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 3px;
 }
 .palanquee-postit-aptitudes--empty {
   color: #9ca3af;
   font-style: italic;
   font-weight: 400;
+}
+.palanquee-postit-apt-edit-icon {
+  font-size: 9px;
+  color: #9ca3af;
+  opacity: 0;
+  transition: opacity 0.15s;
+  line-height: 1;
+  flex-shrink: 0;
+  /* bouton reset */
+  background: none;
+  border: none;
+  padding: 0 1px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+.palanquee-postit:hover .palanquee-postit-apt-edit-icon {
+  opacity: 1;
+}
+/* Sur mobile (pointer coarse) : toujours visible */
+@media (pointer: coarse) {
+  .palanquee-postit-apt-edit-icon {
+    opacity: 1;
+  }
 }
 .palanquee-postit-director { font-size: 12px; }
 

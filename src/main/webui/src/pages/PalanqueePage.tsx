@@ -107,28 +107,34 @@ function DiverCard({ diver, onDragStart, onDragEnter, isDragging, onLevelChange,
           {diver.level}
         </div>
       )}
-      {editingAptitudes ? (
-        <select
-          autoFocus
-          className="palanquee-postit-level-select"
-          value={diver.aptitudes ?? ''}
-          onBlur={() => setEditingAptitudes(false)}
-          onChange={e => { onAptitudesChange(diver.id, e.target.value); setEditingAptitudes(false); }}
-          onMouseDown={e => e.stopPropagation()}
-          onClick={e => e.stopPropagation()}
-        >
-          <option value="">— aucune —</option>
-          {(aptitudesOptions ?? APTITUDES_OPTIONS).map(a => <option key={a} value={a}>{a}</option>)}
-        </select>
-      ) : (
-        <div
-          className="palanquee-postit-aptitudes"
-          title="Double-clic pour modifier les aptitudes"
-          onDoubleClick={e => { e.stopPropagation(); setEditingAptitudes(true); }}
-        >
-          {diver.aptitudes ? diver.aptitudes : <span className="palanquee-postit-aptitudes--empty">aptitudes</span>}
-        </div>
-      )}
+      <div className="palanquee-postit-apt-wrapper">
+        {editingAptitudes ? (
+          <select
+            autoFocus
+            className="palanquee-postit-level-select"
+            value={diver.aptitudes ?? ''}
+            onBlur={() => setEditingAptitudes(false)}
+            onChange={e => { onAptitudesChange(diver.id, e.target.value); setEditingAptitudes(false); }}
+            onMouseDown={e => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
+          >
+            <option value="">— aucune —</option>
+            {(aptitudesOptions ?? APTITUDES_OPTIONS).map(a => <option key={a} value={a}>{a}</option>)}
+          </select>
+        ) : (
+          <div className="palanquee-postit-aptitudes">
+            {diver.aptitudes
+              ? diver.aptitudes
+              : <span className="palanquee-postit-aptitudes--empty">aptitudes</span>}
+            <button
+              className="palanquee-postit-apt-edit-icon"
+              title="Modifier les aptitudes"
+              onClick={e => { e.stopPropagation(); setEditingAptitudes(true); }}
+              onMouseDown={e => e.stopPropagation()}
+            >✎</button>
+          </div>
+        )}
+      </div>
       {onMoveToWaitingList && !diver.isDirector && (
         <button
           className="palanquee-postit-wl-btn"
