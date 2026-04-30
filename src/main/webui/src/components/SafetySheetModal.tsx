@@ -139,7 +139,7 @@ export function SafetySheetModal({ slotId, slotDate, isDP, onClose, onUploaded }
       aria-modal="true"
       aria-label="Fiches de sécurité"
     >
-      <div className="modal-content" style={{ maxWidth: 560, width: '95vw' }}>
+      <div className="modal" style={{ maxWidth: 560, width: '95vw', padding: 24 }}>
         <div className="modal-header">
           <h2 className="modal-title">📋 Fiches de sécurité</h2>
           <button className="modal-close" onClick={onClose} aria-label="Fermer">✕</button>
