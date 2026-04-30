@@ -489,17 +489,20 @@ export function SlotBlock({
       return;
     }
 
-    // Plusieurs plongées avec palanquées : exporter une fiche par plongée
+    // Plusieurs plongées avec palanquées : regrouper dans un ZIP unique (compatible mobile)
     const slotDives: SlotDive[] = await slotDiveService.getBySlot(slot.id).catch(() => []);
-    for (const diveId of diveIds) {
+    const { exportMultipleFichesZip } = await import('../utils/exportMultipleFiches');
+    const entries = diveIds.map(diveId => {
       const dive = slotDives.find(d => d.id === diveId);
-      const palForDive = palanquees.filter(p => p.slotDiveId === diveId);
-      const label = dive?.label ?? `Plongée ${diveId}`;
-      await exportFicheSecuriteAvecPalanquees(currentSlot, divers, palForDive, label, dive?.startTime, dive?.endTime)
-        .catch(err => console.error(`Export fiche sécurité (${label}) :`, err));
-      // Petit délai pour éviter que le navigateur bloque les téléchargements successifs
-      await new Promise<void>(resolve => setTimeout(resolve, 350));
-    }
+      return {
+        palanquees: palanquees.filter(p => p.slotDiveId === diveId),
+        label: dive?.label ?? `Plongée ${diveId}`,
+        startTime: dive?.startTime,
+        endTime: dive?.endTime,
+      };
+    });
+    exportMultipleFichesZip(currentSlot, divers, entries)
+      .catch(err => console.error('Export fiches sécurité (ZIP) :', err));
   };
 
   const handleRemoveDiver = async (diverId: number) => {
@@ -1137,7 +1140,7 @@ export function SlotBlock({
           {(() => {
             if (palanquees.length === 0) return '📊 Exporter fiche de sécurité (Excel)';
             const diveIds = [...new Set(palanquees.map(p => p.slotDiveId).filter((id): id is number => id !== null && id !== undefined))];
-            if (diveIds.length >= 2) return `📥 Exporter ${diveIds.length} fiches de sécurité (Excel)`;
+            if (diveIds.length >= 2) return `📥 Télécharger ${diveIds.length} fiches de sécurité (ZIP)`;
             return '📥 Exporter fiche de sécurité avec palanquées (Excel)';
           })()}
         </button>

@@ -238,14 +238,18 @@ async function loadFreshSheet(
   return dest;
 }
 
-export async function exportFicheSecuriteAvecPalanquees(
+/**
+ * Construit le workbook Excel et retourne son contenu sous forme d'ArrayBuffer.
+ * Peut être appelé sans déclencher de téléchargement (utile pour le ZIP multi-fiches).
+ */
+export async function buildFicheSecuriteBuffer(
   slot: DiveSlot,
   allDivers: SlotDiver[],
   palanquees: Palanquee[],
   diveLabel?: string,
   diveStartTime?: string | null,
   diveEndTime?: string | null,
-): Promise<void> {
+): Promise<{ buffer: ArrayBuffer; filename: string }> {
   // ── Construire la liste des groupes à exporter ────────────────────────────
   const assignedIds = new Set(palanquees.flatMap(p => p.divers.map(d => d.id)));
 
@@ -325,12 +329,25 @@ export async function exportFicheSecuriteAvecPalanquees(
   const genLabel = `Généré le ${now.toLocaleDateString('fr-FR')} à ${now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} — avec palanquées`;
   wb.eachSheet(ws => { ws.getCell('A40').value = genLabel; });
 
-  // ── Export ────────────────────────────────────────────────────────────────
-  const buffer = await wb.xlsx.writeBuffer();
+  const buffer = await wb.xlsx.writeBuffer() as ArrayBuffer;
   const suffix = diveLabel ? `-${diveLabel.replace(/[^a-zA-Z0-9\u00C0-\u024F-]/g, '_')}` : '';
+  const filename = `${slot.slotDate}-${slot.startTime.replace(':', '-')}${suffix}-Fiche-securite-Saint-Lin.xlsx`;
+
+  return { buffer, filename };
+}
+
+export async function exportFicheSecuriteAvecPalanquees(
+  slot: DiveSlot,
+  allDivers: SlotDiver[],
+  palanquees: Palanquee[],
+  diveLabel?: string,
+  diveStartTime?: string | null,
+  diveEndTime?: string | null,
+): Promise<void> {
+  const { buffer, filename } = await buildFicheSecuriteBuffer(slot, allDivers, palanquees, diveLabel, diveStartTime, diveEndTime);
   downloadBlob(
     new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
-    `${slot.slotDate}-${slot.startTime.replace(':', '-')}${suffix}-Fiche-securite-Saint-Lin.xlsx`,
+    filename,
   );
 }
 
