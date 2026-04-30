@@ -83,6 +83,10 @@ export function AdminPage() {
   const [reportEmailPeriodDays, setReportEmailPeriodDays] = useState(7);
   const [reportEmailRecipients, setReportEmailRecipients] = useState('');
   const [reportEmailLoading, setReportEmailLoading]       = useState(false);
+  // Fiches de sécurité
+  const [safetySheetNotifEmails, setSafetySheetNotifEmails] = useState('');
+  const [safetySheetViewerEmails, setSafetySheetViewerEmails] = useState('');
+  const [safetySheetConfigLoading, setSafetySheetConfigLoading] = useState(false);
   // Déclenchement manuel du rapport
   const today = new Date().toISOString().slice(0, 10);
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -167,6 +171,8 @@ export function AdminPage() {
       setReportEmailEnabled(c.reportEmailEnabled ?? false);
       setReportEmailPeriodDays(c.reportEmailPeriodDays ?? 7);
       setReportEmailRecipients(c.reportEmailRecipients ?? '');
+      setSafetySheetNotifEmails(c.safetySheetNotificationEmails ?? '');
+      setSafetySheetViewerEmails(c.safetySheetViewerEmails ?? '');
     } catch {
       setError('Erreur lors du chargement des données');
     }
@@ -452,6 +458,16 @@ export function AdminPage() {
       setMsg('Paramètres du rapport périodique enregistrés.');
     } catch (err: unknown) { setError(getErrorMessage(err)); }
     finally { setReportEmailLoading(false); }
+  };
+
+  const handleUpdateSafetySheetConfig = async () => {
+    setMsg(''); setError(''); setSafetySheetConfigLoading(true);
+    try {
+      const updated = await adminService.updateSafetySheetConfig(safetySheetNotifEmails, safetySheetViewerEmails);
+      setConfig(updated);
+      setMsg('Paramètres des fiches de sécurité enregistrés.');
+    } catch (err: unknown) { setError(getErrorMessage(err)); }
+    finally { setSafetySheetConfigLoading(false); }
   };
 
   const handleManualReportSend = async () => {
@@ -1045,6 +1061,43 @@ export function AdminPage() {
             {recurringLoading ? '...' : '💾 Enregistrer'}
           </button>
         </form>
+      </div>
+
+      {/* ── Fiches de sécurité ── */}
+      <div className="admin-section">
+        <h2>📋 Fiches de sécurité</h2>
+        <p style={{ color: '#6b7280', fontSize: 13, marginBottom: 16 }}>
+          Paramétrez les notifications et les accès aux fiches de sécurité déposées par les directeurs de plongée.
+        </p>
+        <div className="form-group" style={{ marginBottom: 14 }}>
+          <label style={{ fontSize: 13 }}>E-mails de notification (séparés par une virgule ou un point-virgule)</label>
+          <input
+            type="text"
+            value={safetySheetNotifEmails}
+            onChange={e => setSafetySheetNotifEmails(e.target.value)}
+            placeholder="secretaire@club.fr, president@club.fr"
+            style={{ width: '100%' }}
+          />
+          <span style={{ color: '#6b7280', fontSize: 12 }}>
+            Ces adresses recevront un e-mail dès qu'une fiche est déposée sur un créneau.
+          </span>
+        </div>
+        <div className="form-group" style={{ marginBottom: 14 }}>
+          <label style={{ fontSize: 13 }}>Accès en lecture — comptes autorisés (séparés par une virgule ou un point-virgule)</label>
+          <input
+            type="text"
+            value={safetySheetViewerEmails}
+            onChange={e => setSafetySheetViewerEmails(e.target.value)}
+            placeholder="codep@exemple.fr, commission@exemple.fr"
+            style={{ width: '100%' }}
+          />
+          <span style={{ color: '#6b7280', fontSize: 12 }}>
+            En plus des admins et du DP du créneau, ces adresses pourront consulter et télécharger les fiches.
+          </span>
+        </div>
+        <button className="btn btn-primary" onClick={handleUpdateSafetySheetConfig} disabled={safetySheetConfigLoading}>
+          {safetySheetConfigLoading ? '...' : '💾 Enregistrer les paramètres des fiches de sécurité'}
+        </button>
       </div>
 
       </div>

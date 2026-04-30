@@ -11,6 +11,7 @@ import { useAuth } from '../context/AuthContext';
 import { getSlotTypeStyle } from '../utils/slotTypeColors';
 import { downloadSlotIcs } from '../utils/calendarExport';
 import { SelfRegistrationModal } from './SelfRegistrationModal';
+import { SafetySheetModal } from './SafetySheetModal';
 
 
 /** Réinitialise le zoom iOS après fermeture d'un formulaire.
@@ -172,6 +173,10 @@ export function SlotBlock({
   const [regSuccess, setRegSuccess]     = useState('');
   const [editingReg, setEditingReg]     = useState(false);
 
+  // Fiches de sécurité
+  const [showSafetySheetModal, setShowSafetySheetModal] = useState(false);
+  const [hasSafetySheets, setHasSafetySheets]           = useState(slot.hasSafetySheets ?? false);
+
   const times = timeOptions(config?.slotResolutionMinutes ?? 15);
 
   const blockRef   = useRef<HTMLDivElement>(null);
@@ -185,6 +190,9 @@ export function SlotBlock({
       divers.some(d => d.isDirector && d.userId === currentUserId)
     ))
   );
+
+  // Un créneau est passé s'il est strictement avant aujourd'hui
+  const isPastSlot = slot.slotDate < new Date().toISOString().slice(0, 10);
 
   const usedDivers     = divers.length;
   const color          = getCapacityColor(usedDivers, currentDiverCount);
@@ -945,15 +953,37 @@ export function SlotBlock({
         </div>
       )}
 
-      {/* Bouton modifier le créneau */}
-      {canEditThisSlot && !editingInfo && (
+      {/* Bouton modifier le créneau (uniquement si créneau non passé) */}
+      {canEditThisSlot && !isPastSlot && !editingInfo && (
         <button className="btn-edit-slot-info" onClick={startEditInfo}>
           ✏️ Modifier le créneau
         </button>
       )}
-      {canEditThisSlot && editingInfo && (
+      {canEditThisSlot && !isPastSlot && editingInfo && (
         <button className="btn-edit-slot-info btn-edit-slot-cancel" onClick={() => { setEditingInfo(false); setInfoError(''); }}>
           ✕ Annuler la modification
+        </button>
+      )}
+
+      {/* Bouton fiche de sécurité (créneau passé, DP/admin) */}
+      {canEditThisSlot && isPastSlot && (
+        <button
+          className="btn-edit-slot-info"
+          style={{ background: hasSafetySheets ? '#d1fae5' : '#fef9c3', borderColor: hasSafetySheets ? '#6ee7b7' : '#fbbf24' }}
+          onClick={() => setShowSafetySheetModal(true)}
+        >
+          {hasSafetySheets ? '✅ Fiches de sécurité' : '📋 Envoyer la fiche de sécurité'}
+        </button>
+      )}
+
+      {/* Bouton téléchargement fiches de sécurité (lecture seule : non-DP autorisés) */}
+      {!canEditThisSlot && isPastSlot && hasSafetySheets && (
+        <button
+          className="btn-edit-slot-info"
+          style={{ background: '#d1fae5', borderColor: '#6ee7b7' }}
+          onClick={() => setShowSafetySheetModal(true)}
+        >
+          ✅ Voir les fiches de sécurité
         </button>
       )}
 
@@ -1247,6 +1277,15 @@ export function SlotBlock({
               : '';
             alert(`✅ Votre inscription en liste d'attente a bien été enregistrée. Vous recevrez un e-mail de confirmation.${emailNote}`);
           }}
+        />
+      )}
+      {showSafetySheetModal && (
+        <SafetySheetModal
+          slotId={slot.id}
+          slotDate={slot.slotDate}
+          isDP={canEditThisSlot}
+          onClose={() => setShowSafetySheetModal(false)}
+          onUploaded={() => setHasSafetySheets(true)}
         />
       )}
     </>

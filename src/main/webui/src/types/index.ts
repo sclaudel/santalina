@@ -111,6 +111,7 @@ export interface DiveSlot {
   registrationOpensAt: string | null; // ISO datetime or null
   waitingListCount?: number;
   requiresAttachments: boolean;
+  hasSafetySheets: boolean;
 }
 
 export interface SlotRequest {
@@ -172,6 +173,8 @@ export interface AppConfig {
   reportEmailRecipients: string;
   reportEmailLastSent: string;
   defaultOrganizerMailTemplate?: string;
+  safetySheetNotificationEmails: string;
+  safetySheetViewerEmails: string;
 }
 
 // Logs
@@ -297,6 +300,17 @@ export interface SlotDiveRequest {
   endTime?: string | null;
   depth?: string | null;
   duration?: string | null;
+}
+
+// ── Fiches de sécurité ────────────────────────────────────────────────────────
+
+export interface SafetySheetFile {
+  id: number;
+  originalName: string;
+  contentType: string;
+  fileSize: number;
+  uploadedAt: string;  // ISO datetime
+  uploaderName: string | null;
 }
 
 // ── Liste d'attente ──────────────────────────────────────────────────────────
