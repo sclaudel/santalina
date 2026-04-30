@@ -205,7 +205,9 @@ public class UserService {
     /** Exporte tous les utilisateurs au format CSV (séparateur point-virgule), triés par club. */
     public String exportUsersCsv() {
         StringBuilder sb = new StringBuilder();
-        sb.append("club;nom;prenom;email;telephone;licence\n");
+        // BOM UTF-8 : indique à Excel que le fichier est en UTF-8 (corrige l'affichage des accents)
+        sb.append('\uFEFF');
+        sb.append("club;nom;prenom;email;telephone;licence;roles\n");
         User.<User>listAll().stream()
             .sorted(Comparator.comparing(
                 (User u) -> u.club != null ? u.club : "\uFFFF",
@@ -216,8 +218,27 @@ public class UserService {
                 .append(csvEscape(u.firstName)).append(";")
                 .append(csvEscape(u.email)).append(";")
                 .append(csvEscape(u.phone)).append(";")
-                .append(csvEscape(u.licenseNumber)).append("\n"));
+                .append(csvEscape(u.licenseNumber)).append(";")
+                .append(csvEscape(rolesFr(u))).append("\n"));
         return sb.toString();
+    }
+
+    /** Retourne les rôles de l'utilisateur en français, triés par niveau décroissant. */
+    private static String rolesFr(User u) {
+        java.util.Set<UserRole> r = (u.roles != null && !u.roles.isEmpty()) ? u.roles
+                : (u.role != null ? java.util.Set.of(u.role) : java.util.Set.of(UserRole.DIVER));
+        return java.util.stream.Stream.of(UserRole.ADMIN, UserRole.DIVE_DIRECTOR, UserRole.DIVER)
+            .filter(r::contains)
+            .map(UserService::roleFr)
+            .collect(java.util.stream.Collectors.joining(", "));
+    }
+
+    private static String roleFr(UserRole role) {
+        return switch (role) {
+            case ADMIN         -> "Administrateur";
+            case DIVE_DIRECTOR -> "Directeur de plongée";
+            case DIVER         -> "Plongeur";
+        };
     }
 
     /** Importe des utilisateurs depuis un CSV (séparateur ;). Ignore les emails déjà existants. */

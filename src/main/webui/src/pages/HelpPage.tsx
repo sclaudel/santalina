@@ -764,12 +764,13 @@ export function HelpPage() {
 
           <h4>Exporter la liste des utilisateurs (CSV)</h4>
           <p>Cliquez sur <strong>📥 Exporter CSV</strong> pour télécharger un fichier CSV contenant tous les comptes, triés par club.
-            Le fichier est encodé en UTF-8 avec le séparateur point-virgule (compatible Excel).</p>
-          <p>Colonnes exportées : <code>club</code>, <code>nom</code>, <code>prénom</code>, <code>email</code>, <code>téléphone</code>, <code>licence</code>.</p>
+            Le fichier est encodé en UTF-8 (avec BOM) avec le séparateur point-virgule (compatible Excel sans problème d'accents).</p>
+          <p>Colonnes exportées : <code>club</code>, <code>nom</code>, <code>prénom</code>, <code>email</code>, <code>téléphone</code>, <code>licence</code>, <code>roles</code>.</p>
+          <p>La colonne <code>roles</code> contient le ou les rôles de l'utilisateur en français (<em>Administrateur</em>, <em>Directeur de plongée</em>, <em>Plongeur</em>), séparés par une virgule si l'utilisateur a plusieurs rôles.</p>
 
           <h4>Importer des utilisateurs depuis un CSV</h4>
           <ol>
-            <li>Préparez un fichier CSV UTF-8 avec la ligne d'en-tête : <code>club;nom;prenom;email;telephone;licence</code>.</li>
+            <li>Préparez un fichier CSV UTF-8 avec la ligne d'en-tête : <code>club;nom;prenom;email;telephone;licence</code> (la colonne <code>roles</code> est ignorée à l'import).</li>
             <li>Cliquez sur <strong>📤 Importer CSV</strong> pour afficher le panneau d'import.</li>
             <li>Sélectionnez le fichier CSV.</li>
             <li>Saisissez un mot de passe provisoire qui sera assigné à tous les comptes importés (minimum 6 caractères).</li>
