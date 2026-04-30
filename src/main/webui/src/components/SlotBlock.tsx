@@ -1,8 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import type { AppConfig, DiveSlot, Palanquee, SlotDiver, SlotDiverRequest, UserSearchResult } from '../types';
+import type { AppConfig, DiveSlot, Palanquee, SlotDive, SlotDiver, SlotDiverRequest, UserSearchResult } from '../types';
 import { slotDiverService } from '../services/slotDiverService';
 import { slotService } from '../services/slotService';
+import { slotDiveService } from '../services/slotDiveService';
 import { adminService } from '../services/adminService';
 import { palanqueeService } from '../services/palanqueeService';
 import { waitingListService } from '../services/waitingListService';
@@ -463,14 +464,41 @@ export function SlotBlock({
 
   const handleExportFiche = async () => {
     const currentSlot = { ...slot, title: currentTitle, notes: currentNotes, slotType: currentSlotType, club: currentClub, diverCount: currentDiverCount };
-    if (palanquees.length > 0) {
-      const { exportFicheSecuriteAvecPalanquees } = await import('../utils/exportFicheSecuriteAvecPalanquees');
-      exportFicheSecuriteAvecPalanquees(currentSlot, divers, palanquees)
-        .catch(err => console.error('Export fiche sécurité (palanquées) :', err));
-    } else {
+
+    if (palanquees.length === 0) {
+      // Pas de palanquées : fiche simple
       const { exportFicheSecurite } = await import('../utils/exportFicheSecurite');
       exportFicheSecurite(currentSlot, divers)
         .catch(err => console.error('Export fiche sécurité :', err));
+      return;
+    }
+
+    // Détecter les plongées distinctes avec palanquées
+    const diveIds = [...new Set(
+      palanquees
+        .map(p => p.slotDiveId)
+        .filter((id): id is number => id !== null && id !== undefined)
+    )];
+
+    const { exportFicheSecuriteAvecPalanquees } = await import('../utils/exportFicheSecuriteAvecPalanquees');
+
+    if (diveIds.length <= 1) {
+      // Une seule plongée (ou palanquées sans plongée assignée) : comportement actuel
+      exportFicheSecuriteAvecPalanquees(currentSlot, divers, palanquees)
+        .catch(err => console.error('Export fiche sécurité (palanquées) :', err));
+      return;
+    }
+
+    // Plusieurs plongées avec palanquées : exporter une fiche par plongée
+    const slotDives: SlotDive[] = await slotDiveService.getBySlot(slot.id).catch(() => []);
+    for (const diveId of diveIds) {
+      const dive = slotDives.find(d => d.id === diveId);
+      const palForDive = palanquees.filter(p => p.slotDiveId === diveId);
+      const label = dive?.label ?? `Plongée ${diveId}`;
+      await exportFicheSecuriteAvecPalanquees(currentSlot, divers, palForDive, label, dive?.startTime, dive?.endTime)
+        .catch(err => console.error(`Export fiche sécurité (${label}) :`, err));
+      // Petit délai pour éviter que le navigateur bloque les téléchargements successifs
+      await new Promise<void>(resolve => setTimeout(resolve, 350));
     }
   };
 
@@ -1106,9 +1134,12 @@ export function SlotBlock({
       {/* Bouton export fiche de sécurité */}
       {canEditThisSlot && (
         <button className="btn-export-fiche" onClick={handleExportFiche}>
-          {palanquees.length > 0
-            ? '📥 Exporter fiche de sécurité avec palanquées (Excel)'
-            : '📊 Exporter fiche de sécurité (Excel)'}
+          {(() => {
+            if (palanquees.length === 0) return '📊 Exporter fiche de sécurité (Excel)';
+            const diveIds = [...new Set(palanquees.map(p => p.slotDiveId).filter((id): id is number => id !== null && id !== undefined))];
+            if (diveIds.length >= 2) return `📥 Exporter ${diveIds.length} fiches de sécurité (Excel)`;
+            return '📥 Exporter fiche de sécurité avec palanquées (Excel)';
+          })()}
         </button>
       )}
 
@@ -1137,7 +1168,11 @@ export function SlotBlock({
       {/* Bouton supprimer le créneau */}
       {canEditThisSlot && (
         <button className="btn-delete-slot-tooltip"
-          onClick={() => { closeTooltip(); onDelete(slot.id); }}>
+          onClick={() => {
+            if (!window.confirm('Supprimer ce créneau ? Cette action est irréversible.')) return;
+            closeTooltip();
+            onDelete(slot.id);
+          }}>
           🗑 Supprimer le créneau
         </button>
       )}
@@ -1180,7 +1215,11 @@ export function SlotBlock({
           )}
           {canEditThisSlot && !isCompact && (
             <button className="slot-block-delete"
-              onClick={e => { e.stopPropagation(); onDelete(slot.id); }}
+              onClick={e => {
+                e.stopPropagation();
+                if (!window.confirm('Supprimer ce créneau ? Cette action est irréversible.')) return;
+                onDelete(slot.id);
+              }}
               title="Supprimer">✕</button>
           )}
         </div>

@@ -33,7 +33,6 @@ export function DayView({ date, config, onAdd, onOpenPalanquees, openSlotId }: P
   useEffect(() => { load(); }, [load]);
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Supprimer ce créneau ?')) return;
     await slotService.delete(id);
     load();
   };
