@@ -234,9 +234,9 @@ export function HelpPage() {
           <ul>
             <li><strong>📊 Exporter fiche de sécurité (Excel)</strong> — aucune palanquée définie : exporte une fiche simple avec la liste des plongeurs inscrits.</li>
             <li><strong>📥 Exporter fiche de sécurité avec palanquées (Excel)</strong> — des palanquées sont organisées sur une seule plongée : exporte une fiche avec les palanquées.</li>
-            <li><strong>📥 Exporter N fiches de sécurité (Excel)</strong> — plusieurs plongées distinctes avec des palanquées : télécharge <em>N</em> fichiers Excel (un par plongée), espacés de quelques instants pour éviter les blocages du navigateur.</li>
+            <li><strong>📥 Télécharger N fiches de sécurité (ZIP)</strong> — plusieurs plongées distinctes avec des palanquées : télécharge une archive <em>.zip</em> contenant un fichier Excel par plongée. Compatible mobile.</li>
           </ul>
-          <div className="help-tip">💡 Lorsque plusieurs fiches sont téléchargées, votre navigateur peut vous demander d'autoriser les téléchargements multiples. Acceptez pour obtenir tous les fichiers.</div>
+          <div className="help-tip">💡 Sur mobile, les navigateurs bloquent généralement les téléchargements multiples. C'est pourquoi les N fiches sont regroupées dans un fichier ZIP unique que vous pouvez dézipper pour accéder aux fichiers Excel.</div>
           <h4>Contenu de la fiche</h4>
           <ul>
             <li><strong>Cellule B4</strong> — Date, club et informations du directeur sur une seule ligne : <code>NOM Prénom - Niveau - N°Licence</code> (la licence n'apparaît que si elle est renseignée).</li>
@@ -764,12 +764,13 @@ export function HelpPage() {
 
           <h4>Exporter la liste des utilisateurs (CSV)</h4>
           <p>Cliquez sur <strong>📥 Exporter CSV</strong> pour télécharger un fichier CSV contenant tous les comptes, triés par club.
-            Le fichier est encodé en UTF-8 avec le séparateur point-virgule (compatible Excel).</p>
-          <p>Colonnes exportées : <code>club</code>, <code>nom</code>, <code>prénom</code>, <code>email</code>, <code>téléphone</code>, <code>licence</code>.</p>
+            Le fichier est encodé en UTF-8 (avec BOM) avec le séparateur point-virgule (compatible Excel sans problème d'accents).</p>
+          <p>Colonnes exportées : <code>club</code>, <code>nom</code>, <code>prénom</code>, <code>email</code>, <code>téléphone</code>, <code>licence</code>, <code>roles</code>.</p>
+          <p>La colonne <code>roles</code> contient le ou les rôles de l'utilisateur en français (<em>Administrateur</em>, <em>Directeur de plongée</em>, <em>Plongeur</em>), séparés par une virgule si l'utilisateur a plusieurs rôles.</p>
 
           <h4>Importer des utilisateurs depuis un CSV</h4>
           <ol>
-            <li>Préparez un fichier CSV UTF-8 avec la ligne d'en-tête : <code>club;nom;prenom;email;telephone;licence</code>.</li>
+            <li>Préparez un fichier CSV UTF-8 avec la ligne d'en-tête : <code>club;nom;prenom;email;telephone;licence</code> (la colonne <code>roles</code> est ignorée à l'import).</li>
             <li>Cliquez sur <strong>📤 Importer CSV</strong> pour afficher le panneau d'import.</li>
             <li>Sélectionnez le fichier CSV.</li>
             <li>Saisissez un mot de passe provisoire qui sera assigné à tous les comptes importés (minimum 6 caractères).</li>

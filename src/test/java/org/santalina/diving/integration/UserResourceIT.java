@@ -263,7 +263,8 @@ class UserResourceIT {
                 .then()
                 .statusCode(200)
                 .contentType(containsString("text/csv"))
-                .body(startsWith("club;nom;prenom;email;telephone;licence"));
+                // Le fichier commence par le BOM UTF-8 (\uFEFF) pour la compatibilité Excel
+                .body(containsString("club;nom;prenom;email;telephone;licence;roles"));
     }
 
     @Test
