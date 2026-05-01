@@ -113,6 +113,8 @@ export function SlotBlock({
   const [saving, setSaving]               = useState(false);
   const [error, setError]                 = useState('');
   const [addSuccess, setAddSuccess]        = useState('');
+  const [slotLinkCopied, setSlotLinkCopied] = useState(false);
+  const slotLinkCopyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [loading, setLoading]             = useState(false);
   // Édition d'un plongeur existant
   const [editingDiver, setEditingDiver]   = useState<SlotDiver | null>(null);
@@ -182,6 +184,14 @@ export function SlotBlock({
   const blockRef   = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const autoOpenedRef = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      if (slotLinkCopyTimerRef.current) {
+        clearTimeout(slotLinkCopyTimerRef.current);
+      }
+    };
+  }, []);
 
   const canEditThisSlot = canEdit && (
     currentUserRole === 'ADMIN' ||
@@ -644,15 +654,20 @@ export function SlotBlock({
           )}
           <button
             className="slot-tooltip-close"
-            title="Copier le lien vers ce créneau"
+            title={slotLinkCopied ? 'Lien copié' : 'Copier le lien vers ce créneau'}
             onClick={() => {
               const url = `${window.location.origin}${window.location.pathname}?slot=${slot.id}`;
               navigator.clipboard.writeText(url).then(() => {
+                setSlotLinkCopied(true);
                 setAddSuccess('🔗 Lien copié !');
-                setTimeout(() => setAddSuccess(''), 2500);
+                if (slotLinkCopyTimerRef.current) clearTimeout(slotLinkCopyTimerRef.current);
+                slotLinkCopyTimerRef.current = setTimeout(() => {
+                  setSlotLinkCopied(false);
+                  setAddSuccess('');
+                }, 2500);
               }).catch(() => {});
             }}
-          >🔗</button>
+          >{slotLinkCopied ? '✅' : '🔗'}</button>
           <button className="slot-tooltip-close" onClick={closeTooltip} title="Fermer">✕</button>
         </div>
       </div>

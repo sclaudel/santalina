@@ -295,6 +295,42 @@ class PalanqueeResourceIT {
         }
     }
 
+    @Test
+    @TestSecurity(user = "dp_move_atomic@test.com", roles = {"DIVE_DIRECTOR"})
+    void assign_withFromPalanquee_shouldMoveWithoutLeavingDuplicate() {
+        DiveSlot slot   = createSlotWithDp("dp_move_atomic@test.com");
+        SlotDiver diver = addDiver(slot.id, "LEGRAND", "N2");
+        Long pal1       = createPalanquee(slot.id, "P1");
+        Long pal2       = createPalanquee(slot.id, "P2");
+        try {
+            // Assigner d'abord à P1
+            given()
+                .contentType(ContentType.JSON)
+                .body("{\"diverId\":" + diver.id + ",\"palanqueeId\":" + pal1 + "}")
+                .when().put("/api/slots/" + slot.id + "/palanquees/assign")
+                .then()
+                .statusCode(200);
+
+            // Déplacer vers P2 en précisant la source
+            given()
+                .contentType(ContentType.JSON)
+                .body("{\"diverId\":" + diver.id + ",\"palanqueeId\":" + pal2 + ",\"fromPalanqueeId\":" + pal1 + "}")
+                .when().put("/api/slots/" + slot.id + "/palanquees/assign")
+                .then()
+                .statusCode(200);
+
+            // Attendu : P1 vide, P2 contient le plongeur (pas de doublon)
+            given()
+                .when().get("/api/slots/" + slot.id + "/palanquees")
+                .then()
+                .statusCode(200)
+                .body("find { it.id == " + pal1 + " }.divers", hasSize(0))
+                .body("find { it.id == " + pal2 + " }.divers", hasSize(1));
+        } finally {
+            cleanup(slot.id);
+        }
+    }
+
     // ── APTITUDES PAR PLONGÉE ─────────────────────────────────────────────────
 
     @Test

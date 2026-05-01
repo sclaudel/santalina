@@ -106,6 +106,11 @@ public class PalanqueeResource {
             }
         } else {
             Palanquee target = findPalanquee(slotId, req.palanqueeId());
+            // Si une source est précisée, retirer d'abord l'appartenance source.
+            // Cela rend l'opération de déplacement atomique et évite les doublons visuels.
+            if (req.fromPalanqueeId() != null && !req.fromPalanqueeId().equals(req.palanqueeId())) {
+                PalanqueeMember.deleteByDiverAndPalanquee(diver.id, req.fromPalanqueeId());
+            }
             // Upsert : ajouter seulement si pas déjà membre
             if (PalanqueeMember.findByDiverAndPalanquee(diver.id, req.palanqueeId()) == null) {
                 PalanqueeMember m = new PalanqueeMember();
