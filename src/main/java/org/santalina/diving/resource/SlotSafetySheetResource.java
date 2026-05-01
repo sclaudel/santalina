@@ -102,7 +102,8 @@ public class SlotSafetySheetResource {
             @RestForm("file1") FileUpload file1,
             @RestForm("file2") FileUpload file2,
             @RestForm("file3") FileUpload file3,
-            @RestForm("file4") FileUpload file4) {
+            @RestForm("file4") FileUpload file4,
+            @RestForm("additionalEmails") String additionalEmails) {
 
         DiveSlot slot = requireSlot(slotId);
         requirePastSlot(slot);
@@ -117,6 +118,8 @@ public class SlotSafetySheetResource {
         }
 
         long existing = SlotSafetySheet.countBySlot(slotId);
+        boolean isFollowUp = existing > 0;
+
         if (existing + uploads.size() > MAX_FILES_PER_SLOT) {
             throw new BadRequestException(
                     "Le créneau ne peut pas contenir plus de " + MAX_FILES_PER_SLOT +
@@ -129,8 +132,9 @@ public class SlotSafetySheetResource {
 
         User uploader = User.findByEmail(identity.getPrincipal().getName());
 
+        List<SlotSafetySheet> newSheets = new java.util.ArrayList<>();
         for (FileUpload upload : uploads) {
-            saveSheet(slot, uploader, upload);
+            newSheets.add(saveSheet(slot, uploader, upload));
         }
 
         // Désactiver le rappel de fiche de sécurité pour ce créneau
@@ -139,8 +143,8 @@ public class SlotSafetySheetResource {
             slot.persist();
         }
 
-        // Notification par e-mail
-        safetySheetMailer.sendNotification(slot);
+        // Notification par e-mail asynchrone avec les fiches en pièces jointes
+        safetySheetMailer.sendNotificationAsync(slot, newSheets, isFollowUp, additionalEmails);
 
         List<SafetySheetResponse> result = SlotSafetySheet.findBySlot(slotId)
                 .stream().map(SafetySheetResponse::from).toList();
@@ -275,7 +279,7 @@ public class SlotSafetySheetResource {
         }
     }
 
-    private void saveSheet(DiveSlot slot, User uploader, FileUpload upload) {
+    private SlotSafetySheet saveSheet(DiveSlot slot, User uploader, FileUpload upload) {
         String ext          = getExtension(upload.fileName());
         String storedName   = UUID.randomUUID() + "." + ext;
         String relativePath = "attachments/safety-sheets/" + slot.id + "/" + storedName;
@@ -302,6 +306,7 @@ public class SlotSafetySheetResource {
         sheet.uploadedAt   = LocalDateTime.now();
         sheet.expiresAt    = sheet.uploadedAt.plusYears(1);
         sheet.persist();
+        return sheet;
     }
 
     private void buildZip(List<SlotSafetySheet> sheets, OutputStream out) throws IOException {

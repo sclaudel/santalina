@@ -1,29 +1,52 @@
 package org.santalina.diving.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
+import org.santalina.diving.config.DivingConfig;
 import org.santalina.diving.domain.*;
 import org.santalina.diving.dto.BackupDto.*;
 import org.santalina.diving.security.NameUtil;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 @ApplicationScoped
 public class BackupService {
 
     private static final Logger LOG = Logger.getLogger(BackupService.class);
     private static final String BACKUP_VERSION = "1.0";
+    /** Nom du fichier manifeste dans le ZIP de pièces jointes. */
+    private static final String MANIFEST_ENTRY = "manifest.json";
 
     @Inject
     EntityManager em;
 
     @Inject
     AuthService authService;
+
+    @Inject
+    DivingConfig divingConfig;
 
     // ---- Exports ----
 
@@ -443,7 +466,168 @@ public class BackupService {
                 e.registrationStatus, e.rejectionReason);
         // medicalCertPath / licenseQrPath exclus intentionnellement
     }
+
+    // ---- Sauvegarde / restauration des pièces jointes ----
+
+    /**
+     * Écrit dans {@code out} un ZIP contenant :<ul>
+     *   <li>{@code manifest.json} — métadonnées de chaque fiche</li>
+     *   <li>Les fichiers eux-mêmes dans {@code {slotDate}_{slotStart}/{storedName}}</li>
+     * </ul>
+     */
+    public void exportAttachmentsZip(OutputStream out) throws IOException {
+        List<SlotSafetySheet> sheets = SlotSafetySheet.listAll();
+        ObjectMapper mapper = buildMapper();
+
+        List<SheetManifestEntry> manifest = new ArrayList<>();
+        for (SlotSafetySheet s : sheets) {
+            manifest.add(new SheetManifestEntry(
+                    s.slot.slotDate.toString(),
+                    s.slot.startTime.toString(),
+                    s.originalName,
+                    s.storedName,
+                    s.filePath,
+                    s.contentType,
+                    s.fileSize,
+                    s.uploadedAt.toString(),
+                    s.expiresAt.toString(),
+                    s.uploader != null ? s.uploader.email : null
+            ));
+        }
+
+        try (ZipOutputStream zip = new ZipOutputStream(out)) {
+            // manifeste
+            byte[] manifestBytes = mapper.writeValueAsBytes(manifest);
+            zip.putNextEntry(new ZipEntry(MANIFEST_ENTRY));
+            zip.write(manifestBytes);
+            zip.closeEntry();
+
+            // fichiers
+            Path dataDir = Paths.get(divingConfig.dataDir());
+            for (SlotSafetySheet s : sheets) {
+                Path file = dataDir.resolve(s.filePath);
+                if (!Files.exists(file)) {
+                    LOG.warnf("[BackupAttachments] Fichier introuvable, ignoré : %s", s.filePath);
+                    continue;
+                }
+                String entryName = s.slot.slotDate + "_" + s.slot.startTime.toString().replace(":", "") + "/" + s.storedName;
+                zip.putNextEntry(new ZipEntry(entryName));
+                Files.copy(file, zip);
+                zip.closeEntry();
+            }
+        }
+        LOG.infof("[BackupAttachments] Export terminé : %d fiche(s)", sheets.size());
+    }
+
+    /**
+     * Importe le ZIP de pièces jointes (généré par {@link #exportAttachmentsZip}).
+     * <p>Recrée les fichiers physiques et les enregistrements {@link SlotSafetySheet}
+     * en rattachant chaque fiche au créneau retrouvé par date + heure de début.</p>
+     * <p>Les fiches dont le créneau est introuvable sont ignorées (le créneau a peut-être
+     * été supprimé ou n'a pas encore été restauré depuis le backup JSON).</p>
+     */
+    @Transactional
+    public AttachmentsImportResult importAttachmentsZip(InputStream zipStream) throws IOException {
+        ObjectMapper mapper = buildMapper();
+        List<SheetManifestEntry> manifest = null;
+        // Stocker temporairement les fichiers extraits : entryName → contenu
+        java.util.Map<String, byte[]> extractedFiles = new java.util.HashMap<>();
+
+        try (ZipInputStream zip = new ZipInputStream(zipStream)) {
+            ZipEntry entry;
+            while ((entry = zip.getNextEntry()) != null) {
+                String name = entry.getName();
+                byte[] bytes = zip.readAllBytes();
+                if (MANIFEST_ENTRY.equals(name)) {
+                    manifest = mapper.readValue(bytes,
+                            mapper.getTypeFactory().constructCollectionType(List.class, SheetManifestEntry.class));
+                } else {
+                    extractedFiles.put(name, bytes);
+                }
+                zip.closeEntry();
+            }
+        }
+
+        if (manifest == null) {
+            return new AttachmentsImportResult(false, "Fichier manifest.json introuvable dans le ZIP", 0, 0);
+        }
+
+        int restored = 0;
+        int skipped  = 0;
+        Path dataDir = Paths.get(divingConfig.dataDir());
+
+        for (SheetManifestEntry m : manifest) {
+            // Retrouver le créneau
+            LocalDate slotDate;
+            LocalTime slotStart;
+            try {
+                slotDate  = LocalDate.parse(m.slotDate());
+                slotStart = LocalTime.parse(m.slotStartTime());
+            } catch (Exception e) {
+                LOG.warnf("[BackupAttachments] Date/heure invalide pour %s, ignoré.", m.originalName());
+                skipped++;
+                continue;
+            }
+
+            DiveSlot slot = DiveSlot.find("slotDate = ?1 and startTime = ?2", slotDate, slotStart).firstResult();
+            if (slot == null) {
+                LOG.warnf("[BackupAttachments] Créneau %s %s introuvable pour %s, ignoré.",
+                        m.slotDate(), m.slotStartTime(), m.originalName());
+                skipped++;
+                continue;
+            }
+
+            // Éviter les doublons (même storedName sur le même créneau)
+            long alreadyExists = SlotSafetySheet.count("slot.id = ?1 and storedName = ?2",
+                    slot.id, m.storedName());
+            if (alreadyExists > 0) {
+                LOG.debugf("[BackupAttachments] Doublon détecté %s pour créneau %d, ignoré.",
+                        m.storedName(), slot.id);
+                skipped++;
+                continue;
+            }
+
+            // Trouver le contenu dans le ZIP
+            String entryName = m.slotDate() + "_" + m.slotStartTime().replace(":", "") + "/" + m.storedName();
+            byte[] fileContent = extractedFiles.get(entryName);
+            if (fileContent == null) {
+                LOG.warnf("[BackupAttachments] Fichier %s absent du ZIP, ignoré.", entryName);
+                skipped++;
+                continue;
+            }
+
+            // Écrire sur disque
+            String relativePath = "attachments/safety-sheets/" + slot.id + "/" + m.storedName();
+            Path target = dataDir.resolve(relativePath);
+            Files.createDirectories(target.getParent());
+            Files.write(target, fileContent);
+
+            // Créer l'enregistrement en base
+            User uploader = m.uploaderEmail() != null ? User.find("email", m.uploaderEmail()).firstResult() : null;
+
+            SlotSafetySheet sheet = new SlotSafetySheet();
+            sheet.slot         = slot;
+            sheet.uploader     = uploader;
+            sheet.originalName = m.originalName();
+            sheet.storedName   = m.storedName();
+            sheet.filePath     = relativePath;
+            sheet.contentType  = m.contentType();
+            sheet.fileSize     = m.fileSize();
+            try { sheet.uploadedAt = LocalDateTime.parse(m.uploadedAt()); } catch (Exception e) { sheet.uploadedAt = LocalDateTime.now(); }
+            try { sheet.expiresAt  = LocalDateTime.parse(m.expiresAt());  } catch (Exception e) { sheet.expiresAt  = sheet.uploadedAt.plusYears(1); }
+            sheet.persist();
+            restored++;
+        }
+
+        String message = String.format("Import pièces jointes : %d restaurée(s), %d ignorée(s)", restored, skipped);
+        LOG.info("[BackupAttachments] " + message);
+        return new AttachmentsImportResult(true, message, restored, skipped);
+    }
+
+    private static ObjectMapper buildMapper() {
+        ObjectMapper m = new ObjectMapper();
+        m.registerModule(new JavaTimeModule());
+        m.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        return m;
+    }
 }
-
-
-

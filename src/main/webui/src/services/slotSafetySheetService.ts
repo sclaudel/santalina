@@ -12,11 +12,15 @@ export const slotSafetySheetService = {
 
   /**
    * Upload jusqu'à 4 fichiers sur un créneau passé.
+   * @param additionalEmails adresses email séparées par des virgules à inclure dans la notification
    * @returns la liste mise à jour des fiches
    */
-  async upload(slotId: number, files: File[]): Promise<SafetySheetFile[]> {
+  async upload(slotId: number, files: File[], additionalEmails?: string): Promise<SafetySheetFile[]> {
     const form = new FormData();
     files.forEach((f, i) => form.append(`file${i + 1}`, f));
+    if (additionalEmails && additionalEmails.trim()) {
+      form.append('additionalEmails', additionalEmails.trim());
+    }
     const res = await api.post<SafetySheetFile[]>(`/slots/${slotId}/safety-sheets`, form, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });

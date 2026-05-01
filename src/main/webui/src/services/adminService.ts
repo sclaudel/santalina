@@ -1,5 +1,5 @@
 import api from './api';
-import type { User, AppConfig, CreateUserRequest, UpdateUserAdminRequest, UserRole, UserSearchResult, LogInfo, ImportResult, CsvImportResult } from '../types';
+import type { User, AppConfig, CreateUserRequest, UpdateUserAdminRequest, UserRole, UserSearchResult, LogInfo, ImportResult, AttachmentsImportResult, CsvImportResult } from '../types';
 
 export const adminService = {
   async getAllUsers(): Promise<User[]> {
@@ -245,6 +245,28 @@ export const adminService = {
 
   async importBackup(data: unknown): Promise<ImportResult> {
     const res = await api.post<ImportResult>('/admin/backup/import', data);
+    return res.data;
+  },
+
+  async downloadBackupAttachments(): Promise<void> {
+    const res = await api.get('/admin/backup/export/attachments', { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/zip' }));
+    const link = document.createElement('a');
+    link.href = url;
+    const today = new Date().toISOString().slice(0, 10);
+    link.setAttribute('download', `santalina-attachments-${today}.zip`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
+  async importBackupAttachments(file: File): Promise<AttachmentsImportResult> {
+    const form = new FormData();
+    form.append('file', file);
+    const res = await api.post<AttachmentsImportResult>('/admin/backup/import/attachments', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return res.data;
   },
 

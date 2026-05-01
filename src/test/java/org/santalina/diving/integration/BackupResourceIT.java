@@ -380,4 +380,106 @@ class BackupResourceIT {
                 .body("slotsRestored", equalTo(1))
                 .body("slotDivesRestored", equalTo(2));
     }
+
+    // ── Pièces jointes (attachments backup) ──────────────────────────────────
+
+    @Test
+    @Order(10)
+    void exportAttachments_shouldReturn401_withoutAuthentication() {
+        given()
+                .when().get("/api/admin/backup/export/attachments")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    @Order(11)
+    @TestSecurity(user = "diver@test.com", roles = {"DIVER"})
+    void exportAttachments_shouldReturn403_asDiver() {
+        given()
+                .when().get("/api/admin/backup/export/attachments")
+                .then()
+                .statusCode(403);
+    }
+
+    @Test
+    @Order(12)
+    @TestSecurity(user = "admin@test.com", roles = {"ADMIN"})
+    void exportAttachments_shouldReturn200_withZipContentType() {
+        given()
+                .when().get("/api/admin/backup/export/attachments")
+                .then()
+                .statusCode(200)
+                .contentType("application/zip");
+    }
+
+    @Test
+    @Order(13)
+    void importAttachments_shouldReturn401_withoutAuthentication() {
+        given()
+                .multiPart("file", "dummy.zip", new byte[]{80, 75, 5, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, "application/zip")
+                .when().post("/api/admin/backup/import/attachments")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    @Order(14)
+    @TestSecurity(user = "admin@test.com", roles = {"ADMIN"})
+    void importAttachments_withMissingFile_shouldReturn400() {
+        given()
+                .contentType("multipart/form-data")
+                .when().post("/api/admin/backup/import/attachments")
+                .then()
+                .statusCode(400)
+                .body("success", equalTo(false));
+    }
+
+    /**
+     * Importe un ZIP valide mais sans manifest.json → attendre une réponse success=false.
+     */
+    @Test
+    @Order(15)
+    @TestSecurity(user = "admin@test.com", roles = {"ADMIN"})
+    void importAttachments_withZipMissingManifest_shouldReturnSuccessFalse() throws Exception {
+        // Construire un ZIP minimal avec une entrée quelconque, sans manifest.json
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        try (java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(bos)) {
+            zos.putNextEntry(new java.util.zip.ZipEntry("some_file.pdf"));
+            zos.write("fake pdf content".getBytes());
+            zos.closeEntry();
+        }
+        byte[] zipBytes = bos.toByteArray();
+
+        given()
+                .multiPart("file", "attachments.zip", zipBytes, "application/zip")
+                .when().post("/api/admin/backup/import/attachments")
+                .then()
+                .statusCode(200)
+                .body("success", equalTo(false));
+    }
+
+    /**
+     * Importe un ZIP valide avec manifest.json (liste vide = 0 fiches) → success=true, sheetsRestored=0.
+     */
+    @Test
+    @Order(16)
+    @TestSecurity(user = "admin@test.com", roles = {"ADMIN"})
+    void importAttachments_withEmptyManifest_shouldReturn200_sheetsRestoredZero() throws Exception {
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        try (java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(bos)) {
+            zos.putNextEntry(new java.util.zip.ZipEntry("manifest.json"));
+            zos.write("[]".getBytes());
+            zos.closeEntry();
+        }
+        byte[] zipBytes = bos.toByteArray();
+
+        given()
+                .multiPart("file", "attachments.zip", zipBytes, "application/zip")
+                .when().post("/api/admin/backup/import/attachments")
+                .then()
+                .statusCode(200)
+                .body("success", equalTo(true))
+                .body("sheetsRestored", equalTo(0));
+    }
 }

@@ -321,4 +321,49 @@ class SlotSafetySheetResourceIT {
             cleanup(slot.id);
         }
     }
+
+    // ── Upload avec destinataires supplémentaires ─────────────────────────────
+
+    @Test
+    @TestSecurity(user = "dp_ss_extra@test.com", roles = {"DIVE_DIRECTOR"})
+    void upload_withAdditionalEmails_shouldReturn200() {
+        DiveSlot slot = createPastSlot("dp_ss_extra@test.com");
+        try {
+            given()
+                .multiPart("file1", "fiche.pdf", "fake pdf".getBytes(), "application/pdf")
+                .multiPart("additionalEmails", "president@club.fr, responsable@club.fr")
+                .when().post("/api/slots/" + slot.id + "/safety-sheets")
+                .then()
+                .statusCode(200)
+                .body("$", hasSize(1));
+        } finally {
+            cleanup(slot.id);
+        }
+    }
+
+    // ── Réenvoi (follow-up) ───────────────────────────────────────────────────
+
+    /**
+     * Vérifie que l'upload sur un créneau ayant déjà des fiches retourne 200
+     * et que la liste contient les anciennes + les nouvelles fiches.
+     */
+    @Test
+    @TestSecurity(user = "dp_ss_followup@test.com", roles = {"DIVE_DIRECTOR"})
+    void upload_withExistingSheets_isFollowUp_shouldReturn200_withAllSheets() {
+        DiveSlot slot = createPastSlot("dp_ss_followup@test.com");
+        try {
+            // Première fiche existante
+            attachFakeSheet(slot.id, slot.createdBy.id);
+
+            // Deuxième upload (follow-up)
+            given()
+                .multiPart("file1", "fiche2.pdf", "fake pdf 2".getBytes(), "application/pdf")
+                .when().post("/api/slots/" + slot.id + "/safety-sheets")
+                .then()
+                .statusCode(200)
+                .body("$", hasSize(2));  // 1 existante + 1 nouvelle
+        } finally {
+            cleanup(slot.id);
+        }
+    }
 }

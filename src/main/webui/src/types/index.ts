@@ -199,6 +199,13 @@ export interface ImportResult {
   slotDivesRestored?: number;
 }
 
+export interface AttachmentsImportResult {
+  success: boolean;
+  message: string;
+  sheetsRestored: number;
+  sheetsSkipped: number;
+}
+
 // CSV import/export
 export interface CsvImportResult {
   imported: number;

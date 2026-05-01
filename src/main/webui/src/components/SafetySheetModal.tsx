@@ -1,8 +1,22 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import type { SafetySheetFile } from '../types';
 import { slotSafetySheetService } from '../services/slotSafetySheetService';
 import { useAuth } from '../context/AuthContext';
+
+const EXTRA_EMAILS_HISTORY_KEY = 'santalina_extra_emails_history';
+const MAX_EMAIL_HISTORY = 20;
+
+function loadEmailHistory(): string[] {
+  try { return JSON.parse(localStorage.getItem(EXTRA_EMAILS_HISTORY_KEY) || '[]'); }
+  catch { return []; }
+}
+
+function saveEmailHistory(newEmails: string[]) {
+  const existing = loadEmailHistory();
+  const merged = [...new Set([...newEmails, ...existing])].slice(0, MAX_EMAIL_HISTORY);
+  localStorage.setItem(EXTRA_EMAILS_HISTORY_KEY, JSON.stringify(merged));
+}
 
 const MAX_FILES      = 4;
 const MAX_SIZE_BYTES = 3 * 1024 * 1024; // 3 Mo
@@ -30,8 +44,35 @@ export function SafetySheetModal({ slotId, slotDate, isDP, onClose, onUploaded }
   const [error, setError]               = useState('');
   const [success, setSuccess]           = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [additionalEmails, setAdditionalEmails] = useState('');
   const [downloadingZip, setDownloadingZip] = useState(false);
+  const [emailSuggestions, setEmailSuggestions] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const emailInputRef = useRef<HTMLInputElement>(null);
+
+  const handleEmailInputChange = useCallback((value: string) => {
+    setAdditionalEmails(value);
+    // Cherche le fragment en cours (après la dernière virgule)
+    const parts = value.split(',');
+    const fragment = parts[parts.length - 1].trim().toLowerCase();
+    if (fragment.length < 1) { setEmailSuggestions([]); return; }
+    const history = loadEmailHistory();
+    const alreadyAdded = parts.slice(0, -1).map(s => s.trim().toLowerCase());
+    const filtered = history.filter(e =>
+      e.toLowerCase().includes(fragment) && !alreadyAdded.includes(e.toLowerCase())
+    );
+    setEmailSuggestions(filtered);
+  }, []);
+
+  const pickEmailSuggestion = useCallback((email: string) => {
+    setAdditionalEmails(prev => {
+      const parts = prev.split(',');
+      parts[parts.length - 1] = ' ' + email;
+      return parts.join(',').replace(/^,\s*/, '');
+    });
+    setEmailSuggestions([]);
+    emailInputRef.current?.focus();
+  }, []);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -89,9 +130,14 @@ export function SafetySheetModal({ slotId, slotDate, isDP, onClose, onUploaded }
     setError('');
     setSuccess('');
     try {
-      const updated = await slotSafetySheetService.upload(slotId, selectedFiles);
+      const updated = await slotSafetySheetService.upload(slotId, selectedFiles, additionalEmails);
+      // Sauvegarder les adresses utilisées dans l'historique
+      const newEmails = additionalEmails.split(/[,;]/).map(s => s.trim()).filter(s => s.includes('@'));
+      if (newEmails.length > 0) saveEmailHistory(newEmails);
       setSheets(updated);
       setSelectedFiles([]);
+      setAdditionalEmails('');
+      setEmailSuggestions([]);
       setSuccess(`${selectedFiles.length} fichier(s) déposé(s) avec succès.`);
       onUploaded?.();
     } catch (e: any) {
@@ -213,6 +259,59 @@ export function SafetySheetModal({ slotId, slotDate, isDP, onClose, onUploaded }
               <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 10 }}>
                 Formats acceptés : JPG, PNG, WEBP, PDF — 3 Mo max par fichier — {MAX_FILES} fichiers max par créneau.
               </p>
+
+              {/* Destinataires supplémentaires */}
+              <div style={{ marginBottom: 14 }}>
+                <label htmlFor="safety-sheet-extra-emails" style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#374151' }}>
+                  ✉️ Destinataires supplémentaires (optionnel)
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    ref={emailInputRef}
+                    id="safety-sheet-extra-emails"
+                    type="text"
+                    value={additionalEmails}
+                    onChange={e => handleEmailInputChange(e.target.value)}
+                    onBlur={() => setTimeout(() => setEmailSuggestions([]), 200)}
+                    placeholder="president@club.fr, responsable@club.fr"
+                    style={{ width: '100%', fontSize: 12, padding: '6px 8px', border: '1px solid #d1d5db', borderRadius: 4, boxSizing: 'border-box' }}
+                    autoComplete="off"
+                  />
+                  {emailSuggestions.length > 0 && (
+                    <div style={{
+                      position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
+                      background: '#fff', border: '1px solid #d1d5db', borderRadius: 4,
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.10)', maxHeight: 160, overflowY: 'auto',
+                    }}>
+                      {emailSuggestions.map(email => (
+                        <button
+                          key={email}
+                          type="button"
+                          onMouseDown={e => { e.preventDefault(); pickEmailSuggestion(email); }}
+                          style={{
+                            display: 'block', width: '100%', textAlign: 'left',
+                            padding: '6px 10px', border: 'none', background: 'none',
+                            cursor: 'pointer', fontSize: 12, color: '#374151',
+                            borderBottom: '1px solid #f3f4f6',
+                          }}
+                          onMouseEnter={e => (e.currentTarget.style.background = '#f3f4f6')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                        >
+                          {email}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <span style={{ fontSize: 11, color: '#6b7280' }}>
+                  Adresses séparées par des virgules. Ces personnes recevront aussi la notification avec les fichiers en pièce jointe.
+                </span>
+                {sheets.length > 0 && (
+                  <span style={{ display: 'block', fontSize: 11, color: '#f59e0b', marginTop: 2 }}>
+                    ℹ️ Des fiches ont déjà été déposées sur ce créneau — l'e-mail précisera qu'il s'agit d'un complément.
+                  </span>
+                )}
+              </div>
 
               {canUpload && (
                 <>
