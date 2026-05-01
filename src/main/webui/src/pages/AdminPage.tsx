@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { adminService } from '../services/adminService';
-import type { User, AppConfig, CreateUserRequest, UpdateUserAdminRequest, UserRole, LogInfo, ImportResult, CsvImportResult } from '../types';
+import type { User, AppConfig, CreateUserRequest, UpdateUserAdminRequest, UserRole, LogInfo, ImportResult, AttachmentsImportResult, CsvImportResult, UserSearchResult } from '../types';
 import { getErrorMessage } from '../utils/errorUtils';
 import { RichTextEditor } from '../components/RichTextEditor';
 import { DpOrganizerMailer } from '../utils/dpMailDefaults';
@@ -83,6 +83,14 @@ export function AdminPage() {
   const [reportEmailPeriodDays, setReportEmailPeriodDays] = useState(7);
   const [reportEmailRecipients, setReportEmailRecipients] = useState('');
   const [reportEmailLoading, setReportEmailLoading]       = useState(false);
+  // Fiches de sécurité
+  const [safetySheetNotifEmails, setSafetySheetNotifEmails] = useState('');
+  const [safetySheetViewerEmails, setSafetySheetViewerEmails] = useState('');
+  const [safetySheetConfigLoading, setSafetySheetConfigLoading] = useState(false);
+  const [viewerSearch, setViewerSearch] = useState('');
+  const [viewerSuggestions, setViewerSuggestions] = useState<UserSearchResult[]>([]);
+  const [viewerSearchLoading, setViewerSearchLoading] = useState(false);
+  const viewerSearchRef = useRef<HTMLDivElement>(null);
   // Déclenchement manuel du rapport
   const today = new Date().toISOString().slice(0, 10);
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -122,6 +130,11 @@ export function AdminPage() {
   const [importResult, setImportResult]     = useState<ImportResult | null>(null);
   const [activeTab, setActiveTab]           = useState<AdminTabId>('general');
   const importFileRef = useRef<HTMLInputElement>(null);
+  // Sauvegarde / restauration des pièces jointes
+  const [attachmentsBackupLoading, setAttachmentsBackupLoading] = useState(false);
+  const [attachmentsImportLoading, setAttachmentsImportLoading] = useState(false);
+  const [attachmentsImportResult, setAttachmentsImportResult]   = useState<AttachmentsImportResult | null>(null);
+  const attachmentsImportRef = useRef<HTMLInputElement>(null);
 
   // CSV utilisateurs
   const [showCsvImport, setShowCsvImport]       = useState(false);
@@ -167,6 +180,8 @@ export function AdminPage() {
       setReportEmailEnabled(c.reportEmailEnabled ?? false);
       setReportEmailPeriodDays(c.reportEmailPeriodDays ?? 7);
       setReportEmailRecipients(c.reportEmailRecipients ?? '');
+      setSafetySheetNotifEmails(c.safetySheetNotificationEmails ?? '');
+      setSafetySheetViewerEmails(c.safetySheetViewerEmails ?? '');
     } catch {
       setError('Erreur lors du chargement des données');
     }
@@ -454,6 +469,16 @@ export function AdminPage() {
     finally { setReportEmailLoading(false); }
   };
 
+  const handleUpdateSafetySheetConfig = async () => {
+    setMsg(''); setError(''); setSafetySheetConfigLoading(true);
+    try {
+      const updated = await adminService.updateSafetySheetConfig(safetySheetNotifEmails, safetySheetViewerEmails);
+      setConfig(updated);
+      setMsg('Paramètres des fiches de sécurité enregistrés.');
+    } catch (err: unknown) { setError(getErrorMessage(err)); }
+    finally { setSafetySheetConfigLoading(false); }
+  };
+
   const handleManualReportSend = async () => {
     setMsg(''); setError(''); setManualReportSendLoading(true);
     try {
@@ -568,6 +593,34 @@ export function AdminPage() {
       await adminService.exportUsersCsv();
     } catch (err: unknown) {
       setError('Erreur lors de l\'export CSV : ' + getErrorMessage(err));
+    }
+  };
+
+  const handleExportAttachments = async () => {
+    setAttachmentsBackupLoading(true);
+    try {
+      await adminService.downloadBackupAttachments();
+    } catch (err: unknown) {
+      setError('Erreur lors de l\'export des pièces jointes : ' + getErrorMessage(err));
+    } finally {
+      setAttachmentsBackupLoading(false);
+    }
+  };
+
+  const handleImportAttachments = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAttachmentsImportLoading(true); setAttachmentsImportResult(null); setMsg(''); setError('');
+    try {
+      const result = await adminService.importBackupAttachments(file);
+      setAttachmentsImportResult(result);
+      if (result.success) setMsg(result.message);
+      else setError(result.message);
+    } catch (err: unknown) {
+      setError('Erreur lors de l\'import des pièces jointes : ' + getErrorMessage(err));
+    } finally {
+      setAttachmentsImportLoading(false);
+      if (attachmentsImportRef.current) attachmentsImportRef.current.value = '';
     }
   };
 
@@ -984,7 +1037,7 @@ export function AdminPage() {
         <p style={{ color: '#6b7280', fontSize: 13, marginBottom: 16 }}>
           Générez un rapport CSV pour une période personnalisée, à envoyer par e-mail ou à télécharger directement.
         </p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 16 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 16, alignItems: 'flex-end' }}>
           <div className="form-group" style={{ minWidth: 160 }}>
             <label style={{ fontSize: 13 }}>Du</label>
             <input type="date" value={manualReportFrom} onChange={e => setManualReportFrom(e.target.value)} />
@@ -1045,6 +1098,106 @@ export function AdminPage() {
             {recurringLoading ? '...' : '💾 Enregistrer'}
           </button>
         </form>
+      </div>
+
+      {/* ── Fiches de sécurité ── */}
+      <div className="admin-section">
+        <h2>📋 Fiches de sécurité</h2>
+        <p style={{ color: '#6b7280', fontSize: 13, marginBottom: 16 }}>
+          Paramétrez les notifications et les accès aux fiches de sécurité déposées par les directeurs de plongée.
+        </p>
+        <div className="form-group" style={{ marginBottom: 14 }}>
+          <label style={{ fontSize: 13 }}>E-mails de notification (séparés par une virgule ou un point-virgule)</label>
+          <input
+            type="text"
+            value={safetySheetNotifEmails}
+            onChange={e => setSafetySheetNotifEmails(e.target.value)}
+            placeholder="secretaire@club.fr, president@club.fr"
+            style={{ width: '100%' }}
+          />
+          <span style={{ color: '#6b7280', fontSize: 12 }}>
+            Ces adresses recevront un e-mail dès qu'une fiche est déposée sur un créneau.
+          </span>
+        </div>
+        <div className="form-group" style={{ marginBottom: 14 }}>
+          <label style={{ fontSize: 13 }}>Accès en lecture — comptes autorisés</label>
+          {/* Recherche par nom d'utilisateur */}
+          <div ref={viewerSearchRef} style={{ position: 'relative', marginBottom: 6 }}>
+            <input
+              type="text"
+              value={viewerSearch}
+              onChange={async e => {
+                const q = e.target.value;
+                setViewerSearch(q);
+                if (q.trim().length < 2) { setViewerSuggestions([]); return; }
+                setViewerSearchLoading(true);
+                try {
+                  const res = await adminService.searchUsers(q);
+                  setViewerSuggestions(res);
+                } finally {
+                  setViewerSearchLoading(false);
+                }
+              }}
+              onBlur={() => setTimeout(() => setViewerSuggestions([]), 200)}
+              placeholder="🔍 Rechercher un utilisateur par nom…"
+              style={{ width: '100%' }}
+            />
+            {(viewerSuggestions.length > 0 || viewerSearchLoading) && (
+              <div style={{
+                position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+                background: '#fff', border: '1px solid #d1d5db', borderRadius: 6,
+                boxShadow: '0 4px 16px rgba(0,0,0,0.10)', maxHeight: 200, overflowY: 'auto',
+              }}>
+                {viewerSearchLoading && (
+                  <div style={{ padding: '8px 12px', color: '#9ca3af', fontSize: 13 }}>Recherche…</div>
+                )}
+                {viewerSuggestions.map(u => {
+                  const already = safetySheetViewerEmails.split(/[,;]/).map(s => s.trim()).includes(u.email);
+                  return (
+                    <button
+                      key={u.id}
+                      type="button"
+                      disabled={already}
+                      onClick={() => {
+                        const parts = safetySheetViewerEmails.split(/[,;]/).map(s => s.trim()).filter(Boolean);
+                        if (!parts.includes(u.email)) {
+                          setSafetySheetViewerEmails([...parts, u.email].join(', '));
+                        }
+                        setViewerSearch('');
+                        setViewerSuggestions([]);
+                      }}
+                      style={{
+                        display: 'block', width: '100%', textAlign: 'left',
+                        padding: '8px 12px', border: 'none', background: already ? '#f3f4f6' : '#fff',
+                        cursor: already ? 'default' : 'pointer', fontSize: 13,
+                        color: already ? '#9ca3af' : '#111827',
+                        borderBottom: '1px solid #f3f4f6',
+                      }}
+                    >
+                      <strong>{u.firstName} {u.lastName}</strong>
+                      <span style={{ marginLeft: 8, color: '#6b7280' }}>{u.email}</span>
+                      {already && <span style={{ marginLeft: 8, color: '#9ca3af', fontSize: 11 }}>(déjà ajouté)</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          {/* Champ texte libre */}
+          <input
+            type="text"
+            value={safetySheetViewerEmails}
+            onChange={e => setSafetySheetViewerEmails(e.target.value)}
+            placeholder="codep@exemple.fr, commission@exemple.fr"
+            style={{ width: '100%' }}
+          />
+          <span style={{ color: '#6b7280', fontSize: 12 }}>
+            En plus des admins et du DP du créneau, ces adresses pourront consulter et télécharger les fiches.
+          </span>
+        </div>
+        <button className="btn btn-primary" onClick={handleUpdateSafetySheetConfig} disabled={safetySheetConfigLoading}>
+          {safetySheetConfigLoading ? '...' : '💾 Enregistrer les paramètres des fiches de sécurité'}
+        </button>
       </div>
 
       </div>
@@ -1195,6 +1348,55 @@ export function AdminPage() {
                   {importResult.palanqueesRestored} palanquées, {importResult.waitingListRestored} liste d'attente
                   {importResult.slotDivesRestored !== undefined && importResult.slotDivesRestored > 0
                     ? `, ${importResult.slotDivesRestored} plongées` : ''})
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Pièces jointes (fiches de sécurité) — sauvegarde séparée */}
+        <div style={{ marginTop: 24, padding: 16, borderRadius: 8, border: '1px solid #c7d2fe', background: '#eef2ff' }}>
+          <h3 style={{ margin: '0 0 6px', fontSize: 15, color: '#3730a3' }}>📎 Pièces jointes (fiches de sécurité)</h3>
+          <p style={{ color: '#4338ca', fontSize: 13, margin: '0 0 12px' }}>
+            Les pièces jointes (fiches de sécurité déposées par les DP) ne sont <strong>pas incluses</strong> dans la
+            sauvegarde JSON. Utilisez ces deux boutons pour les sauvegarder et les restaurer séparément.
+          </p>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 12 }}>
+            <button
+              className="btn btn-outline"
+              onClick={handleExportAttachments}
+              disabled={attachmentsBackupLoading}
+            >
+              {attachmentsBackupLoading ? '⏳ Export en cours…' : '📦 Exporter les pièces jointes (.zip)'}
+            </button>
+          </div>
+
+          <div>
+            <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>
+              Restaurer depuis un ZIP (après import JSON)
+            </label>
+            <input
+              ref={attachmentsImportRef}
+              type="file"
+              accept=".zip,application/zip"
+              onChange={handleImportAttachments}
+              disabled={attachmentsImportLoading}
+              style={{ fontSize: 13 }}
+            />
+            {attachmentsImportLoading && <span style={{ marginLeft: 8, fontSize: 13, color: '#4338ca' }}>⏳ Import en cours…</span>}
+          </div>
+
+          {attachmentsImportResult && (
+            <div style={{
+              marginTop: 10, padding: 10, borderRadius: 6, fontSize: 13,
+              background: attachmentsImportResult.success ? '#d1fae5' : '#fee2e2',
+              color: attachmentsImportResult.success ? '#065f46' : '#991b1b',
+            }}>
+              {attachmentsImportResult.message}
+              {attachmentsImportResult.success && (
+                <span style={{ marginLeft: 8, opacity: 0.8 }}>
+                  ({attachmentsImportResult.sheetsRestored} restaurée(s), {attachmentsImportResult.sheetsSkipped} ignorée(s))
                 </span>
               )}
             </div>

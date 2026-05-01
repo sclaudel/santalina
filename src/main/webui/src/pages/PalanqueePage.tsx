@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { Fragment, useState, useEffect, useRef, useCallback } from 'react';
 import { slotDiverService } from '../services/slotDiverService';
 import { palanqueeService } from '../services/palanqueeService';
 import { slotDiveService } from '../services/slotDiveService';
@@ -222,12 +222,11 @@ function DropZone({
         onDragEnter={() => onDragEnterEnd(palanqueeId)}
       >
         {divers.map(d => (
-          <>
+          <Fragment key={d.id}>
             {isActive && insertBeforeId === d.id && (
               <div key={`ins-${d.id}`} className="palanquee-insert-line" />
             )}
             <DiverCard
-              key={d.id}
               diver={d}
               onDragStart={onDragStart}
               onDragEnter={() => onDragEnterCard(palanqueeId, d.id)}
@@ -240,7 +239,7 @@ function DropZone({
               movingToWlId={movingToWlId}
               aptitudesOptions={aptitudesOptions}
             />
-          </>
+          </Fragment>
         ))}
         {isActive && insertBeforeId === null && (
           <div className="palanquee-insert-line" />
@@ -569,9 +568,10 @@ export function PalanqueePage({ slotId, onBack }: Props) {
     }));
 
     try {
-      // En mode multi-plongée, passer fromPalanqueeId pour ne désassigner que de
-      // cette plongée-ci (le plongeur reste dans les autres plongées)
-      const fromId = targetPalanqueeId === null ? currentPalanqueeId : null;
+      // Toujours passer la palanquée source quand elle est connue :
+      // cela garantit un vrai "move" (pas de doublon résiduel) tout en
+      // ne désassignant que la source courante en mode multi-plongée.
+      const fromId = currentPalanqueeId;
       await palanqueeService.assign(slotId, diverId, targetPalanqueeId, fromId);
       if (targetPalanqueeId !== null) {
         const updatedPal = palanquees.find(p => p.id === targetPalanqueeId)!;

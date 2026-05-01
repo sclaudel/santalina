@@ -142,5 +142,27 @@ public class BackupDto {
             int waitingListRestored,
             int slotDivesRestored
     ) {}
+
+    /** Entrée du manifeste d'un backup de pièces jointes */
+    public record SheetManifestEntry(
+            String  slotDate,      // ISO YYYY-MM-DD
+            String  slotStartTime, // HH:mm:ss
+            String  originalName,
+            String  storedName,
+            String  relativePath,  // chemin relatif stocké en base
+            String  contentType,
+            long    fileSize,
+            String  uploadedAt,
+            String  expiresAt,
+            String  uploaderEmail  // peut être null
+    ) {}
+
+    /** Résultat d'un import de pièces jointes */
+    public record AttachmentsImportResult(
+            boolean success,
+            String  message,
+            int     sheetsRestored,
+            int     sheetsSkipped
+    ) {}
 }
 

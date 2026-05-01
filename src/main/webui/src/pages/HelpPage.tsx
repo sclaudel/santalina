@@ -625,6 +625,44 @@ export function HelpPage() {
       ),
     },
 
+    // ── DÉPÔT DES FICHES DE SÉCURITÉ ─────────────────────────────────────────
+    {
+      id: 'depot-fiches',
+      icon: '📋',
+      title: 'Déposer les fiches de sécurité',
+      roles: ['ADMIN', 'DIVE_DIRECTOR'],
+      content: (
+        <>
+          <p>Après un créneau passé, le directeur de plongée peut déposer les fiches de sécurité remplies (images ou PDF) directement depuis l'application.</p>
+          <h4>Accéder à la modale</h4>
+          <ol>
+            <li>Cliquez sur le créneau passé pour ouvrir le panneau de détails.</li>
+            <li>Cliquez sur le bouton <strong>📋 Fiches de sécurité</strong>.</li>
+          </ol>
+          <h4>Déposer des fichiers</h4>
+          <ol>
+            <li>Cliquez sur <strong>📎 Sélectionner des fichiers</strong> et choisissez jusqu'à 4 fichiers (JPG, PNG, WEBP ou PDF, max 3 Mo chacun).</li>
+            <li>Optionnellement, saisissez des <strong>destinataires supplémentaires</strong> dans le champ prévu (adresses séparées par des virgules) : ces personnes recevront aussi la notification par e-mail avec les fichiers en pièce jointe (adresses configurées en <strong>To</strong>, adresses supplémentaires en <strong>CC visible</strong>).</li>
+            <li>Cliquez sur <strong>📤 Envoyer</strong>.</li>
+          </ol>
+          <div className="help-tip">💡 Le champ « Destinataires supplémentaires » permet d'envoyer la notification au président ou au responsable technique du club invité, en plus des adresses configurées dans l'administration. Les destinataires en copie voient les autres adresses présentes en CC.</div>
+          <div className="help-tip">💡 Si des fiches ont déjà été déposées sur ce créneau (réenvoi), l'e-mail le mentionnera explicitement et le sujet contiendra la mention « (complément) ».</div>
+          <h4>Télécharger les fiches</h4>
+          <p>Tous les fichiers déposés sont accessibles depuis la même modale :</p>
+          <ul>
+            <li>Cliquez sur <strong>⬇️ Télécharger tout (.zip)</strong> pour obtenir une archive ZIP.</li>
+            <li>Les admins peuvent supprimer un fichier individuellement avec le bouton 🗑️.</li>
+          </ul>
+          <h4>Droits d'accès</h4>
+          <ul>
+            <li><strong>DP créateur ou assigné</strong> — peut déposer et consulter les fiches.</li>
+            <li><strong>Admin</strong> — accès complet y compris la suppression.</li>
+            <li><strong>Liste blanche</strong> — les adresses configurées dans <em>Administration → Fiches de sécurité → Accès en lecture</em> peuvent consulter et télécharger les fiches.</li>
+          </ul>
+        </>
+      ),
+    },
+
     // ── SAUVEGARDE & RESTAURATION (ADMIN) ───────────────────────────────────
     {
       id: 'sauvegarde',
@@ -659,6 +697,20 @@ export function HelpPage() {
             <li>Un résumé indique le nombre d'éléments restaurés (config, utilisateurs, créneaux, plongeurs, palanquées, listes d'attente).</li>
           </ol>
           <div className="help-warning">⚠️ L'import est irréversible : toutes les données existantes sont supprimées avant la restauration. Effectuez une sauvegarde complète juste avant si nécessaire.</div>
+
+          <h4>Sauvegarde des pièces jointes (fiches de sécurité)</h4>
+          <p>Les fiches de sécurité déposées par les directeurs de plongée <strong>ne sont pas incluses</strong> dans la sauvegarde JSON (volume trop important). Elles disposent de leur propre sauvegarde/restauration.</p>
+          <ol>
+            <li>Cliquez sur <strong>📦 Exporter les pièces jointes (.zip)</strong> pour télécharger une archive contenant tous les fichiers déposés avec leurs métadonnées.</li>
+          </ol>
+          <h4>Restaurer les pièces jointes</h4>
+          <p>À effectuer <em>après</em> l'import de la sauvegarde JSON.</p>
+          <ol>
+            <li>Importez d'abord le fichier <code>.json</code> (les créneaux doivent être présents en base).</li>
+            <li>Sélectionnez ensuite le fichier <code>santalina-attachments-AAAA-MM-JJ.zip</code> dans la section <strong>Restaurer depuis un ZIP</strong>.</li>
+            <li>L'application reccrée les enregistrements dans la base et copie les fichiers au bon emplacement.</li>
+          </ol>
+          <div className="help-tip">💡 Si le ZIP de pièces jointes n'est pas restauré, les créneaux n'afficheront aucune fiche déposée — c'est le comportement souhaité.</div>
         </>
       ),
     },
@@ -1102,6 +1154,23 @@ export function HelpPage() {
         ],
       },
       {
+        icon: '📋', title: 'Déposer les fiches de sécurité',
+        items: [
+          { type: 'paragraph' as const, text: 'Après un créneau passé, le directeur de plongée (ou un administrateur) peut déposer les fiches de sécurité remplies (images ou PDF).' },
+          { type: 'h4' as const, text: 'Déposer des fiches' },
+          { type: 'ol' as const, items: [
+            'Ouvrez le panneau de détails d\'un créneau passé.',
+            'Cliquez sur 📋 Fiches de sécurité.',
+            'Cliquez sur 📎 Sélectionner des fichiers.',
+            '(Optionnel) Ajoutez des destinataires supplémentaires séparés par des virgules (adresses configurées en To, supplémentaires en CC visible).',
+            'Cliquez sur 📤 Envoyer.',
+          ] },
+          { type: 'tip' as const, text: 'Si des fiches ont déjà été déposées pour ce créneau, l\'e-mail de notification indiquera qu\'il s\'agit d\'un envoi complémentaire.' },
+          { type: 'h4' as const, text: 'Télécharger les fiches déposées' },
+          { type: 'ol' as const, items: ['Dans la modale Fiches de sécurité, cliquez sur 📦 Télécharger toutes les fiches (.zip) pour obtenir toutes les pièces jointes en une seule archive.'] },
+        ],
+      },
+      {
         icon: '🫧', title: 'Organiser les palanquées',
         items: [
           { type: 'paragraph' as const, text: 'La page d\'organisation des palanquées permet de répartir les plongeurs en groupes de plongée par glisser-déposer.' },
@@ -1276,9 +1345,11 @@ export function HelpPage() {
           { type: 'h4' as const, text: 'Exporter configuration + utilisateurs' },
           { type: 'paragraph' as const, text: 'Exporte la configuration et les comptes utilisateurs uniquement (sans créneaux ni listes d\'attente).' },
           { type: 'ol' as const, items: ['Cliquez sur Exporter configuration + utilisateurs.', 'Le fichier santalina-config-users-AAAA-MM-JJ.json est téléchargé.'] },
+          { type: 'h4' as const, text: 'Sauvegarde des pièces jointes' },
+          { type: 'paragraph' as const, text: 'Les fiches de sécurité ne sont pas dans la sauvegarde JSON. Utilisez le bouton Exporter les pièces jointes (.zip) pour les sauvegarder séparément.' },
           { type: 'h4' as const, text: 'Importer une sauvegarde' },
-          { type: 'ol' as const, items: ['Cliquez sur Choisir un fichier et sélectionnez le fichier .json.', 'Cliquez sur Importer.', 'Un résumé indique le nombre d\'éléments restaurés.'] },
-          { type: 'warning' as const, text: 'L\'import est irréversible : toutes les données existantes sont supprimées avant la restauration.' },
+          { type: 'ol' as const, items: ['Cliquez sur Choisir un fichier et sélectionnez le fichier .json.', 'Cliquez sur Importer.', 'Un résumé indique le nombre d\'éléments restaurés.', 'Importez ensuite le ZIP des pièces jointes pour restaurer les fiches de sécurité.'] },
+          { type: 'warning' as const, text: 'L\'import JSON est irréversible : toutes les données existantes sont supprimées avant la restauration. Sans import du ZIP de pièces jointes, les créneaux ne présenteront aucune fiche attachée.' },
         ],
       },
     ] : []),

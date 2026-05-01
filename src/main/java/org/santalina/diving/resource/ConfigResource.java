@@ -198,6 +198,15 @@ public class ConfigResource {
                 request != null ? request.template() : null);
     }
 
+    @PUT
+    @Path("/safety-sheet-config")
+    @RolesAllowed("ADMIN")
+    public ConfigResponse updateSafetySheetConfig(UpdateSafetySheetConfigRequest request) {
+        return configService.updateSafetySheetConfig(
+                request != null ? request.safetySheetNotificationEmails() : null,
+                request != null ? request.safetySheetViewerEmails()       : null);
+    }
+
     @POST
     @Path("/report-email-send")
     @RolesAllowed("ADMIN")
