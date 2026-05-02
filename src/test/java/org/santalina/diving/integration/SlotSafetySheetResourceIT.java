@@ -202,7 +202,7 @@ class SlotSafetySheetResourceIT {
                 .then()
                 .statusCode(200)
                 .body("$", hasSize(1))
-                .body("[0].originalName", equalTo("fiche_test.pdf"))
+                .body("[0].originalName", equalTo("fiche_test_uuid.pdf"))
                 .body("[0].contentType", equalTo("application/pdf"))
                 .body("[0].fileSize", equalTo(1024));
         } finally {
@@ -402,7 +402,7 @@ class SlotSafetySheetResourceIT {
 
     @Test
     @TestSecurity(user = "dp_ss_naming@test.com", roles = {"DIVE_DIRECTOR"})
-    void upload_shouldStoreFileName_withDateDpSlotAndIncrement() {
+    void upload_shouldStoreFileName_withDatePrefixDpLastNameSlotIdAndIncrement() {
         DiveSlot slot = createPastSlot("dp_ss_naming@test.com");
         try {
             given()
@@ -414,8 +414,8 @@ class SlotSafetySheetResourceIT {
                 .body("$", hasSize(2));
 
             List<SlotSafetySheet> sheets = listSheets(slot.id);
-            assertTrue(sheets.stream().anyMatch(s -> s.storedName.matches("2020-06-15_test-dp_slot" + slot.id + "_001\\.pdf")));
-            assertTrue(sheets.stream().anyMatch(s -> s.storedName.matches("2020-06-15_test-dp_slot" + slot.id + "_002\\.pdf")));
+            assertTrue(sheets.stream().anyMatch(s -> s.storedName.matches("2020-06-15_Fiche-Securite-Saint-Lin-Test-D-" + slot.id + "_001\\.pdf")));
+            assertTrue(sheets.stream().anyMatch(s -> s.storedName.matches("2020-06-15_Fiche-Securite-Saint-Lin-Test-D-" + slot.id + "_002\\.pdf")));
         } finally {
             cleanup(slot.id);
         }

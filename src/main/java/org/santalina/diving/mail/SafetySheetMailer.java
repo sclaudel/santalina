@@ -103,7 +103,10 @@ public class SafetySheetMailer {
                 if (Files.exists(path)) {
                     try {
                         byte[] data = Files.readAllBytes(path);
-                        mail.addAttachment(sheet.originalName, data, sheet.contentType);
+                        String attachmentName = (sheet.storedName != null && !sheet.storedName.isBlank())
+                                ? sheet.storedName
+                                : sheet.originalName;
+                        mail.addAttachment(attachmentName, data, sheet.contentType);
                     } catch (IOException e) {
                         LOG.warnf("[SafetySheet] Impossible de lire le fichier %s pour la pièce jointe : %s",
                                 sheet.filePath, e.getMessage());

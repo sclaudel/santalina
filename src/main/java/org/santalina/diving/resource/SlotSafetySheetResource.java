@@ -75,9 +75,10 @@ public class SlotSafetySheetResource {
             String uploaderName
     ) {
         public static SafetySheetResponse from(SlotSafetySheet s) {
+            String displayName = (s.storedName != null && !s.storedName.isBlank()) ? s.storedName : s.originalName;
             return new SafetySheetResponse(
                     s.id,
-                    s.originalName,
+                displayName,
                     s.contentType,
                     s.fileSize,
                     s.uploadedAt,
@@ -320,7 +321,10 @@ public class SlotSafetySheetResource {
                     LOG.warnf("Fichier introuvable lors du ZIP : %s", file);
                     continue;
                 }
-                zip.putNextEntry(new ZipEntry(sheet.originalName));
+                String entryName = (sheet.storedName != null && !sheet.storedName.isBlank())
+                        ? sheet.storedName
+                        : sheet.originalName;
+                zip.putNextEntry(new ZipEntry(entryName));
                 Files.copy(file, zip);
                 zip.closeEntry();
             }
@@ -371,26 +375,33 @@ public class SlotSafetySheetResource {
 
     /**
      * Construit un nom stocké lisible et stable :
-     * YYYY-MM-DD_nom-prenom_slot<ID>_<increment>.<ext>
+     * YYYY-MM-DD_Fiche-Securite-Saint-Lin-<Nomdp>-<InitialPrenom>-<ID>_<increment>.<ext>
      */
     private static String buildStoredName(DiveSlot slot, User uploader, int sequence, String ext) {
-        String datePart = slot.slotDate.format(DateTimeFormatter.ISO_LOCAL_DATE);
-        String dpName = buildDpSlug(uploader);
-        return String.format("%s_%s_slot%d_%03d.%s", datePart, dpName, slot.id, sequence, ext);
+        String datePart  = slot.slotDate.format(DateTimeFormatter.ISO_LOCAL_DATE);
+        String dpName    = buildLastNameSlug(uploader);
+        String firstInit = buildFirstInitial(uploader);
+        String middle = firstInit.isBlank()
+                ? String.format("Fiche-Securite-Saint-Lin-%s-%d", dpName, slot.id)
+                : String.format("Fiche-Securite-Saint-Lin-%s-%s-%d", dpName, firstInit, slot.id);
+        return String.format("%s_%s_%03d.%s", datePart, middle, sequence, ext);
     }
 
-    private static String buildDpSlug(User uploader) {
-        String rawLast = uploader != null && uploader.lastName != null ? uploader.lastName : "dp";
-        String rawFirst = uploader != null && uploader.firstName != null ? uploader.firstName : "inconnu";
-        String raw = rawLast + "-" + rawFirst;
-
+    private static String buildLastNameSlug(User uploader) {
+        String raw = uploader != null && uploader.lastName != null ? uploader.lastName : "Dp";
         String ascii = Normalizer.normalize(raw, Normalizer.Form.NFD)
                 .replaceAll("\\p{M}", "");
-        String slug = ascii.toLowerCase()
-                .replaceAll("[^a-z0-9-]", "-")
-                .replaceAll("-+", "-")
-                .replaceAll("(^-|-$)", "");
-        return slug.isBlank() ? "dp-inconnu" : slug;
+        String slug = ascii.replaceAll("[^a-zA-Z0-9]", "");
+        if (slug.isBlank()) return "Dp";
+        return Character.toUpperCase(slug.charAt(0)) + slug.substring(1).toLowerCase();
+    }
+
+    private static String buildFirstInitial(User uploader) {
+        if (uploader == null || uploader.firstName == null || uploader.firstName.isBlank()) return "";
+        String ascii = Normalizer.normalize(uploader.firstName.trim(), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .replaceAll("[^a-zA-Z]", "");
+        return ascii.isBlank() ? "" : String.valueOf(Character.toUpperCase(ascii.charAt(0)));
     }
 
     /** Garde uniquement le nom de fichier sans chemin et nettoie les caractères dangereux. */
