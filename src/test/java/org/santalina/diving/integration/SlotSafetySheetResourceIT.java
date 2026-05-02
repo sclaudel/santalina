@@ -13,9 +13,11 @@ import org.santalina.diving.domain.UserRole;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests d'intégration pour SlotSafetySheetResource.
@@ -165,6 +167,11 @@ class SlotSafetySheetResourceIT {
         SlotDiver.delete("slot", slot);
         if (slot.createdBy != null) slot.createdBy.delete();
         slot.delete();
+    }
+
+    @Transactional
+    List<SlotSafetySheet> listSheets(Long slotId) {
+        return SlotSafetySheet.findBySlot(slotId);
     }
 
     // ── GET liste ─────────────────────────────────────────────────────────────
@@ -388,6 +395,27 @@ class SlotSafetySheetResourceIT {
                 .then()
                 .statusCode(200)
                 .body("$", hasSize(1));
+        } finally {
+            cleanup(slot.id);
+        }
+    }
+
+    @Test
+    @TestSecurity(user = "dp_ss_naming@test.com", roles = {"DIVE_DIRECTOR"})
+    void upload_shouldStoreFileName_withDateDpSlotAndIncrement() {
+        DiveSlot slot = createPastSlot("dp_ss_naming@test.com");
+        try {
+            given()
+                .multiPart("file1", "fiche1.pdf", "fake pdf 1".getBytes(), "application/pdf")
+                .multiPart("file2", "fiche2.pdf", "fake pdf 2".getBytes(), "application/pdf")
+                .when().post("/api/slots/" + slot.id + "/safety-sheets")
+                .then()
+                .statusCode(200)
+                .body("$", hasSize(2));
+
+            List<SlotSafetySheet> sheets = listSheets(slot.id);
+            assertTrue(sheets.stream().anyMatch(s -> s.storedName.matches("2020-06-15_test-dp_slot" + slot.id + "_001\\.pdf")));
+            assertTrue(sheets.stream().anyMatch(s -> s.storedName.matches("2020-06-15_test-dp_slot" + slot.id + "_002\\.pdf")));
         } finally {
             cleanup(slot.id);
         }
