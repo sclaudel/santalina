@@ -201,8 +201,9 @@ export function SlotBlock({
     ))
   );
 
-  // Un créneau est passé s'il est strictement avant aujourd'hui
-  const isPastSlot = slot.slotDate < new Date().toISOString().slice(0, 10);
+  // Un créneau est passé dès que sa date+heure de fin est atteinte.
+  const slotEndAt = new Date(`${slot.slotDate}T${slot.endTime}:00`);
+  const isPastSlot = !Number.isNaN(slotEndAt.getTime()) && slotEndAt <= new Date();
 
   const usedDivers     = divers.length;
   const color          = getCapacityColor(usedDivers, currentDiverCount);

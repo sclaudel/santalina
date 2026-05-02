@@ -227,7 +227,8 @@ public class SlotSafetySheetResource {
     }
 
     private void requirePastSlot(DiveSlot slot) {
-        if (!slot.slotDate.isBefore(LocalDate.now())) {
+        LocalDateTime slotEndAt = LocalDateTime.of(slot.slotDate, slot.endTime);
+        if (slotEndAt.isAfter(LocalDateTime.now())) {
             throw new BadRequestException("Les fiches de sécurité ne peuvent être déposées que sur des créneaux passés");
         }
     }

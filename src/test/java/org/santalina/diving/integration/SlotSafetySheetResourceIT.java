@@ -100,6 +100,41 @@ class SlotSafetySheetResourceIT {
         return slot;
     }
 
+    /** Crée un créneau du jour déjà terminé. */
+    @Transactional
+    DiveSlot createEndedTodaySlot(String creatorEmail) {
+        User creator = new User();
+        creator.email        = creatorEmail;
+        creator.firstName    = "dp";
+        creator.lastName     = "TODAY";
+        creator.passwordHash = "x";
+        creator.activated    = true;
+        creator.role         = UserRole.DIVE_DIRECTOR;
+        creator.roles        = java.util.Set.of(UserRole.DIVE_DIRECTOR);
+        creator.persist();
+
+        LocalDateTime now = LocalDateTime.now().minusHours(2);
+
+        DiveSlot slot = new DiveSlot();
+        slot.slotDate   = now.toLocalDate();
+        slot.startTime  = now.toLocalTime().minusHours(1).withSecond(0).withNano(0);
+        slot.endTime    = now.toLocalTime().withSecond(0).withNano(0);
+        slot.diverCount = 10;
+        slot.createdBy  = creator;
+        slot.persist();
+
+        SlotDiver dp = new SlotDiver();
+        dp.slot       = slot;
+        dp.firstName  = "dp";
+        dp.lastName   = "TODAY";
+        dp.level      = "MF1";
+        dp.email      = creatorEmail;
+        dp.isDirector = true;
+        dp.persist();
+
+        return slot;
+    }
+
     /** Attache une fiche de sécurité fictive (sans fichier physique) à un créneau. */
     @Transactional
     SlotSafetySheet attachFakeSheet(Long slotId, Long uploaderId) {
@@ -194,6 +229,23 @@ class SlotSafetySheetResourceIT {
                 .when().post("/api/slots/" + slot.id + "/safety-sheets")
                 .then()
                 .statusCode(400);
+        } finally {
+            cleanup(slot.id);
+        }
+    }
+
+    @Test
+    @TestSecurity(user = "dp_ss_today_end@test.com", roles = {"DIVE_DIRECTOR"})
+    void upload_endedTodaySlot_shouldReturn200() {
+        DiveSlot slot = createEndedTodaySlot("dp_ss_today_end@test.com");
+        try {
+            byte[] content = "fake pdf content".getBytes();
+            given()
+                .multiPart("file1", "test.pdf", content, "application/pdf")
+                .when().post("/api/slots/" + slot.id + "/safety-sheets")
+                .then()
+                .statusCode(200)
+                .body("$", hasSize(1));
         } finally {
             cleanup(slot.id);
         }

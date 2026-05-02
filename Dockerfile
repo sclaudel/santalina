@@ -21,9 +21,11 @@ COPY --chown=appuser:appgroup build/quarkus-app/quarkus/ quarkus/
 
 EXPOSE 8085
 
+ENV TZ=Europe/Paris
 ENV QUARKUS_PROFILE=prod
 
 CMD ["java", \
+    "-Duser.timezone=Europe/Paris", \
      "-Dquarkus.http.host=0.0.0.0", \
      "-Djava.util.logging.manager=org.jboss.logmanager.LogManager", \
      "-jar", "quarkus-run.jar"]
