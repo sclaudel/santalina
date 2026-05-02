@@ -29,10 +29,10 @@ import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.text.Normalizer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -132,9 +132,11 @@ public class SlotSafetySheetResource {
 
         User uploader = User.findByEmail(identity.getPrincipal().getName());
 
+        int nextSequence = (int) existing;
         List<SlotSafetySheet> newSheets = new java.util.ArrayList<>();
         for (FileUpload upload : uploads) {
-            newSheets.add(saveSheet(slot, uploader, upload));
+            nextSequence++;
+            newSheets.add(saveSheet(slot, uploader, upload, nextSequence));
         }
 
         // Désactiver le rappel de fiche de sécurité pour ce créneau
@@ -280,9 +282,9 @@ public class SlotSafetySheetResource {
         }
     }
 
-    private SlotSafetySheet saveSheet(DiveSlot slot, User uploader, FileUpload upload) {
+    private SlotSafetySheet saveSheet(DiveSlot slot, User uploader, FileUpload upload, int sequence) {
         String ext          = getExtension(upload.fileName());
-        String storedName   = UUID.randomUUID() + "." + ext;
+        String storedName   = buildStoredName(slot, uploader, sequence, ext);
         String relativePath = "attachments/safety-sheets/" + slot.id + "/" + storedName;
         java.nio.file.Path target = Paths.get(divingConfig.dataDir()).resolve(relativePath);
 
@@ -365,6 +367,30 @@ public class SlotSafetySheetResource {
             case "webp" -> "image/webp";
             default     -> "image/jpeg";
         };
+    }
+
+    /**
+     * Construit un nom stocké lisible et stable :
+     * YYYY-MM-DD_nom-prenom_slot<ID>_<increment>.<ext>
+     */
+    private static String buildStoredName(DiveSlot slot, User uploader, int sequence, String ext) {
+        String datePart = slot.slotDate.format(DateTimeFormatter.ISO_LOCAL_DATE);
+        String dpName = buildDpSlug(uploader);
+        return String.format("%s_%s_slot%d_%03d.%s", datePart, dpName, slot.id, sequence, ext);
+    }
+
+    private static String buildDpSlug(User uploader) {
+        String rawLast = uploader != null && uploader.lastName != null ? uploader.lastName : "dp";
+        String rawFirst = uploader != null && uploader.firstName != null ? uploader.firstName : "inconnu";
+        String raw = rawLast + "-" + rawFirst;
+
+        String ascii = Normalizer.normalize(raw, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "");
+        String slug = ascii.toLowerCase()
+                .replaceAll("[^a-z0-9-]", "-")
+                .replaceAll("-+", "-")
+                .replaceAll("(^-|-$)", "");
+        return slug.isBlank() ? "dp-inconnu" : slug;
     }
 
     /** Garde uniquement le nom de fichier sans chemin et nettoie les caractères dangereux. */
