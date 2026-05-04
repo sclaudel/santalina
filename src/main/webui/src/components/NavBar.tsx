@@ -104,7 +104,7 @@ export function NavBar({ onNavigate, currentPage, selfRegistration = true, maint
       </div>
 
       {showLogin && <LoginModal onClose={() => setShowLogin(false)} selfRegistration={selfRegistration} maintenanceMode={maintenanceMode} announcementShowOnLogin={announcementShowOnLogin} announcementMessage={announcementMessage} />}
-      {/* Bouton hamburger (mobile uniquement) */}}}
+      {/* Bouton hamburger (mobile uniquement) */}
       <button
         className="navbar-hamburger"
         onClick={() => setShowMobileMenu(v => !v)}
