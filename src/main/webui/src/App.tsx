@@ -40,15 +40,10 @@ function AppContent() {
     adminService.getConfig().then(setAppConfig).catch(() => {});
   }, []);
 
-  // Afficher l'annonce après connexion si activée et pas encore vue dans cette session
+  // Afficher l'annonce après connexion si activée
   useEffect(() => {
     if (isAuthenticated && appConfig?.announcementShowAfterLogin && appConfig?.announcementMessage) {
-      const key = `announcement_dismissed_${appConfig.announcementMessage.length}_${appConfig.announcementMessage.slice(0, 20)}`;
-      if (!sessionStorage.getItem(key)) {
-        // Nettoyer les éventuelles anciennes clés
-        Object.keys(sessionStorage).filter(k => k.startsWith('announcement_dismissed')).forEach(k => sessionStorage.removeItem(k));
-        setShowAnnouncement(true);
-      }
+      setShowAnnouncement(true);
     } else {
       setShowAnnouncement(false);
     }
@@ -115,11 +110,7 @@ function AppContent() {
       {showAnnouncement && appConfig && (
         <AnnouncementModal
           message={appConfig.announcementMessage}
-          onClose={() => {
-            const key = `announcement_dismissed_${appConfig.announcementMessage.length}_${appConfig.announcementMessage.slice(0, 20)}`;
-            sessionStorage.setItem(key, '1');
-            setShowAnnouncement(false);
-          }}
+          onClose={() => setShowAnnouncement(false)}
         />
       )}
       <div className="app-content">
