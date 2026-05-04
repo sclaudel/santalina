@@ -165,8 +165,8 @@ export const adminService = {
     return res.data;
   },
 
-  async updateAnnouncement(enabled: boolean, message: string): Promise<AppConfig> {
-    const res = await api.put<AppConfig>('/config/announcement', { enabled, message });
+  async updateAnnouncement(showOnLogin: boolean, showAfterLogin: boolean, message: string): Promise<AppConfig> {
+    const res = await api.put<AppConfig>('/config/announcement', { showOnLogin, showAfterLogin, message });
     return res.data;
   },
 

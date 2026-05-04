@@ -91,7 +91,8 @@ export function AdminPage() {
   const [viewerSuggestions, setViewerSuggestions] = useState<UserSearchResult[]>([]);
   const [viewerSearchLoading, setViewerSearchLoading] = useState(false);
   // Annonce / message
-  const [announcementEnabled, setAnnouncementEnabled] = useState(false);
+  const [announcementShowOnLogin, setAnnouncementShowOnLogin] = useState(false);
+  const [announcementShowAfterLogin, setAnnouncementShowAfterLogin] = useState(false);
   const [announcementMessage, setAnnouncementMessage] = useState('');
   const [announcementLoading, setAnnouncementLoading] = useState(false);
   const viewerSearchRef = useRef<HTMLDivElement>(null);
@@ -186,7 +187,8 @@ export function AdminPage() {
       setReportEmailRecipients(c.reportEmailRecipients ?? '');
       setSafetySheetNotifEmails(c.safetySheetNotificationEmails ?? '');
       setSafetySheetViewerEmails(c.safetySheetViewerEmails ?? '');
-      setAnnouncementEnabled(c.announcementEnabled ?? false);
+      setAnnouncementShowOnLogin(c.announcementShowOnLogin ?? false);
+      setAnnouncementShowAfterLogin(c.announcementShowAfterLogin ?? false);
       setAnnouncementMessage(c.announcementMessage ?? '');
     } catch {
       setError('Erreur lors du chargement des données');
@@ -488,9 +490,9 @@ export function AdminPage() {
   const handleUpdateAnnouncement = async () => {
     setMsg(''); setError(''); setAnnouncementLoading(true);
     try {
-      const updated = await adminService.updateAnnouncement(announcementEnabled, announcementMessage);
+      const updated = await adminService.updateAnnouncement(announcementShowOnLogin, announcementShowAfterLogin, announcementMessage);
       setConfig(updated);
-      setMsg(announcementEnabled ? 'Message d\'annonce activé.' : 'Message d\'annonce désactivé.');
+      setMsg('Message d\'annonce enregistré.');
     } catch (err: unknown) { setError(getErrorMessage(err)); }
     finally { setAnnouncementLoading(false); }
   };
@@ -807,16 +809,28 @@ export function AdminPage() {
           <div className="toggle-setting" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 12 }}>
             <div className="toggle-setting-info">
               <strong>📢 Message d'annonce</strong>
-              <span>Affiché en bannière sur la page de connexion et en modale après connexion. Désactiver le message le masque sans le supprimer.</span>
+              <span>Désactiver les affichages masque le message sans le supprimer.</span>
             </div>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <span style={{ fontSize: 13, minWidth: 220 }}>Afficher sur la page de connexion&nbsp;:</span>
               <button
                 type="button"
-                className={`toggle-btn ${announcementEnabled ? 'toggle-on' : 'toggle-off'}`}
-                style={announcementEnabled ? { background: '#3b82f6', borderColor: '#3b82f6' } : {}}
-                onClick={() => setAnnouncementEnabled(v => !v)}
+                className={`toggle-btn ${announcementShowOnLogin ? 'toggle-on' : 'toggle-off'}`}
+                style={announcementShowOnLogin ? { background: '#3b82f6', borderColor: '#3b82f6' } : {}}
+                onClick={() => setAnnouncementShowOnLogin(v => !v)}
               >
-                {announcementEnabled ? '📢 Activé' : '✅ Désactivé'}
+                {announcementShowOnLogin ? '📢 Activé' : '✅ Désactivé'}
+              </button>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <span style={{ fontSize: 13, minWidth: 220 }}>Afficher en modale après connexion&nbsp;:</span>
+              <button
+                type="button"
+                className={`toggle-btn ${announcementShowAfterLogin ? 'toggle-on' : 'toggle-off'}`}
+                style={announcementShowAfterLogin ? { background: '#3b82f6', borderColor: '#3b82f6' } : {}}
+                onClick={() => setAnnouncementShowAfterLogin(v => !v)}
+              >
+                {announcementShowAfterLogin ? '📢 Activé' : '✅ Désactivé'}
               </button>
             </label>
             <textarea

@@ -7,11 +7,11 @@ interface Props {
   onClose: () => void;
   selfRegistration?: boolean;
   maintenanceMode?: boolean;
-  announcementEnabled?: boolean;
+  announcementShowOnLogin?: boolean;
   announcementMessage?: string;
 }
 
-export function LoginModal({ onClose, selfRegistration = true, maintenanceMode = false, announcementEnabled = false, announcementMessage = '' }: Props) {
+export function LoginModal({ onClose, selfRegistration = true, maintenanceMode = false, announcementShowOnLogin = false, announcementMessage = '' }: Props) {
   const { login, register } = useAuth();
   const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
   const [email, setEmail] = useState('');
@@ -111,7 +111,7 @@ export function LoginModal({ onClose, selfRegistration = true, maintenanceMode =
         )}
 
         {/* Bannière annonce */}
-        {announcementEnabled && announcementMessage && mode === 'login' && (
+        {announcementShowOnLogin && announcementMessage && mode === 'login' && (
           <div className="alert" style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: '#e8f4fd', border: '1px solid #90cdf4', color: '#1a365d', borderRadius: 6, padding: '10px 14px' }}>
             📢 <span dangerouslySetInnerHTML={{ __html: announcementMessage }} />
           </div>

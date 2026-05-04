@@ -42,7 +42,7 @@ function AppContent() {
 
   // Afficher l'annonce après connexion si activée et pas encore vue dans cette session
   useEffect(() => {
-    if (isAuthenticated && appConfig?.announcementEnabled && appConfig?.announcementMessage
+    if (isAuthenticated && appConfig?.announcementShowAfterLogin && appConfig?.announcementMessage
         && !sessionStorage.getItem('announcement_dismissed')) {
       setShowAnnouncement(true);
     }
@@ -87,7 +87,8 @@ function AppContent() {
   const publicAccess = appConfig === null || appConfig.publicAccess;
   const selfRegistration = appConfig === null || appConfig.selfRegistration;
   const maintenanceMode = appConfig?.maintenanceMode ?? false;
-  const announcementEnabled = appConfig?.announcementEnabled ?? false;
+  const announcementShowOnLogin = appConfig?.announcementShowOnLogin ?? false;
+  const announcementShowAfterLogin = appConfig?.announcementShowAfterLogin ?? false;
   const announcementMessage = appConfig?.announcementMessage ?? '';
 
   if (!publicAccess && !isAuthenticated) {
@@ -97,7 +98,7 @@ function AppContent() {
           <div style={{ fontSize: 48 }}>🔒</div>
           <h2 style={{ fontSize: 22, fontWeight: 700 }}>Accès réservé aux membres</h2>
           <p style={{ color: '#6b7280' }}>Connectez-vous pour accéder au calendrier de réservation.</p>
-          <NavBar onNavigate={navigate} currentPage={currentPage} selfRegistration={selfRegistration} maintenanceMode={maintenanceMode} announcementEnabled={announcementEnabled} announcementMessage={announcementMessage} />
+          <NavBar onNavigate={navigate} currentPage={currentPage} selfRegistration={selfRegistration} maintenanceMode={maintenanceMode} announcementShowOnLogin={announcementShowOnLogin} announcementMessage={announcementMessage} />
         </div>
       </div>
     );
@@ -105,7 +106,7 @@ function AppContent() {
 
   return (
     <div className="app">
-      <NavBar onNavigate={navigate} currentPage={currentPage} selfRegistration={selfRegistration} maintenanceMode={maintenanceMode} announcementEnabled={announcementEnabled} announcementMessage={announcementMessage} />
+      <NavBar onNavigate={navigate} currentPage={currentPage} selfRegistration={selfRegistration} maintenanceMode={maintenanceMode} announcementShowOnLogin={announcementShowOnLogin} announcementMessage={announcementMessage} />
       <div className="app-content">
         {showAnnouncement && appConfig && (
           <AnnouncementModal
