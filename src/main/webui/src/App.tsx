@@ -88,7 +88,6 @@ function AppContent() {
   const selfRegistration = appConfig === null || appConfig.selfRegistration;
   const maintenanceMode = appConfig?.maintenanceMode ?? false;
   const announcementShowOnLogin = appConfig?.announcementShowOnLogin ?? false;
-  const announcementShowAfterLogin = appConfig?.announcementShowAfterLogin ?? false;
   const announcementMessage = appConfig?.announcementMessage ?? '';
 
   if (!publicAccess && !isAuthenticated) {
