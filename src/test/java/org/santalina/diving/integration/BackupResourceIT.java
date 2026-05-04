@@ -9,13 +9,18 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.santalina.diving.domain.DiveSlot;
+import org.santalina.diving.domain.SlotSafetySheet;
 import org.santalina.diving.domain.User;
 import org.santalina.diving.domain.UserRole;
 import org.santalina.diving.domain.WaitingListEntry;
 
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
@@ -583,5 +588,89 @@ class BackupResourceIT {
                 .statusCode(200)
                 .body("[0].divers", hasSize(1))
                 .body("[0].divers[0].aptitudes", equalTo("PE40"));
+    }
+
+    /**
+     * Vérifie le round-trip attachments avec le format de nommage courant :
+     * YYYY-MM-DD_Fiche-Securite-Saint-Lin-Nomdp-InitialPrenom-ID_XXX.ext
+     */
+    @Test
+    @Order(18)
+    @TestSecurity(user = "admin@test.com", roles = {"ADMIN"})
+    void importAttachments_withNewNamingFormat_shouldRestoreSheet() throws Exception {
+        DiveSlot slot = createSlotForAttachmentRoundTrip();
+        try {
+            String slotDate   = "2099-10-01";
+            String startTime  = "08:00";
+            String storedName = slotDate + "_Fiche-Securite-Saint-Lin-Dupont-J-" + slot.id + "_001.pdf";
+
+            String manifest = "[{" +
+                    "\"slotDate\":\"" + slotDate + "\"," +
+                    "\"slotStartTime\":\"" + startTime + "\"," +
+                    "\"originalName\":\"fiche.pdf\"," +
+                    "\"storedName\":\"" + storedName + "\"," +
+                    "\"relativePath\":\"attachments/safety-sheets/" + slot.id + "/" + storedName + "\"," +
+                    "\"contentType\":\"application/pdf\"," +
+                    "\"fileSize\":1024," +
+                    "\"uploadedAt\":\"2099-10-01T10:00:00\"," +
+                    "\"expiresAt\":\"2100-10-01T10:00:00\"," +
+                    "\"uploaderEmail\":null" +
+                    "}]";
+
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            try (ZipOutputStream zos = new ZipOutputStream(bos)) {
+                zos.putNextEntry(new ZipEntry("manifest.json"));
+                zos.write(manifest.getBytes(StandardCharsets.UTF_8));
+                zos.closeEntry();
+                String entryName = slotDate + "_" + startTime.replace(":", "") + "/" + storedName;
+                zos.putNextEntry(new ZipEntry(entryName));
+                zos.write("fake pdf content".getBytes());
+                zos.closeEntry();
+            }
+
+            given()
+                    .multiPart("file", "attachments.zip", bos.toByteArray(), "application/zip")
+                    .when().post("/api/admin/backup/import/attachments")
+                    .then()
+                    .statusCode(200)
+                    .body("success", equalTo(true))
+                    .body("sheetsRestored", equalTo(1));
+        } finally {
+            cleanupAttachmentSlot(slot.id);
+        }
+    }
+
+    @Transactional
+    DiveSlot createSlotForAttachmentRoundTrip() {
+        User creator = new User();
+        creator.email        = "backup_attach_dp@test.com";
+        creator.firstName    = "Jean";
+        creator.lastName     = "DUPONT";
+        creator.passwordHash = "x";
+        creator.activated    = true;
+        creator.role         = UserRole.DIVE_DIRECTOR;
+        creator.roles        = java.util.Set.of(UserRole.DIVE_DIRECTOR);
+        creator.persist();
+
+        DiveSlot slot = new DiveSlot();
+        slot.slotDate   = LocalDate.of(2099, 10, 1);
+        slot.startTime  = LocalTime.of(8, 0);
+        slot.endTime    = LocalTime.of(17, 0);
+        slot.diverCount = 6;
+        slot.createdBy  = creator;
+        slot.createdAt  = LocalDateTime.now();
+        slot.updatedAt  = LocalDateTime.now();
+        slot.persist();
+        return slot;
+    }
+
+    @Transactional
+    void cleanupAttachmentSlot(Long slotId) {
+        if (slotId == null) return;
+        SlotSafetySheet.delete("slot.id", slotId);
+        DiveSlot slot = DiveSlot.findById(slotId);
+        if (slot == null) return;
+        if (slot.createdBy != null) slot.createdBy.delete();
+        slot.delete();
     }
 }
