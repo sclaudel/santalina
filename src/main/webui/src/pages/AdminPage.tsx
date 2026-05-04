@@ -90,6 +90,10 @@ export function AdminPage() {
   const [viewerSearch, setViewerSearch] = useState('');
   const [viewerSuggestions, setViewerSuggestions] = useState<UserSearchResult[]>([]);
   const [viewerSearchLoading, setViewerSearchLoading] = useState(false);
+  // Annonce / message
+  const [announcementEnabled, setAnnouncementEnabled] = useState(false);
+  const [announcementMessage, setAnnouncementMessage] = useState('');
+  const [announcementLoading, setAnnouncementLoading] = useState(false);
   const viewerSearchRef = useRef<HTMLDivElement>(null);
   // Déclenchement manuel du rapport
   const today = new Date().toISOString().slice(0, 10);
@@ -182,6 +186,8 @@ export function AdminPage() {
       setReportEmailRecipients(c.reportEmailRecipients ?? '');
       setSafetySheetNotifEmails(c.safetySheetNotificationEmails ?? '');
       setSafetySheetViewerEmails(c.safetySheetViewerEmails ?? '');
+      setAnnouncementEnabled(c.announcementEnabled ?? false);
+      setAnnouncementMessage(c.announcementMessage ?? '');
     } catch {
       setError('Erreur lors du chargement des données');
     }
@@ -477,6 +483,16 @@ export function AdminPage() {
       setMsg('Paramètres des fiches de sécurité enregistrés.');
     } catch (err: unknown) { setError(getErrorMessage(err)); }
     finally { setSafetySheetConfigLoading(false); }
+  };
+
+  const handleUpdateAnnouncement = async () => {
+    setMsg(''); setError(''); setAnnouncementLoading(true);
+    try {
+      const updated = await adminService.updateAnnouncement(announcementEnabled, announcementMessage);
+      setConfig(updated);
+      setMsg(announcementEnabled ? 'Message d\'annonce activé.' : 'Message d\'annonce désactivé.');
+    } catch (err: unknown) { setError(getErrorMessage(err)); }
+    finally { setAnnouncementLoading(false); }
   };
 
   const handleManualReportSend = async () => {
@@ -786,6 +802,34 @@ export function AdminPage() {
               {config?.maintenanceMode ? '🚧 Activé' : '✅ Désactivé'}
             </button>
           </label>
+
+          {/* Annonce / message d'information */}
+          <div className="toggle-setting" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 12 }}>
+            <div className="toggle-setting-info">
+              <strong>📢 Message d'annonce</strong>
+              <span>Affiché en bannière sur la page de connexion et en modale après connexion. Désactiver le message le masque sans le supprimer.</span>
+            </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <button
+                type="button"
+                className={`toggle-btn ${announcementEnabled ? 'toggle-on' : 'toggle-off'}`}
+                style={announcementEnabled ? { background: '#3b82f6', borderColor: '#3b82f6' } : {}}
+                onClick={() => setAnnouncementEnabled(v => !v)}
+              >
+                {announcementEnabled ? '📢 Activé' : '✅ Désactivé'}
+              </button>
+            </label>
+            <textarea
+              rows={4}
+              style={{ width: '100%', maxWidth: 560, fontSize: 13, padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db', resize: 'vertical' }}
+              placeholder="Entrez le message à afficher (HTML simple autorisé, ex. <b>texte</b>)"
+              value={announcementMessage}
+              onChange={e => setAnnouncementMessage(e.target.value)}
+            />
+            <button className="btn btn-primary" onClick={handleUpdateAnnouncement} disabled={announcementLoading}>
+              {announcementLoading ? 'Enregistrement…' : 'Enregistrer l\'annonce'}
+            </button>
+          </div>
 
           {/* Fenêtre horaire de réservation */}
           <div className="toggle-setting" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 12 }}>

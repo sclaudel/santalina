@@ -63,6 +63,9 @@ public class ConfigService {
     // -- Fiches de sécurité --
     private static final String KEY_SAFETY_SHEET_NOTIFICATION_EMAILS = "safety.sheet.notification.emails";
     private static final String KEY_SAFETY_SHEET_VIEWER_EMAILS       = "safety.sheet.viewer.emails";
+    private static final String KEY_ANNOUNCEMENT_SHOW_ON_LOGIN      = "announcement.show.on.login";
+    private static final String KEY_ANNOUNCEMENT_SHOW_AFTER_LOGIN    = "announcement.show.after.login";
+    private static final String KEY_ANNOUNCEMENT_MESSAGE             = "announcement.message";
 
     private static final String DEFAULT_SAFETY_REMINDER_BODY =
         "Ce rappel vous est envoyé car vous êtes le directeur de plongée du créneau du {slotDate} sur le site {siteName}.\n\n" +
@@ -225,6 +228,18 @@ public class ConfigService {
         return getStringValue(KEY_SAFETY_SHEET_VIEWER_EMAILS, "");
     }
 
+    public boolean isAnnouncementShowOnLogin() {
+        return Boolean.parseBoolean(getStringValue(KEY_ANNOUNCEMENT_SHOW_ON_LOGIN, "false"));
+    }
+
+    public boolean isAnnouncementShowAfterLogin() {
+        return Boolean.parseBoolean(getStringValue(KEY_ANNOUNCEMENT_SHOW_AFTER_LOGIN, "false"));
+    }
+
+    public String getAnnouncementMessage() {
+        return getStringValue(KEY_ANNOUNCEMENT_MESSAGE, "");
+    }
+
     public ConfigResponse getConfig() {
         return new ConfigResponse(
                 getMaxDivers(), getSlotMinHours(), getSlotMaxHours(),
@@ -253,7 +268,10 @@ public class ConfigService {
                 getReportEmailLastSent(),
                 getDefaultOrganizerMailTemplate(),
                 getSafetySheetNotificationEmails(),
-                getSafetySheetViewerEmails()
+                getSafetySheetViewerEmails(),
+                isAnnouncementShowOnLogin(),
+                isAnnouncementShowAfterLogin(),
+                getAnnouncementMessage()
         );
     }
 
@@ -338,6 +356,14 @@ public class ConfigService {
     public ConfigResponse updateSafetySheetConfig(String notificationEmails, String viewerEmails) {
         forceUpsert(KEY_SAFETY_SHEET_NOTIFICATION_EMAILS, notificationEmails != null ? notificationEmails.trim() : "");
         forceUpsert(KEY_SAFETY_SHEET_VIEWER_EMAILS,       viewerEmails       != null ? viewerEmails.trim()       : "");
+        return getConfig();
+    }
+
+    @Transactional
+    public ConfigResponse updateAnnouncement(boolean showOnLogin, boolean showAfterLogin, String message) {
+        forceUpsert(KEY_ANNOUNCEMENT_SHOW_ON_LOGIN,   String.valueOf(showOnLogin));
+        forceUpsert(KEY_ANNOUNCEMENT_SHOW_AFTER_LOGIN, String.valueOf(showAfterLogin));
+        forceUpsert(KEY_ANNOUNCEMENT_MESSAGE, message != null ? message : "");
         return getConfig();
     }
 
@@ -464,6 +490,9 @@ public class ConfigService {
         upsertIfMissing(KEY_DEFAULT_ORGANIZER_MAIL_TEMPLATE, "");
         upsertIfMissing(KEY_SAFETY_SHEET_NOTIFICATION_EMAILS, "");
         upsertIfMissing(KEY_SAFETY_SHEET_VIEWER_EMAILS,       "");
+        upsertIfMissing(KEY_ANNOUNCEMENT_SHOW_ON_LOGIN,    "false");
+        upsertIfMissing(KEY_ANNOUNCEMENT_SHOW_AFTER_LOGIN,  "false");
+        upsertIfMissing(KEY_ANNOUNCEMENT_MESSAGE,            "");
     }
 
     // ---- Helpers privés ----
