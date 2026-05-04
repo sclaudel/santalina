@@ -42,9 +42,13 @@ function AppContent() {
 
   // Afficher l'annonce après connexion si activée et pas encore vue dans cette session
   useEffect(() => {
-    if (isAuthenticated && appConfig?.announcementShowAfterLogin && appConfig?.announcementMessage
-        && !sessionStorage.getItem('announcement_dismissed')) {
-      setShowAnnouncement(true);
+    if (isAuthenticated && appConfig?.announcementShowAfterLogin && appConfig?.announcementMessage) {
+      const dismissedMsg = sessionStorage.getItem('announcement_dismissed');
+      if (dismissedMsg !== appConfig.announcementMessage) {
+        setShowAnnouncement(true);
+      }
+    } else {
+      setShowAnnouncement(false);
     }
   }, [isAuthenticated, appConfig]);
 
@@ -110,7 +114,7 @@ function AppContent() {
         {showAnnouncement && appConfig && (
           <AnnouncementModal
             message={appConfig.announcementMessage}
-            onClose={() => { sessionStorage.setItem('announcement_dismissed', '1'); setShowAnnouncement(false); }}
+            onClose={() => { sessionStorage.setItem('announcement_dismissed', appConfig.announcementMessage); setShowAnnouncement(false); }}
           />
         )}
         {currentPage === 'calendar' && (

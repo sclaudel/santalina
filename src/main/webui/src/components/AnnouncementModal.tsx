@@ -1,25 +1,37 @@
 import React from 'react';
 
-interface AnnouncementModalProps {
+interface AnnouncementBannerProps {
   message: string;
   onClose: () => void;
 }
 
-const AnnouncementModal: React.FC<AnnouncementModalProps> = ({ message, onClose }) => {
+const AnnouncementModal: React.FC<AnnouncementBannerProps> = ({ message, onClose }) => {
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
-        <button className="modal-close" onClick={onClose}>✕</button>
-        <h2 className="modal-title">📢 Information</h2>
-        <div
-          className="alert"
-          style={{ background: '#e8f4fd', border: '1px solid #90cdf4', color: '#1a365d', borderRadius: 6, padding: '12px 16px', marginBottom: 20, lineHeight: 1.6 }}
-          dangerouslySetInnerHTML={{ __html: message }}
-        />
-        <button className="btn btn-primary" onClick={onClose} style={{ width: '100%' }}>
-          J'ai compris
-        </button>
-      </div>
+    <div
+      style={{
+        background: '#e8f4fd',
+        border: '1px solid #90cdf4',
+        borderRadius: 6,
+        padding: '10px 16px',
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 10,
+        margin: '12px 16px 0',
+        position: 'relative',
+      }}
+    >
+      <span style={{ fontSize: 18, lineHeight: 1.4 }}>📢</span>
+      <span
+        style={{ flex: 1, fontSize: 14, color: '#1a365d', lineHeight: 1.6 }}
+        dangerouslySetInnerHTML={{ __html: message }}
+      />
+      <button
+        onClick={onClose}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: '#4a5568', padding: '0 4px', lineHeight: 1 }}
+        title="Fermer"
+      >
+        ✕
+      </button>
     </div>
   );
 };
