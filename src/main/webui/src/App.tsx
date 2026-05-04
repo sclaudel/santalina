@@ -43,8 +43,10 @@ function AppContent() {
   // Afficher l'annonce après connexion si activée et pas encore vue dans cette session
   useEffect(() => {
     if (isAuthenticated && appConfig?.announcementShowAfterLogin && appConfig?.announcementMessage) {
-      const dismissedMsg = sessionStorage.getItem('announcement_dismissed');
-      if (dismissedMsg !== appConfig.announcementMessage) {
+      const key = `announcement_dismissed_${appConfig.announcementMessage.length}_${appConfig.announcementMessage.slice(0, 20)}`;
+      if (!sessionStorage.getItem(key)) {
+        // Nettoyer les éventuelles anciennes clés
+        Object.keys(sessionStorage).filter(k => k.startsWith('announcement_dismissed')).forEach(k => sessionStorage.removeItem(k));
         setShowAnnouncement(true);
       }
     } else {
@@ -110,13 +112,17 @@ function AppContent() {
   return (
     <div className="app">
       <NavBar onNavigate={navigate} currentPage={currentPage} selfRegistration={selfRegistration} maintenanceMode={maintenanceMode} announcementShowOnLogin={announcementShowOnLogin} announcementMessage={announcementMessage} />
+      {showAnnouncement && appConfig && (
+        <AnnouncementModal
+          message={appConfig.announcementMessage}
+          onClose={() => {
+            const key = `announcement_dismissed_${appConfig.announcementMessage.length}_${appConfig.announcementMessage.slice(0, 20)}`;
+            sessionStorage.setItem(key, '1');
+            setShowAnnouncement(false);
+          }}
+        />
+      )}
       <div className="app-content">
-        {showAnnouncement && appConfig && (
-          <AnnouncementModal
-            message={appConfig.announcementMessage}
-            onClose={() => { sessionStorage.setItem('announcement_dismissed', appConfig.announcementMessage); setShowAnnouncement(false); }}
-          />
-        )}
         {currentPage === 'calendar' && (
           <CalendarPage
             onNavigate={navigate}
