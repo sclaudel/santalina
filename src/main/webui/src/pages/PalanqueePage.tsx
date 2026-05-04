@@ -277,7 +277,8 @@ export function PalanqueePage({ slotId, onBack }: Props) {
   const [activeDiveId, setActiveDiveId] = useState<number | null>(null);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState('');
-  const [draggedId, setDraggedId]   = useState<number | null>(null);
+  const [draggedId, setDraggedId]                 = useState<number | null>(null);
+  const [draggedFromPalanqueeId, setDraggedFromPalanqueeId] = useState<number | null>(null);
 
   // Liste d'attente
   const [waitingList, setWaitingList]     = useState<WaitingListEntry[]>([]);
@@ -313,6 +314,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
   // ── mobile ─────────────────────────────────────────────────────────────────
   const [isMobile, setIsMobile] = useState(() => window.matchMedia('(pointer: coarse), (max-width: 768px)').matches);
   const [mobilePickedId, setMobilePickedId] = useState<number | null>(null);
+  const [mobilePickedFromPalanqueeId, setMobilePickedFromPalanqueeId] = useState<number | null>(null);
   const [activePalIdx, setActivePalIdx] = useState(0);
 
   // référence sur le board pour l'auto-scroll horizontal pendant le drag
@@ -524,14 +526,17 @@ export function PalanqueePage({ slotId, onBack }: Props) {
     diverId: number,
     targetPalanqueeId: number | null,
     beforeDiverId: number | null = null,
+    explicitFromPalanqueeId?: number | null,
   ) => {
-    // En mode plongée active, on cherche la palanquée courante uniquement dans
-    // le contexte de cette plongée (un plongeur peut être dans plusieurs plongées)
+    // La source est fournie explicitement par le drag (ou tap mobile) pour éviter
+    // qu'en mode "Toutes" (multi-plongées), le find() ne prenne la mauvaise palanquée
+    // source et ne laisse un doublon dans une autre plongée.
     const contextPals = activeDiveId === null
       ? palanquees
       : palanquees.filter(p => p.slotDiveId === activeDiveId);
-    const currentPalanquee = contextPals.find(p => p.divers.some(d => d.id === diverId));
-    const currentPalanqueeId = currentPalanquee?.id ?? null;
+    const currentPalanqueeId = explicitFromPalanqueeId !== undefined
+      ? explicitFromPalanqueeId
+      : (contextPals.find(p => p.divers.some(d => d.id === diverId))?.id ?? null);
     const diver = allDivers.find(d => d.id === diverId);
     if (!diver) return;
 
@@ -556,14 +561,19 @@ export function PalanqueePage({ slotId, onBack }: Props) {
     }
 
     // ── Déplacer vers une autre palanquée (ou zone non assignée) ──────────
+    // Calcul optimiste de la cible (avant appel API) pour l'affichage immédiat
+    const targetPalDivers = palanquees.find(p => p.id === targetPalanqueeId)?.divers ?? [];
+    const targetWithout = targetPalDivers.filter(d => d.id !== diverId);
+    const optimisticTargetDivers = beforeDiverId === null
+      ? [...targetWithout, diver]
+      : (() => {
+          const idx = targetWithout.findIndex(d => d.id === beforeDiverId);
+          return idx === -1 ? [...targetWithout, diver] : [...targetWithout.slice(0, idx), diver, ...targetWithout.slice(idx)];
+        })();
+
     setPalanquees(prev => prev.map(p => {
       if (p.id === currentPalanqueeId) return { ...p, divers: p.divers.filter(d => d.id !== diverId) };
-      if (p.id === targetPalanqueeId) {
-        const without = p.divers.filter(d => d.id !== diverId);
-        if (beforeDiverId === null) return { ...p, divers: [...without, diver] };
-        const idx = without.findIndex(d => d.id === beforeDiverId);
-        return { ...p, divers: idx === -1 ? [...without, diver] : [...without.slice(0, idx), diver, ...without.slice(idx)] };
-      }
+      if (p.id === targetPalanqueeId)  return { ...p, divers: optimisticTargetDivers };
       return p;
     }));
 
@@ -571,25 +581,18 @@ export function PalanqueePage({ slotId, onBack }: Props) {
       // Toujours passer la palanquée source quand elle est connue :
       // cela garantit un vrai "move" (pas de doublon résiduel) tout en
       // ne désassignant que la source courante en mode multi-plongée.
-      const fromId = currentPalanqueeId;
-      await palanqueeService.assign(slotId, diverId, targetPalanqueeId, fromId);
+      await palanqueeService.assign(slotId, diverId, targetPalanqueeId, currentPalanqueeId);
       if (targetPalanqueeId !== null) {
-        const updatedPal = palanquees.find(p => p.id === targetPalanqueeId)!;
-        const without = updatedPal.divers.filter(d => d.id !== diverId);
-        const finalOrder: SlotDiver[] = beforeDiverId === null
-          ? [...without, diver]
-          : (() => {
-              const idx = without.findIndex(d => d.id === beforeDiverId);
-              return idx === -1 ? [...without, diver] : [...without.slice(0, idx), diver, ...without.slice(idx)];
-            })();
-        await palanqueeService.reorder(slotId, targetPalanqueeId, finalOrder.map(d => d.id));
+        // Utiliser l'ordre déjà calculé (optimisticTargetDivers) — pas de référence stale
+        await palanqueeService.reorder(slotId, targetPalanqueeId, optimisticTargetDivers.map(d => d.id));
       }
     } catch { await loadAll(); }
   }, [allDivers, palanquees, activeDiveId, slotId, loadAll]);
 
   // ── drag & drop ───────────────────────────────────────────────────────────
-  const handleDragStart = (diverId: number) => {
+  const handleDragStart = (diverId: number, fromPalanqueeId: number | null = null) => {
     setDraggedId(diverId);
+    setDraggedFromPalanqueeId(fromPalanqueeId);
     setInsertTarget(null);
   };
 
@@ -605,22 +608,32 @@ export function PalanqueePage({ slotId, onBack }: Props) {
     if (draggedId === null) return;
     const target = insertTargetRef.current;
     const did = draggedId;
+    const fromId = draggedFromPalanqueeId;
     setDraggedId(null);
+    setDraggedFromPalanqueeId(null);
     setInsertTarget(null);
     const beforeId = target?.palanqueeId === targetPalanqueeId ? target.beforeDiverId : null;
-    await handleAssign(did, targetPalanqueeId, beforeId);
+    await handleAssign(did, targetPalanqueeId, beforeId, fromId);
   };
 
   // ── tap mobile ────────────────────────────────────────────────────────────
-  const handleMobilePick = (diverId: number) => {
-    setMobilePickedId(prev => prev === diverId ? null : diverId);
+  const handleMobilePick = (diverId: number, fromPalanqueeId: number | null = null) => {
+    if (mobilePickedId === diverId) {
+      setMobilePickedId(null);
+      setMobilePickedFromPalanqueeId(null);
+    } else {
+      setMobilePickedId(diverId);
+      setMobilePickedFromPalanqueeId(fromPalanqueeId);
+    }
   };
 
   const handleMobileAssign = async (targetPalanqueeId: number | null) => {
     if (mobilePickedId === null) return;
     const did = mobilePickedId;
+    const fromId = mobilePickedFromPalanqueeId;
     setMobilePickedId(null);
-    await handleAssign(did, targetPalanqueeId);
+    setMobilePickedFromPalanqueeId(null);
+    await handleAssign(did, targetPalanqueeId, null, fromId);
   };
 
   // ── actions ───────────────────────────────────────────────────────────────
@@ -1325,7 +1338,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
           divers={unassigned}
           draggedId={draggedId}
           onDrop={handleDrop}
-          onDragStart={handleDragStart}
+          onDragStart={(id) => handleDragStart(id, null)}
           onDragEnterCard={handleDragEnterCard}
           onDragEnterEnd={handleDragEnterEnd}
           label="Non assignés"
@@ -1334,7 +1347,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
           isPool
           onLevelChange={handleLevelChange}
           onAptitudesChange={handleAptitudesChange}
-          onTapDiver={isMobile ? handleMobilePick : undefined}
+          onTapDiver={isMobile ? (id) => handleMobilePick(id, null) : undefined}
           mobilePickedId={isMobile ? mobilePickedId : undefined}
           onMoveToWaitingList={isRegistrationCurrentlyActive(slot) ? handleMoveToWaitingList : undefined}
           movingToWlId={movingToWlId}
@@ -1451,7 +1464,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                       divers={p.divers}
                       draggedId={draggedId}
                       onDrop={handleDrop}
-                      onDragStart={handleDragStart}
+                      onDragStart={(id) => handleDragStart(id, p.id)}
                       onDragEnterCard={handleDragEnterCard}
                       onDragEnterEnd={handleDragEnterEnd}
                       label={p.name}
@@ -1459,7 +1472,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                       palanqueeIndex={idx + 1}
                       onLevelChange={handleLevelChange}
                       onAptitudesChange={handleAptitudesChange}
-                      onTapDiver={handleMobilePick}
+                      onTapDiver={(id) => handleMobilePick(id, p.id)}
                       mobilePickedId={mobilePickedId}
                       onMoveToWaitingList={isRegistrationCurrentlyActive(slot) ? handleMoveToWaitingList : undefined}
                       movingToWlId={movingToWlId}
@@ -1478,7 +1491,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
         <div
           ref={boardRef}
           className="palanquee-board"
-          onDragEnd={() => { setDraggedId(null); setInsertTarget(null); }}
+          onDragEnd={() => { setDraggedId(null); setDraggedFromPalanqueeId(null); setInsertTarget(null); }}
         >
           {filteredPalanquees.map((p, idx) => (
             <div key={p.id} className="palanquee-column">
@@ -1550,7 +1563,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                 divers={p.divers}
                 draggedId={draggedId}
                 onDrop={handleDrop}
-                onDragStart={handleDragStart}
+                onDragStart={(id) => handleDragStart(id, p.id)}
                 onDragEnterCard={handleDragEnterCard}
                 onDragEnterEnd={handleDragEnterEnd}
                 insertBeforeId={insertTarget?.palanqueeId === p.id ? insertTarget.beforeDiverId : undefined}
