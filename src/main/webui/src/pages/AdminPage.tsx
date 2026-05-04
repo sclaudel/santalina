@@ -811,8 +811,8 @@ export function AdminPage() {
               <strong>📢 Message d'annonce</strong>
               <span>Désactiver les affichages masque le message sans le supprimer.</span>
             </div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-              <span style={{ fontSize: 13, minWidth: 220 }}>Afficher sur la page de connexion&nbsp;:</span>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 13 }}>Afficher sur la page de connexion&nbsp;:</span>
               <button
                 type="button"
                 className={`toggle-btn ${announcementShowOnLogin ? 'toggle-on' : 'toggle-off'}`}
@@ -822,8 +822,8 @@ export function AdminPage() {
                 {announcementShowOnLogin ? '📢 Activé' : '✅ Désactivé'}
               </button>
             </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-              <span style={{ fontSize: 13, minWidth: 220 }}>Afficher en modale après connexion&nbsp;:</span>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 13 }}>Afficher en modale après connexion&nbsp;:</span>
               <button
                 type="button"
                 className={`toggle-btn ${announcementShowAfterLogin ? 'toggle-on' : 'toggle-off'}`}
@@ -933,7 +933,7 @@ export function AdminPage() {
               </div>
             )}
             <form onSubmit={handleUpdateNotificationEmail} className="form form-inline" style={{ gap: 12 }}>
-              <div className="form-group" style={{ minWidth: 380 }}>
+              <div className="form-group" style={{ flex: 1, minWidth: 0 }}>
                 <label>Adresses email (séparées par des virgules)</label>
                 <input
                   type="text"
