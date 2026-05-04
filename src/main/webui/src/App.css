@@ -2360,3 +2360,19 @@ body {
   border-radius: 8px; padding: 12px 14px; margin: 0 0 0;
 }
 .rte-link-popup-inner { display: flex; flex-direction: column; gap: 4px; }
+
+/* ========== ADMIN PAGE — responsive mobile ========== */
+@media (max-width: 640px) {
+  /* Reduce section padding so content has more room */
+  .admin-section { padding: 16px 12px; }
+  .create-user-form { padding: 14px 12px; }
+
+  /* Allow section header (title + buttons) to wrap on narrow screens */
+  .admin-section-header { flex-wrap: wrap; gap: 8px; }
+
+  /* Config grid: 2 columns instead of 4 */
+  .config-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* Form rows stack vertically on mobile */
+  .form-row { flex-direction: column; }
+}
