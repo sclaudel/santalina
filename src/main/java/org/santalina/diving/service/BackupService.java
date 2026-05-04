@@ -322,8 +322,29 @@ public class BackupService {
                 palanqueeCount++;
 
                 // Réassigner les plongeurs de cette palanquée
-                if (pe.memberDiverIds() != null && !pe.memberDiverIds().isEmpty()) {
-                    // Nouveau format : liste d'IDs originaux ordonnée
+                if (pe.members() != null && !pe.members().isEmpty()) {
+                    // Format actuel : inclut aptitudes par plongée
+                    for (int pos = 0; pos < pe.members().size(); pos++) {
+                        final PalanqueeMemberEntry mEntry = pe.members().get(pos);
+                        DiverEntry de = backup.divers() == null ? null :
+                                backup.divers().stream()
+                                        .filter(d -> mEntry.diverId().equals(d.id()))
+                                        .findFirst().orElse(null);
+                        if (de == null) continue;
+                        SlotDiver sd = SlotDiver.find(
+                                "slot = ?1 and firstName = ?2 and lastName = ?3",
+                                linkedSlot, de.firstName(), de.lastName()).firstResult();
+                        if (sd != null) {
+                            PalanqueeMember m = new PalanqueeMember();
+                            m.palanquee = pal;
+                            m.diver     = sd;
+                            m.position  = pos;
+                            m.aptitudes = mEntry.aptitudes();
+                            m.persist();
+                        }
+                    }
+                } else if (pe.memberDiverIds() != null && !pe.memberDiverIds().isEmpty()) {
+                    // Format intermédiaire : liste d'IDs originaux ordonnée (sans aptitudes)
                     for (int pos = 0; pos < pe.memberDiverIds().size(); pos++) {
                         final Long origDiverId = pe.memberDiverIds().get(pos);
                         DiverEntry de = backup.divers() == null ? null :
@@ -446,11 +467,14 @@ public class BackupService {
     }
 
     private PalanqueeEntry toPalanqueeEntry(Palanquee p) {
-        List<Long> memberDiverIds = PalanqueeMember.findByPalanquee(p.id)
-                .stream().map(m -> m.diver.id).collect(Collectors.toList());
+        List<PalanqueeMember> members = PalanqueeMember.findByPalanquee(p.id);
+        List<Long> memberDiverIds = members.stream().map(m -> m.diver.id).collect(Collectors.toList());
+        List<PalanqueeMemberEntry> memberEntries = members.stream()
+                .map(m -> new PalanqueeMemberEntry(m.diver.id, m.aptitudes))
+                .collect(Collectors.toList());
         return new PalanqueeEntry(p.id, p.slot != null ? p.slot.id : null,
                 p.name, p.position, p.depth, p.duration,
-                p.slotDive != null ? p.slotDive.id : null, memberDiverIds);
+                p.slotDive != null ? p.slotDive.id : null, memberDiverIds, memberEntries);
     }
 
     private SlotDiveEntry toSlotDiveEntry(SlotDive d) {

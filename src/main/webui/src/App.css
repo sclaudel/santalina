@@ -1324,6 +1324,18 @@ body {
   gap: 12px;
   flex-wrap: wrap;
 }
+.palanquee-hint--overview {
+  background: #eff6ff;
+  border: 1px solid #93c5fd;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d4ed8;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .palanquee-hint-warning { color: #b45309; font-weight: 600; }
 
 .palanquee-error {
@@ -1358,10 +1370,46 @@ body {
   flex-shrink: 0;
 }
 
-/* Plateau (board) — palanquées en grille qui s'adapte à la largeur */
+/* Plateau (board) — colonnes en flex wrap, horizontales */
 .palanquee-board {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: start;
+}
+
+/* Vue d'ensemble : les groupes s'empilent verticalement */
+.palanquee-board--overview {
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Groupe de palanquées par plongée (vue "Toutes") */
+.palanquee-dive-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.palanquee-dive-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0 4px 4px;
+  border-left: 3px solid #38bdf8;
+  color: #0369a1;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+.palanquee-dive-group-header--unassigned {
+  border-left-color: #94a3b8;
+  color: #64748b;
+}
+.palanquee-dive-group-columns {
+  display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   align-items: start;
 }
@@ -1629,6 +1677,17 @@ body {
     opacity: 1;
   }
 }
+/* Vue lecture seule (vue d'ensemble) : ni grab, ni hover, ni ??dition */
+.palanquee-postit--readonly {
+  cursor: default;
+}
+.palanquee-postit--readonly:hover {
+  transform: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+.palanquee-postit--readonly:active { cursor: default; }
+.palanquee-postit--readonly .palanquee-postit-aptitudes { cursor: default; }
+.palanquee-postit--readonly .palanquee-postit-apt-edit-icon { display: none !important; }
 .palanquee-postit-director { font-size: 12px; }
 
 .palanquee-postit-wl-btn {

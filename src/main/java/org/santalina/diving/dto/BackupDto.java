@@ -95,7 +95,14 @@ public class BackupDto {
             String depth,
             String duration,
             Long slotDiveId,
-            List<Long> memberDiverIds  // IDs originaux des plongeurs, ordonnés par position
+            List<Long> memberDiverIds,  // conservé pour rétro-compatibilité import ancien format
+            List<PalanqueeMemberEntry> members  // format actuel : ordonné par position, inclut aptitudes
+    ) {}
+
+    /** Membre d'une palanquée avec ses aptitudes spécifiques à cette plongée. */
+    public record PalanqueeMemberEntry(
+            Long diverId,   // ID original dans le backup
+            String aptitudes  // null = utiliser aptitudes globales du plongeur
     ) {}
 
     public record SlotDiveEntry(
