@@ -175,6 +175,9 @@ export interface AppConfig {
   defaultOrganizerMailTemplate?: string;
   safetySheetNotificationEmails: string;
   safetySheetViewerEmails: string;
+  announcementShowOnLogin: boolean;
+  announcementShowAfterLogin: boolean;
+  announcementMessage: string;
 }
 
 // Logs

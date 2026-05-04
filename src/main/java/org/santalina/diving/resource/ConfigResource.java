@@ -207,6 +207,16 @@ public class ConfigResource {
                 request != null ? request.safetySheetViewerEmails()       : null);
     }
 
+    @PUT
+    @Path("/announcement")
+    @RolesAllowed("ADMIN")
+    public ConfigResponse updateAnnouncement(UpdateAnnouncementRequest request) {
+        return configService.updateAnnouncement(
+                request != null && request.showOnLogin()      != null ? request.showOnLogin()      : false,
+                request != null && request.showAfterLogin()   != null ? request.showAfterLogin()   : false,
+                request != null ? request.message() : null);
+    }
+
     @POST
     @Path("/report-email-send")
     @RolesAllowed("ADMIN")

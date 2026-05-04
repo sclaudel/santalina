@@ -19,9 +19,11 @@ interface Props {
   currentPage: string;
   selfRegistration?: boolean;
   maintenanceMode?: boolean;
+  announcementShowOnLogin?: boolean;
+  announcementMessage?: string;
 }
 
-export function NavBar({ onNavigate, currentPage, selfRegistration = true, maintenanceMode = false }: Props) {
+export function NavBar({ onNavigate, currentPage, selfRegistration = true, maintenanceMode = false, announcementShowOnLogin = false, announcementMessage = '' }: Props) {
   const { user, isAuthenticated, logout, hasRole } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -101,7 +103,7 @@ export function NavBar({ onNavigate, currentPage, selfRegistration = true, maint
         )}
       </div>
 
-      {showLogin && <LoginModal onClose={() => setShowLogin(false)} selfRegistration={selfRegistration} maintenanceMode={maintenanceMode} />}
+      {showLogin && <LoginModal onClose={() => setShowLogin(false)} selfRegistration={selfRegistration} maintenanceMode={maintenanceMode} announcementShowOnLogin={announcementShowOnLogin} announcementMessage={announcementMessage} />}
       {/* Bouton hamburger (mobile uniquement) */}
       <button
         className="navbar-hamburger"
@@ -171,7 +173,7 @@ export function NavBar({ onNavigate, currentPage, selfRegistration = true, maint
         </div>
       )}
 
-      {showLogin && <LoginModal onClose={() => setShowLogin(false)} selfRegistration={selfRegistration} maintenanceMode={maintenanceMode} />}
+      {showLogin && <LoginModal onClose={() => setShowLogin(false)} selfRegistration={selfRegistration} maintenanceMode={maintenanceMode} announcementShowOnLogin={announcementShowOnLogin} announcementMessage={announcementMessage} />}
     </nav>
   );
 }

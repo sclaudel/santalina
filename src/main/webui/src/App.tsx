@@ -11,6 +11,7 @@ import { ActivatePage } from './pages/ActivatePage';
 import { HelpPage } from './pages/HelpPage';
 import { PalanqueePage } from './pages/PalanqueePage';
 import { adminService } from './services/adminService';
+import AnnouncementModal from './components/AnnouncementModal';
 import type { AppConfig } from './types';
 import './App.css';
 
@@ -28,6 +29,7 @@ function AppContent() {
 
   const [currentPage, setCurrentPage] = useState<string>('calendar');
   const [appConfig, setAppConfig] = useState<AppConfig | null>(null);
+  const [showAnnouncement, setShowAnnouncement] = useState(false);
   // Redirect post-login si l'URL contient ?goto=
   const gotoHandledRef = useRef(false);
   // Contexte de retour vers le calendrier (date + vue) après navigation palanquées
@@ -37,6 +39,15 @@ function AppContent() {
   useEffect(() => {
     adminService.getConfig().then(setAppConfig).catch(() => {});
   }, []);
+
+  // Afficher l'annonce après connexion si activée
+  useEffect(() => {
+    if (isAuthenticated && appConfig?.announcementShowAfterLogin && appConfig?.announcementMessage) {
+      setShowAnnouncement(true);
+    } else {
+      setShowAnnouncement(false);
+    }
+  }, [isAuthenticated, appConfig]);
 
   // Gère la redirection ?goto= dès que l'authentification est confirmée
   useEffect(() => {
@@ -77,6 +88,8 @@ function AppContent() {
   const publicAccess = appConfig === null || appConfig.publicAccess;
   const selfRegistration = appConfig === null || appConfig.selfRegistration;
   const maintenanceMode = appConfig?.maintenanceMode ?? false;
+  const announcementShowOnLogin = appConfig?.announcementShowOnLogin ?? false;
+  const announcementMessage = appConfig?.announcementMessage ?? '';
 
   if (!publicAccess && !isAuthenticated) {
     return (
@@ -85,7 +98,7 @@ function AppContent() {
           <div style={{ fontSize: 48 }}>🔒</div>
           <h2 style={{ fontSize: 22, fontWeight: 700 }}>Accès réservé aux membres</h2>
           <p style={{ color: '#6b7280' }}>Connectez-vous pour accéder au calendrier de réservation.</p>
-          <NavBar onNavigate={navigate} currentPage={currentPage} selfRegistration={selfRegistration} maintenanceMode={maintenanceMode} />
+          <NavBar onNavigate={navigate} currentPage={currentPage} selfRegistration={selfRegistration} maintenanceMode={maintenanceMode} announcementShowOnLogin={announcementShowOnLogin} announcementMessage={announcementMessage} />
         </div>
       </div>
     );
@@ -93,7 +106,13 @@ function AppContent() {
 
   return (
     <div className="app">
-      <NavBar onNavigate={navigate} currentPage={currentPage} selfRegistration={selfRegistration} maintenanceMode={maintenanceMode} />
+      <NavBar onNavigate={navigate} currentPage={currentPage} selfRegistration={selfRegistration} maintenanceMode={maintenanceMode} announcementShowOnLogin={announcementShowOnLogin} announcementMessage={announcementMessage} />
+      {showAnnouncement && appConfig && (
+        <AnnouncementModal
+          message={appConfig.announcementMessage}
+          onClose={() => setShowAnnouncement(false)}
+        />
+      )}
       <div className="app-content">
         {currentPage === 'calendar' && (
           <CalendarPage

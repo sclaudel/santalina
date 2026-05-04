@@ -45,7 +45,10 @@ public class ConfigDto {
             String reportEmailLastSent,
             String defaultOrganizerMailTemplate,
             String safetySheetNotificationEmails,
-            String safetySheetViewerEmails
+            String safetySheetViewerEmails,
+            boolean announcementShowOnLogin,
+            boolean announcementShowAfterLogin,
+            String announcementMessage
     ) {}
 
     public record UpdateMaxRecurringMonthsRequest(
@@ -117,5 +120,11 @@ public class ConfigDto {
     public record UpdateSafetySheetConfigRequest(
             String safetySheetNotificationEmails,
             String safetySheetViewerEmails
+    ) {}
+
+    public record UpdateAnnouncementRequest(
+            Boolean showOnLogin,
+            Boolean showAfterLogin,
+            String message
     ) {}
 }

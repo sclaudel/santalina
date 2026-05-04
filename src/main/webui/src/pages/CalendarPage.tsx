@@ -53,6 +53,7 @@ export function CalendarPage({ onNavigate, returnContext, onReturnConsumed, init
     maintenanceMode: false,
     reportEmailEnabled: false, reportEmailPeriodDays: 7, reportEmailRecipients: '', reportEmailLastSent: '',
     safetySheetNotificationEmails: '', safetySheetViewerEmails: '',
+    announcementShowOnLogin: false, announcementShowAfterLogin: false, announcementMessage: '',
   });
   // Date pour laquelle on ouvre le formulaire (null = fermé)
   const [formDate, setFormDate]           = useState<string | null>(null);

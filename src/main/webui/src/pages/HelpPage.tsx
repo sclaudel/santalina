@@ -652,7 +652,7 @@ export function HelpPage() {
           <ul>
             <li>Cliquez sur <strong>⬇️ Télécharger tout (.zip)</strong> pour obtenir une archive ZIP.</li>
             <li>Les admins peuvent supprimer un fichier individuellement avec le bouton 🗑️.</li>
-            <li>Les fichiers sont enregistrés automatiquement avec une convention de nommage : <code>YYYY-MM-DD_Fiche-Securite-Saint-Lin-Nomdp-InitialPrenom-ID_XXX.ext</code> (date, puis préfixe, nom du DP, initiale du prénom et identifiant du créneau séparés par des tirets, incrément).</li>
+            <li>Les fichiers sont enregistrés automatiquement avec une convention de nommage : <code>YYYY-MM-DD_Fiche-Securite-Saint-Lin-Nomdp-InitialPrenom-ID_XXX.ext</code> (date, préfixe fixe, nom du DP, initiale du prénom, identifiant du créneau, incrément — ex. <code>2026-05-02_Fiche-Securite-Saint-Lin-Dupont-J-123_001.pdf</code>).</li>
           </ul>
           <h4>Droits d'accès</h4>
           <ul>
