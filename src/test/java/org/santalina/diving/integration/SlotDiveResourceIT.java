@@ -7,6 +7,7 @@ import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.Test;
 import org.santalina.diving.domain.DiveSlot;
 import org.santalina.diving.domain.Palanquee;
+import org.santalina.diving.domain.PalanqueeMember;
 import org.santalina.diving.domain.SlotDive;
 import org.santalina.diving.domain.SlotDiver;
 import org.santalina.diving.domain.User;
@@ -26,6 +27,7 @@ import static org.hamcrest.Matchers.*;
  *   - Création d'une plongée (POST)
  *   - Mise à jour (PATCH)
  *   - Suppression (DELETE — détache les palanquées)
+ *   - Suppression de la dernière plongée : déduplication automatique des membres
  *   - Assignation d'une palanquée à une plongée (PUT /assign)
  *   - Accès refusé pour DIVER ou sans authentification
  */
@@ -312,5 +314,75 @@ class SlotDiveResourceIT {
         Palanquee p = Palanquee.findById(palanqueeId);
         SlotDive d  = SlotDive.findById(diveId);
         if (p != null && d != null) p.slotDive = d;
+    }
+
+    @Transactional
+    SlotDiver addDiver(Long slotId, String lastName) {
+        DiveSlot slot = DiveSlot.findById(slotId);
+        SlotDiver d = new SlotDiver();
+        d.slot       = slot;
+        d.firstName  = "Test";
+        d.lastName   = lastName;
+        d.level      = "N2";
+        d.isDirector = false;
+        d.persist();
+        return d;
+    }
+
+    @Transactional
+    void assignDiverToPalanquee(Long diverId, Long palanqueeId) {
+        Palanquee pal   = Palanquee.findById(palanqueeId);
+        SlotDiver diver = SlotDiver.findById(diverId);
+        if (pal == null || diver == null) return;
+        if (PalanqueeMember.findByDiverAndPalanquee(diverId, palanqueeId) == null) {
+            PalanqueeMember m = new PalanqueeMember();
+            m.palanquee = pal;
+            m.diver     = diver;
+            m.position  = (int) PalanqueeMember.count("palanquee.id = ?1", palanqueeId);
+            m.persist();
+        }
+    }
+
+    /**
+     * Vérifie que la suppression de la dernière plongée déduplique automatiquement
+     * les membres de palanquée : un plongeur présent dans deux palanquées
+     * (scénario multi-plongées) ne doit plus apparaître qu'une seule fois après
+     * le retour en mode simple.
+     */
+    @Test
+    @TestSecurity(user = "dp_dedup@test.com", roles = {"DIVE_DIRECTOR"})
+    void deleteLastDive_shouldDeduplicatePalanqueeMembers() {
+        DiveSlot slot   = createSlotWithDp("dp_dedup@test.com");
+        SlotDiver diver = addDiver(slot.id, "LEBRUN");
+        Palanquee pal1  = createPalanquee(slot.id, "P1");
+        Palanquee pal2  = createPalanquee(slot.id, "P2");
+        SlotDive dive   = createDive(slot.id, "Matin");
+
+        // Plongeur dans les deux palanquées (situation multi-plongées normale)
+        assignDiverToPalanquee(diver.id, pal1.id);
+        assignDiverToPalanquee(diver.id, pal2.id);
+
+        try {
+            // Vérifier la situation initiale : 1 plongeur dans chaque palanquée
+            given()
+                .when().get("/api/slots/" + slot.id + "/palanquees")
+                .then().statusCode(200)
+                .body("find { it.id == " + pal1.id + " }.divers", hasSize(1))
+                .body("find { it.id == " + pal2.id + " }.divers", hasSize(1));
+
+            // Supprimer la dernière (et seule) plongée
+            given()
+                .when().delete("/api/slots/" + slot.id + "/dives/" + dive.id)
+                .then().statusCode(204);
+
+            // Après déduplication : P1 contient le plongeur, P2 est vide
+            given()
+                .when().get("/api/slots/" + slot.id + "/palanquees")
+                .then().statusCode(200)
+                .body("find { it.id == " + pal1.id + " }.divers", hasSize(1))
+                .body("find { it.id == " + pal2.id + " }.divers", hasSize(0));
+        } finally {
+            cleanup(slot.id);
+        }
     }
 }

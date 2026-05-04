@@ -2,6 +2,7 @@ package org.santalina.diving.resource;
 
 import org.santalina.diving.domain.DiveSlot;
 import org.santalina.diving.domain.Palanquee;
+import org.santalina.diving.domain.PalanqueeMember;
 import org.santalina.diving.domain.SlotDive;
 import org.santalina.diving.domain.SlotDiver;
 import org.santalina.diving.domain.User;
@@ -16,7 +17,9 @@ import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Path("/api/slots/{slotId}/dives")
 @Produces(MediaType.APPLICATION_JSON)
@@ -101,6 +104,13 @@ public class SlotDiveResource {
             remaining.get(i).diveIndex = i + 1;
         }
 
+        // Si c'était la dernière plongée, dédupliquer les membres de palanquée :
+        // un plongeur peut figurer dans plusieurs palanquées (multi-plongées) ; en mode
+        // simple il ne doit apparaître qu'une seule fois (dans la première palanquée trouvée).
+        if (remaining.isEmpty()) {
+            deduplicatePalanqueeMembers(slotId);
+        }
+
         return Response.noContent().build();
     }
 
@@ -157,5 +167,25 @@ public class SlotDiveResource {
             throw new NotFoundException("Plongée non trouvée");
         }
         return d;
+    }
+
+    /**
+     * Déduplication des PalanqueeMember après suppression de la dernière plongée.
+     * En mode multi-plongées, un plongeur peut figurer dans plusieurs palanquées.
+     * Quand on revient en mode simple (0 plongée), on ne garde que la première
+     * appartenance (ordre palanquée par position puis id) et on supprime les doublons.
+     */
+    private void deduplicatePalanqueeMembers(Long slotId) {
+        List<Palanquee> palList = Palanquee.list("slot.id = ?1 ORDER BY position, id", slotId);
+        Set<Long> seenDiverIds = new HashSet<>();
+        for (Palanquee pal : palList) {
+            List<PalanqueeMember> members = PalanqueeMember.findByPalanquee(pal.id);
+            for (PalanqueeMember m : members) {
+                if (!seenDiverIds.add(m.diver.id)) {
+                    // Ce plongeur est déjà dans une palanquée précédente → doublon
+                    m.delete();
+                }
+            }
+        }
     }
 }

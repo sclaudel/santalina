@@ -482,4 +482,106 @@ class BackupResourceIT {
                 .body("success", equalTo(true))
                 .body("sheetsRestored", equalTo(0));
     }
+
+    /**
+     * Vérifie que l'import d'un backup au format actuel (champ {@code members} avec aptitudes)
+     * restaure correctement les aptitudes spécifiques des membres de palanquée.
+     *
+     * Utilise le créneau virtuel 2099-11-20 pour isoler le test.
+     * ⚠️ L'import purge la base avant de réimporter : ce test doit rester le dernier.
+     */
+    @Test
+    @Order(17)
+    @TestSecurity(user = "admin@test.com", roles = {"ADMIN"})
+    void importBackup_withPalanqueeMemberAptitudes_shouldRestoreAptitudes() {
+        String payload = """
+                {
+                    "version": "1.0",
+                    "type": "full",
+                    "exportedAt": "2099-01-01T00:00:00",
+                    "config": [],
+                    "users": [],
+                    "slots": [
+                        {
+                            "id": 9010,
+                            "slotDate": "2099-11-20",
+                            "startTime": "08:00:00",
+                            "endTime": "17:00:00",
+                            "diverCount": 8,
+                            "title": "Créneau aptitudes",
+                            "notes": null,
+                            "slotType": null,
+                            "club": null,
+                            "createdById": null,
+                            "createdAt": "2099-01-01T00:00:00",
+                            "registrationOpen": false,
+                            "registrationOpensAt": null,
+                            "requiresAttachments": false
+                        }
+                    ],
+                    "divers": [
+                        {
+                            "id": 9010,
+                            "slotId": 9010,
+                            "firstName": "Test",
+                            "lastName": "DURAND",
+                            "level": "N2",
+                            "email": null,
+                            "phone": null,
+                            "isDirector": false,
+                            "aptitudes": null,
+                            "licenseNumber": null,
+                            "palanqueeId": null,
+                            "palanqueePosition": 0,
+                            "medicalCertDate": null,
+                            "comment": null,
+                            "club": null
+                        }
+                    ],
+                    "palanquees": [
+                        {
+                            "id": 9010,
+                            "slotId": 9010,
+                            "name": "Palanquée Test",
+                            "position": 0,
+                            "depth": "20m",
+                            "duration": "40'",
+                            "slotDiveId": null,
+                            "memberDiverIds": [],
+                            "members": [
+                                { "diverId": 9010, "aptitudes": "PE40" }
+                            ]
+                        }
+                    ],
+                    "slotDives": [],
+                    "waitingListEntries": []
+                }
+                """;
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(payload)
+                .when().post("/api/admin/backup/import")
+                .then()
+                .statusCode(200)
+                .body("success", equalTo(true))
+                .body("slotsRestored", equalTo(1))
+                .body("diversRestored", equalTo(1))
+                .body("palanqueesRestored", equalTo(1));
+
+        // Retrouver le créneau restauré et vérifier les aptitudes du membre
+        int slotId = given()
+                .when().get("/api/slots?date=2099-11-20")
+                .then()
+                .statusCode(200)
+                .body("", hasSize(1))
+                .extract().path("[0].id");
+
+        given()
+                .when().get("/api/slots/" + slotId + "/palanquees")
+                .then()
+                .statusCode(200)
+                .body("[0].divers", hasSize(1))
+                .body("[0].divers[0].aptitudes", equalTo("PE40"));
+    }
 }

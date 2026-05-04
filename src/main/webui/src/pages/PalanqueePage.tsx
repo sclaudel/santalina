@@ -50,6 +50,7 @@ interface DiverCardProps {
   onMoveToWaitingList?: (diverId: number) => void;
   movingToWlId?: number | null;
   aptitudesOptions?: string[];
+  isReadOnly?: boolean;
 }
 
 const APTITUDES_OPTIONS = ['PE12','PE20','PE40','PE60','PA12','PA20','PA40','PA60','E1','E2','E3','E4','GP'];
@@ -57,7 +58,7 @@ const APTITUDES_OPTIONS = ['PE12','PE20','PE40','PE60','PA12','PA20','PA40','PA6
 const DEPTH_OPTIONS = ['6m', '12m', '20m', '30m', '40m', '50m', '60m'];
 const DURATION_OPTIONS = Array.from({ length: 24 }, (_, i) => `${(i + 1) * 10}'`);
 
-function DiverCard({ diver, onDragStart, onDragEnter, isDragging, onLevelChange, onAptitudesChange, onTap, isPicked, onMoveToWaitingList, movingToWlId, aptitudesOptions }: DiverCardProps) {
+function DiverCard({ diver, onDragStart, onDragEnter, isDragging, onLevelChange, onAptitudesChange, onTap, isPicked, onMoveToWaitingList, movingToWlId, aptitudesOptions, isReadOnly }: DiverCardProps) {
   const [editingLevel, setEditingLevel] = useState(false);
   const [editingAptitudes, setEditingAptitudes] = useState(false);
   const color = getLevelColor(diver.level);
@@ -69,17 +70,17 @@ function DiverCard({ diver, onDragStart, onDragEnter, isDragging, onLevelChange,
 
   return (
     <div
-      className={`palanquee-postit${isDragging ? ' palanquee-postit--dragging' : ''}${isPicked ? ' palanquee-postit--picked' : ''}`}
-      draggable={!isEditing && !onTap}
+      className={`palanquee-postit${isDragging ? ' palanquee-postit--dragging' : ''}${isPicked ? ' palanquee-postit--picked' : ''}${isReadOnly ? ' palanquee-postit--readonly' : ''}`}
+      draggable={!isEditing && !onTap && !isReadOnly}
       onDragStart={e => {
-        if (isEditing) { e.preventDefault(); return; }
+        if (isEditing || isReadOnly) { e.preventDefault(); return; }
         e.dataTransfer.effectAllowed = 'move';
         onDragStart(diver.id);
       }}
-      onDragEnter={e => { e.stopPropagation(); if (!isEditing) onDragEnter(); }}
-      onClick={() => onTap?.(diver.id)}
+      onDragEnter={e => { e.stopPropagation(); if (!isEditing && !isReadOnly) onDragEnter(); }}
+      onClick={() => !isReadOnly && onTap?.(diver.id)}
       style={{ borderTop: `4px solid ${color}` }}
-      title={onTap ? 'Appuyer pour sélectionner' : 'Glisser pour réordonner ou changer de palanquée'}
+      title={isReadOnly ? 'Vue lecture seule — sélectionnez une plongée pour modifier' : onTap ? 'Appuyer pour sélectionner' : 'Glisser pour réordonner ou changer de palanquée'}
     >
       <div className="palanquee-postit-name">
         {diver.isDirector && <span className="palanquee-postit-director" title="Directeur de plongée">🎖 </span>}
@@ -102,7 +103,7 @@ function DiverCard({ diver, onDragStart, onDragEnter, isDragging, onLevelChange,
           className="palanquee-postit-level"
           style={{ color }}
           title="Double-clic pour modifier le niveau"
-          onDoubleClick={e => { e.stopPropagation(); setEditingLevel(true); }}
+          onDoubleClick={e => { if (isReadOnly) return; e.stopPropagation(); setEditingLevel(true); }}
         >
           {diver.level}
         </div>
@@ -129,7 +130,7 @@ function DiverCard({ diver, onDragStart, onDragEnter, isDragging, onLevelChange,
             <button
               className="palanquee-postit-apt-edit-icon"
               title="Modifier les aptitudes"
-              onClick={e => { e.stopPropagation(); setEditingAptitudes(true); }}
+              onClick={e => { if (isReadOnly) return; e.stopPropagation(); setEditingAptitudes(true); }}
               onMouseDown={e => e.stopPropagation()}
             >✎</button>
           </div>
@@ -176,6 +177,7 @@ interface DropZoneProps {
   onMoveToWaitingList?: (diverId: number) => void;
   movingToWlId?: number | null;
   aptitudesOptions?: string[];
+  isReadOnly?: boolean;
 }
 
 function DropZone({
@@ -183,11 +185,12 @@ function DropZone({
   onDragEnterCard, onDragEnterEnd, insertBeforeId,
   label, labelIcon, isUnassigned = false, isPool = false, palanqueeIndex,
   onLevelChange, onAptitudesChange, onTapDiver, mobilePickedId,
-  onMoveToWaitingList, movingToWlId, aptitudesOptions,
+  onMoveToWaitingList, movingToWlId, aptitudesOptions, isReadOnly,
 }: DropZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
 
   const handleDragOver = (e: React.DragEvent) => {
+    if (isReadOnly) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     setIsDragOver(true);
@@ -196,6 +199,7 @@ function DropZone({
     if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsDragOver(false);
   };
   const handleDrop = (e: React.DragEvent) => {
+    if (isReadOnly) return;
     e.preventDefault();
     setIsDragOver(false);
     onDrop(palanqueeId);
@@ -238,6 +242,7 @@ function DropZone({
               onMoveToWaitingList={onMoveToWaitingList}
               movingToWlId={movingToWlId}
               aptitudesOptions={aptitudesOptions}
+              isReadOnly={isReadOnly}
             />
           </Fragment>
         ))}
@@ -515,6 +520,10 @@ export function PalanqueePage({ slotId, onBack }: Props) {
     ? palanquees
     : palanquees.filter(p => p.slotDiveId === activeDiveId);
 
+  // Vue "Toutes" en mode multi-plongées = lecture seule (un plongeur peut être
+  // dans plusieurs palanquées simultanément, le drag serait ambigu)
+  const isOverviewReadOnly = activeDiveId === null && slotDives.length > 0;
+
   // ── calcul des non-assignés (pool propre à la plongée active) ─────────────
   // En mode multi-plongée, chaque plongée a son propre pool : un plongeur
   // dans dive 1 reste disponible dans le pool de dive 2.
@@ -679,15 +688,40 @@ export function PalanqueePage({ slotId, onBack }: Props) {
   const handleDeleteDive = async (diveId: number) => {
     const dive = slotDives.find(d => d.id === diveId);
     const diveLabel = dive?.label ?? `Plongée ${dive?.diveIndex}`;
-    const palanqueesForDive = palanquees.filter(p => p.slotDiveId === diveId);
-    if (palanqueesForDive.length > 0) {
-      if (!window.confirm(`Supprimer « ${diveLabel} » ? Ses ${palanqueesForDive.length} palanquée(s) ne seront plus associées à une plongée.`)) return;
+    const isLastDive = slotDives.length === 1;
+
+    if (isLastDive) {
+      // Détecter les plongeurs présents dans plusieurs palanquées (doublons potentiels)
+      const diverPalCount = new Map<number, number>();
+      palanquees.forEach(p => {
+        p.divers.forEach(d => diverPalCount.set(d.id, (diverPalCount.get(d.id) ?? 0) + 1));
+      });
+      const duplicateCount = [...diverPalCount.values()].filter(c => c > 1).length;
+
+      let message = `Supprimer « ${diveLabel} » ? C'est la dernière plongée du créneau.`;
+      if (duplicateCount > 0) {
+        message += `\n\n⚠️ ${duplicateCount} plongeur${duplicateCount > 1 ? 's sont présents' : ' est présent'} dans plusieurs palanquées (multi-plongées). En supprimant cette plongée, les doublons seront automatiquement supprimés\u00a0: chaque plongeur sera conservé uniquement dans sa première palanquée.`;
+      }
+      message += '\n\nConfirmer la suppression ?';
+      if (!window.confirm(message)) return;
+    } else {
+      const palanqueesForDive = palanquees.filter(p => p.slotDiveId === diveId);
+      if (palanqueesForDive.length > 0) {
+        if (!window.confirm(`Supprimer « ${diveLabel} » ? Ses ${palanqueesForDive.length} palanquée(s) ne seront plus associées à une plongée.`)) return;
+      }
     }
+
     try {
       await slotDiveService.delete(slotId, diveId);
       setSlotDives(prev => prev.filter(d => d.id !== diveId).map((d, i) => ({ ...d, diveIndex: i + 1 })));
-      setPalanquees(prev => prev.map(p => p.slotDiveId === diveId ? { ...p, slotDiveId: null } : p));
       if (activeDiveId === diveId) setActiveDiveId(null);
+      // Si c'était la dernière plongée, recharger les palanquées depuis le serveur
+      // (le backend a dédupliqué les membres)
+      if (isLastDive) {
+        await loadAll();
+      } else {
+        setPalanquees(prev => prev.map(p => p.slotDiveId === diveId ? { ...p, slotDiveId: null } : p));
+      }
     } catch {
       setError('Impossible de supprimer la plongée.');
     }
@@ -1250,7 +1284,10 @@ export function PalanqueePage({ slotId, onBack }: Props) {
               <button
                 className="dive-tab-delete"
                 onClick={() => handleDeleteDive(dive.id)}
-                title={`Supprimer ${dive.label ?? `Plongée ${dive.diveIndex}`}`}
+                title={slotDives.length === 1
+                  ? `Supprimer ${dive.label ?? `Plongée ${dive.diveIndex}`} — dernière plongée du créneau. Si des plongeurs sont dans plusieurs palanquées, les doublons seront automatiquement supprimés.`
+                  : `Supprimer ${dive.label ?? `Plongée ${dive.diveIndex}`}`
+                }
               >✕</button>
             </span>
           ))}
@@ -1321,17 +1358,20 @@ export function PalanqueePage({ slotId, onBack }: Props) {
         );
       })()}
 
-      <div className="palanquee-hint">
-        {isMobile
-          ? <span>💡 Appuyez sur un plongeur pour le sélectionner, puis choisissez sa destination</span>
-          : <span>💡 Glissez les post-its pour assigner ou réordonner les plongeurs</span>
+      <div className={`palanquee-hint${isOverviewReadOnly ? ' palanquee-hint--overview' : ''}`}>
+        {isOverviewReadOnly
+          ? <span>👁 Vue d’ensemble — sélectionnez une plongée pour modifier les palanquées</span>
+          : isMobile
+            ? <span>💡 Appuyez sur un plongeur pour le sélectionner, puis choisissez sa destination</span>
+            : <span>💡 Glissez les post-its pour assigner ou réordonner les plongeurs</span>
         }
-        {unassigned.length > 0 && (
+        {!isOverviewReadOnly && unassigned.length > 0 && (
           <span className="palanquee-hint-warning">  ⚠️ {unassigned.length} plongeur{unassigned.length > 1 ? 's' : ''} non assigné{unassigned.length > 1 ? 's' : ''}</span>
         )}
       </div>
 
-      {/* Pool non-assignés — sticky sur mobile, fixe au-dessus du board */}
+      {/* Pool non-assignés — masqué en vue "Toutes" multi-plongées (pool non significatif) */}
+      {!isOverviewReadOnly && (
       <div className={`palanquee-pool-section${isMobile ? ' palanquee-pool-section--sticky' : ''}`}>
         <DropZone
           palanqueeId={null}
@@ -1354,6 +1394,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
           aptitudesOptions={aptitudesOptions}
         />
       </div>
+      )}
 
       {/* ── Mobile : navigation + palanquée active ── */}
       {isMobile && (
@@ -1472,11 +1513,12 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                       palanqueeIndex={idx + 1}
                       onLevelChange={handleLevelChange}
                       onAptitudesChange={handleAptitudesChange}
-                      onTapDiver={(id) => handleMobilePick(id, p.id)}
+                      onTapDiver={isOverviewReadOnly ? undefined : (id) => handleMobilePick(id, p.id)}
                       mobilePickedId={mobilePickedId}
                       onMoveToWaitingList={isRegistrationCurrentlyActive(slot) ? handleMoveToWaitingList : undefined}
                       movingToWlId={movingToWlId}
                       aptitudesOptions={aptitudesOptions}
+                      isReadOnly={isOverviewReadOnly}
                     />
                   </div>
                 );
@@ -1486,109 +1528,150 @@ export function PalanqueePage({ slotId, onBack }: Props) {
         </div>
       )}
 
-      {/* ── Desktop : plateau scroll horizontal ── */}
+      {/* ── Desktop : plateau ── */}
       {!isMobile && (
         <div
           ref={boardRef}
-          className="palanquee-board"
+          className={`palanquee-board${isOverviewReadOnly ? ' palanquee-board--overview' : ''}`}
           onDragEnd={() => { setDraggedId(null); setDraggedFromPalanqueeId(null); setInsertTarget(null); }}
         >
-          {filteredPalanquees.map((p, idx) => (
-            <div key={p.id} className="palanquee-column">
-              <div className="palanquee-column-header">
-                {renamingId === p.id ? (
-                  <input
-                    ref={renameInputRef}
-                    className="palanquee-rename-input"
-                    value={renameDraft}
-                    onChange={e => setRenameDraft(e.target.value)}
-                    onBlur={() => commitRename(p.id)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') commitRename(p.id);
-                      if (e.key === 'Escape') setRenamingId(null);
-                    }}
-                  />
-                ) : (
-                  <div className="palanquee-column-header-top">
-                    <span
-                      className="palanquee-column-name"
-                      title="Double-clic pour renommer"
-                      onDoubleClick={() => startRename(p)}
-                    >
-                      P{idx + 1} – {p.name}
-                    </span>
-                    <button
-                      className="palanquee-delete-btn"
-                      onClick={() => handleDeletePalanquee(p.id)}
-                      title="Supprimer cette palanquée"
-                    >✕</button>
+          {(() => {
+            if (filteredPalanquees.length === 0) {
+              return (
+                <div className="palanquee-column palanquee-column--empty">
+                  <div className="palanquee-empty-state">
+                    <p>Aucune palanquée créée{activeDiveId !== null ? ' pour cette plongée' : ''}.</p>
+                    <button className="palanquee-add-btn" onClick={handleAddPalanquee} disabled={saving}>
+                      + Créer la première palanquée
+                    </button>
                   </div>
-                )}
-                <div className="palanquee-column-params">
-                  {slotDives.length > 0 && (
-                    <select
-                      className="palanquee-param-select palanquee-param-select--dive"
-                      value={p.slotDiveId ?? ''}
-                      onChange={e => handleAssignPalanqueeToDive(p.id, e.target.value ? Number(e.target.value) : null)}
-                      title="Plongée associée"
-                    >
-                      <option value="">Plongée ▾</option>
-                      {slotDives.map(d => (
-                        <option key={d.id} value={d.id}>{d.label ?? `Plongée ${d.diveIndex}`}</option>
-                      ))}
-                    </select>
-                  )}
-                  <select
-                    className={`palanquee-param-select${!p.depth ? ' palanquee-param-select--empty' : ''}`}
-                    value={p.depth ?? ''}
-                    onChange={e => handleDepthChange(p.id, e.target.value)}
-                    title="Cliquez pour définir la profondeur maximale de cette palanquée"
-                  >
-                    <option value="">Prof. ▾</option>
-                    {DEPTH_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
-                  <select
-                    className={`palanquee-param-select${!p.duration ? ' palanquee-param-select--empty' : ''}`}
-                    value={p.duration ?? ''}
-                    onChange={e => handleDurationChange(p.id, e.target.value)}
-                    title="Cliquez pour définir le temps maximum de cette palanquée"
-                  >
-                    <option value="">Temps ▾</option>
-                    {DURATION_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
                 </div>
-              </div>
-              <DropZone
-                palanqueeId={p.id}
-                divers={p.divers}
-                draggedId={draggedId}
-                onDrop={handleDrop}
-                onDragStart={(id) => handleDragStart(id, p.id)}
-                onDragEnterCard={handleDragEnterCard}
-                onDragEnterEnd={handleDragEnterEnd}
-                insertBeforeId={insertTarget?.palanqueeId === p.id ? insertTarget.beforeDiverId : undefined}
-                label={p.name}
-                labelIcon="🤿"
-                palanqueeIndex={idx + 1}
-                onLevelChange={handleLevelChange}
-                onAptitudesChange={handleAptitudesChange}
-                onMoveToWaitingList={isRegistrationCurrentlyActive(slot) ? handleMoveToWaitingList : undefined}
-                movingToWlId={movingToWlId}
-                aptitudesOptions={aptitudesOptions}
-              />
-            </div>
-          ))}
+              );
+            }
 
-          {filteredPalanquees.length === 0 && (
-            <div className="palanquee-column palanquee-column--empty">
-              <div className="palanquee-empty-state">
-                <p>Aucune palanquée créée{activeDiveId !== null ? ' pour cette plongée' : ''}.</p>
-                <button className="palanquee-add-btn" onClick={handleAddPalanquee} disabled={saving}>
-                  + Créer la première palanquée
-                </button>
+            // ── Rendu des colonnes (factorisé) ──────────────────────────────
+            const renderColumn = (p: typeof filteredPalanquees[0], idx: number) => (
+              <div key={p.id} className="palanquee-column">
+                <div className="palanquee-column-header">
+                  {renamingId === p.id ? (
+                    <input
+                      ref={renameInputRef}
+                      className="palanquee-rename-input"
+                      value={renameDraft}
+                      onChange={e => setRenameDraft(e.target.value)}
+                      onBlur={() => commitRename(p.id)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') commitRename(p.id);
+                        if (e.key === 'Escape') setRenamingId(null);
+                      }}
+                    />
+                  ) : (
+                    <div className="palanquee-column-header-top">
+                      <span
+                        className="palanquee-column-name"
+                        title="Double-clic pour renommer"
+                        onDoubleClick={() => !isOverviewReadOnly && startRename(p)}
+                      >
+                        P{idx + 1} – {p.name}
+                      </span>
+                      {!isOverviewReadOnly && (
+                        <button
+                          className="palanquee-delete-btn"
+                          onClick={() => handleDeletePalanquee(p.id)}
+                          title="Supprimer cette palanquée"
+                        >✕</button>
+                      )}
+                    </div>
+                  )}
+                  {!isOverviewReadOnly && (
+                    <div className="palanquee-column-params">
+                      {slotDives.length > 0 && (
+                        <select
+                          className="palanquee-param-select palanquee-param-select--dive"
+                          value={p.slotDiveId ?? ''}
+                          onChange={e => handleAssignPalanqueeToDive(p.id, e.target.value ? Number(e.target.value) : null)}
+                          title="Plongée associée"
+                        >
+                          <option value="">Plongée ▾</option>
+                          {slotDives.map(d => (
+                            <option key={d.id} value={d.id}>{d.label ?? `Plongée ${d.diveIndex}`}</option>
+                          ))}
+                        </select>
+                      )}
+                      <select
+                        className={`palanquee-param-select${!p.depth ? ' palanquee-param-select--empty' : ''}`}
+                        value={p.depth ?? ''}
+                        onChange={e => handleDepthChange(p.id, e.target.value)}
+                        title="Cliquez pour définir la profondeur maximale de cette palanquée"
+                      >
+                        <option value="">Prof. ▾</option>
+                        {DEPTH_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
+                      </select>
+                      <select
+                        className={`palanquee-param-select${!p.duration ? ' palanquee-param-select--empty' : ''}`}
+                        value={p.duration ?? ''}
+                        onChange={e => handleDurationChange(p.id, e.target.value)}
+                        title="Cliquez pour définir le temps maximum de cette palanquée"
+                      >
+                        <option value="">Temps ▾</option>
+                        {DURATION_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                  )}
+                </div>
+                <DropZone
+                  palanqueeId={p.id}
+                  divers={p.divers}
+                  draggedId={draggedId}
+                  onDrop={handleDrop}
+                  onDragStart={(id) => handleDragStart(id, p.id)}
+                  onDragEnterCard={handleDragEnterCard}
+                  onDragEnterEnd={handleDragEnterEnd}
+                  insertBeforeId={insertTarget?.palanqueeId === p.id ? insertTarget.beforeDiverId : undefined}
+                  label={p.name}
+                  labelIcon="🤿"
+                  palanqueeIndex={idx + 1}
+                  onLevelChange={handleLevelChange}
+                  onAptitudesChange={handleAptitudesChange}
+                  onMoveToWaitingList={isRegistrationCurrentlyActive(slot) ? handleMoveToWaitingList : undefined}
+                  movingToWlId={movingToWlId}
+                  aptitudesOptions={aptitudesOptions}
+                  isReadOnly={isOverviewReadOnly}
+                />
               </div>
-            </div>
-          )}
+            );
+
+            // ── Vue "Toutes" (multi-plongées) : groupes par plongée ─────────
+            if (isOverviewReadOnly) {
+              // Construire les groupes dans l'ordre de slotDives, puis les non-associées
+              const groups: { diveId: number | null; label: string; pals: typeof filteredPalanquees }[] = [];
+              slotDives.forEach(dive => {
+                const pals = filteredPalanquees.filter(p => p.slotDiveId === dive.id);
+                if (pals.length > 0) groups.push({ diveId: dive.id, label: dive.label ?? `Plongée ${dive.diveIndex}`, pals });
+              });
+              const unassignedPals = filteredPalanquees.filter(p => !p.slotDiveId);
+              if (unassignedPals.length > 0) groups.push({ diveId: null, label: 'Non associées à une plongée', pals: unassignedPals });
+
+              // Index global pour la numérotation des palanquées
+              let globalIdx = 0;
+              return groups.map(group => (
+                <div key={group.diveId ?? 'unassigned'} className="palanquee-dive-group">
+                  <div className={`palanquee-dive-group-header${group.diveId === null ? ' palanquee-dive-group-header--unassigned' : ''}`}>
+                    {group.diveId !== null ? '🤿' : '·'} {group.label}
+                    <span style={{ fontWeight: 400, opacity: 0.7, marginLeft: 4 }}>
+                      — {group.pals.reduce((n, p) => n + p.divers.length, 0)} plongeur{group.pals.reduce((n, p) => n + p.divers.length, 0) !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <div className="palanquee-dive-group-columns">
+                    {group.pals.map(p => renderColumn(p, globalIdx++))}
+                  </div>
+                </div>
+              ));
+            }
+
+            // ── Vue normale (une plongée ou plongée unique) ─────────────────
+            return filteredPalanquees.map((p, idx) => renderColumn(p, idx));
+          })()}
         </div>
       )}
 

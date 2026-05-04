@@ -508,6 +508,61 @@ class PalanqueeResourceIT {
 
     // ── ACCÈS NON AUTORISÉ ──────────────────────────────────────────────────
 
+    // ── MULTI-PLONGÉES : PAS DE DOUBLON LORS D'UN MOVE ───────────────────────
+
+    /**
+     * Vérifie que le déplacement d'un plongeur via fromPalanqueeId retire le plongeur
+     * uniquement de la palanquée source spécifiée, sans toucher une autre palanquée
+     * où ce même plongeur est également assigné (scénario multi-plongées).
+     *
+     * Reproduit le bug "doublons dans la vue Toutes" : sans fromPalanqueeId explicite,
+     * le backend pourrait retirer le plongeur de la mauvaise palanquée.
+     */
+    @Test
+    @TestSecurity(user = "dp_multidive_nodup@test.com", roles = {"DIVE_DIRECTOR"})
+    void assign_withFromPalanquee_multiDive_shouldOnlyRemoveFromSpecifiedSource() {
+        DiveSlot slot   = createSlotWithDp("dp_multidive_nodup@test.com");
+        SlotDiver diver = addDiver(slot.id, "MOREAU", "N2");
+        Long pal1       = createPalanquee(slot.id, "P1");
+        Long pal2       = createPalanquee(slot.id, "P2");
+        Long pal3       = createPalanquee(slot.id, "P3");
+        try {
+            // Assigner dans P1 (première plongée)
+            given()
+                .contentType(ContentType.JSON)
+                .body("{\"diverId\":" + diver.id + ",\"palanqueeId\":" + pal1 + "}")
+                .when().put("/api/slots/" + slot.id + "/palanquees/assign")
+                .then().statusCode(200);
+
+            // Assigner dans P2 aussi (multi-plongées : le plongeur peut être dans deux palanquées)
+            given()
+                .contentType(ContentType.JSON)
+                .body("{\"diverId\":" + diver.id + ",\"palanqueeId\":" + pal2 + "}")
+                .when().put("/api/slots/" + slot.id + "/palanquees/assign")
+                .then().statusCode(200);
+
+            // Déplacer de P2 vers P3 en précisant fromPalanqueeId=P2
+            given()
+                .contentType(ContentType.JSON)
+                .body("{\"diverId\":" + diver.id + ",\"palanqueeId\":" + pal3 + ",\"fromPalanqueeId\":" + pal2 + "}")
+                .when().put("/api/slots/" + slot.id + "/palanquees/assign")
+                .then().statusCode(200);
+
+            // P1 doit toujours avoir le plongeur (pas la source du déplacement)
+            // P2 doit être vide (source explicite du déplacement)
+            // P3 doit avoir le plongeur (destination)
+            given()
+                .when().get("/api/slots/" + slot.id + "/palanquees")
+                .then()
+                .statusCode(200)
+                .body("find { it.id == " + pal1 + " }.divers", hasSize(1))
+                .body("find { it.id == " + pal2 + " }.divers", hasSize(0))
+                .body("find { it.id == " + pal3 + " }.divers", hasSize(1));
+        } finally {
+            cleanup(slot.id);
+        }
+    }
+
     @Test
     void createPalanquee_shouldReturn401_withoutAuthentication() {
         DiveSlot slot = createSlotWithDp("dp_pal_401_" + System.nanoTime() + "@test.com");

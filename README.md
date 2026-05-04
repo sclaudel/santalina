@@ -24,7 +24,7 @@ Application de réservation de créneaux de plongée en lac, développée avec *
 - **Liste d'attente** : inscription libre, validation/refus par le DP responsable
 - **Inscriptions libres** : le DP assigné peut ouvrir les inscriptions avec date d'ouverture optionnelle
 - **Organisation des palanquées** : drag-and-drop, gestion des aptitudes, export Excel fiche de sécurité, export CSV
-- **Plongées multiples par créneau** : découpage optionnel d'un créneau en plusieurs plongées distinctes (matin/après-midi…), filtrage du tableau des palanquées par plongée, horaires par plongée, aptitudes différentes par plongée, fiches de sécurité individuelles par plongée
+- **Plongées multiples par créneau** : découpage optionnel d'un créneau en plusieurs plongées distinctes (matin/après-midi…), filtrage du tableau des palanquées par plongée, horaires par plongée, aptitudes différentes par plongée, fiches de sécurité individuelles par plongée ; l'onglet **Toutes** est en lecture seule (vue d'ensemble) pour éviter les doublons, avec séparation visuelle des palanquées par plongée
 - **Mail d'organisation** (DIVE_DIRECTOR) : envoi groupé depuis la page Palanquées — plongeurs en BCC, DP en CC, Reply-To = DP ; éditeur WYSIWYG avec variables `{siteName}`, `{slotDate}`, `{dpName}`… ; modèle personnalisable par DP dans son profil
 - **Normalisation des données** : prénoms capitalisés, emails en minuscules
 - **Docker-ready** : Dockerfile multi-stage + docker-compose
@@ -166,12 +166,22 @@ Il est possible de découper un créneau en **plusieurs plongées distinctes** (
    - Bouton 📥 **Liste globale** sur l'onglet Toutes → exporte la **liste complète des inscrits** sans organisation en palanquées.
 9. Pour supprimer une plongée, cliquer sur **✕** dans son onglet (les palanquées sont détachées mais pas supprimées).
 
+### Vue d'ensemble (onglet « Toutes »)
+L'onglet **Toutes** est en **lecture seule** dès qu'au moins une plongée est définie. Il affiche toutes les palanquées regroupées par plongée avec une séparation visuelle. Pour modifier les affectations, sélectionner l'onglet de la plongée concernée.
+
+### Suppression de la dernière plongée
+Si un créneau multi-plongées est simplifié en supprimant toutes ses plongées, l'application :
+- Affiche un avertissement indiquant combien de plongeurs étaient présents en double (un même plongeur dans plusieurs palanquées).
+- **Déduplique automatiquement** les membres après confirmation : chaque plongeur est conservé uniquement dans sa première palanquée (par ordre de position).
+
 ### Rétrocompatibilité
 - Les palanquées sans plongée assignée restent visibles dans l'onglet **Toutes**.
 - La fonctionnalité est optionnelle : un créneau sans plongée fonctionne exactement comme avant.
 
 ### Sauvegarde / restauration
 Les plongées sont incluses dans l'export JSON complet et restaurées automatiquement lors de l'import.
+
+Les **aptitudes spécifiques par plongée** (`PalanqueeMember.aptitudes`) sont également incluses dans l'export JSON (champ `members` de chaque palanquée) et restaurées fidèlement lors de l'import. Les anciens exports (champ `memberDiverIds` uniquement) restent compatibles à l'import (aptitudes nulles dans ce cas).
 
 ---
 
