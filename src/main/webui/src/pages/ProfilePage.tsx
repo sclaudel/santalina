@@ -345,17 +345,19 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
                         </div>
                       </div>
                     ) : (
-                      <div key={s.id} style={{ background: '#f9fafb', borderRadius: 8, padding: '8px 12px', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ flex: 1 }}>
+                      <div key={s.id} style={{ background: '#f9fafb', borderRadius: 8, padding: '8px 12px', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <div style={{ flex: '1 1 160px', minWidth: 0 }}>
                           <span style={{ fontWeight: 600 }}>{fmtDate(s.diveDate)}</span>
                           <span style={{ margin: '0 6px', color: '#9ca3af' }}>·</span>
                           <span>{s.startTime.slice(0,5)}</span>
-                          {s.label && <><span style={{ margin: '0 6px', color: '#9ca3af' }}>·</span><span style={{ color: '#374151' }}>{s.label}</span></>}
+                          {s.label && <><span style={{ margin: '0 6px', color: '#9ca3af' }}>·</span><span style={{ color: '#374151', wordBreak: 'break-word' }}>{s.label}</span></>}
                         </div>
-                        <button className="btn btn-primary" style={{ padding: '3px 10px', fontSize: 12 }} onClick={() => onNavigate?.(`free-session-${s.id}`)}>🧩 Ouvrir</button>
-                        <button className="btn btn-secondary" style={{ padding: '3px 10px', fontSize: 12 }} title="Copier (garder les plongeurs)" onClick={() => { setCopySource(s); setCopyLabel(s.label ?? ''); setCopyDate(''); setCopyTime(''); setFsError(''); }}>📋</button>
-                        <button className="btn btn-secondary" style={{ padding: '3px 10px', fontSize: 12 }} onClick={() => setEditSession(s)}>✏️</button>
-                        <button className="btn btn-secondary" style={{ padding: '3px 10px', fontSize: 12, color: '#ef4444' }} onClick={() => handleDeleteSession(s.id)}>🗑️</button>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', flexShrink: 0 }}>
+                          <button className="btn btn-primary" style={{ padding: '3px 10px', fontSize: 12 }} onClick={() => onNavigate?.(`free-session-${s.id}`)}>🧩 Ouvrir</button>
+                          <button className="btn btn-secondary" style={{ padding: '3px 10px', fontSize: 12 }} title="Copier (garder les plongeurs)" onClick={() => { setCopySource(s); setCopyLabel(s.label ?? ''); setCopyDate(''); setCopyTime(''); setFsError(''); }}>📋</button>
+                          <button className="btn btn-secondary" style={{ padding: '3px 10px', fontSize: 12 }} onClick={() => setEditSession(s)}>✏️</button>
+                          <button className="btn btn-secondary" style={{ padding: '3px 10px', fontSize: 12, color: '#ef4444' }} onClick={() => handleDeleteSession(s.id)}>🗑️</button>
+                        </div>
                       </div>
                     )
                   ))}
