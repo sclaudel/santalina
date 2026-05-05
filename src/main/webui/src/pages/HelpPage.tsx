@@ -428,6 +428,61 @@ export function HelpPage() {
       ),
     },
 
+    // ── ORGANISATION LIBRE (BETA) ─────────────────────────────────────────────
+    {
+      id: 'organisation-libre',
+      icon: '🧩',
+      title: 'Organisation libre (bêta)',
+      roles: ['ADMIN', 'DIVE_DIRECTOR'],
+      content: (
+        <>
+          <div className="help-warning">
+            ⚠️ Cette fonctionnalité est en <strong>version bêta</strong>. Elle est fonctionnelle mais peut encore évoluer. N'hésitez pas à signaler tout comportement inattendu.
+          </div>
+          <p>
+            L'<strong>Organisation libre</strong> permet de créer des sessions d'organisation de palanquées
+            <strong> sans rattachement à un créneau du calendrier</strong>. C'est utile pour préparer une
+            sortie en dehors du calendrier de la plateforme, ou pour organiser des plongeurs à la demande.
+          </p>
+          <h4>Accéder aux organisations libres</h4>
+          <ol>
+            <li>Cliquez sur votre nom dans la barre de navigation → <strong>👤 Mon profil</strong>.</li>
+            <li>Faites défiler jusqu'à la section <strong>🧩 Organisations libres</strong>.</li>
+          </ol>
+          <h4>Créer une organisation</h4>
+          <ol>
+            <li>Cliquez sur <strong>+ Nouvelle organisation</strong>.</li>
+            <li>Renseignez une <strong>date</strong> et une <strong>heure de début</strong> (obligatoires) et un <strong>libellé</strong> optionnel.</li>
+            <li>Cliquez sur <strong>💾 Créer</strong>.</li>
+            <li>Cliquez sur <strong>🧩 Ouvrir</strong> pour accéder à la vue d'organisation.</li>
+          </ol>
+          <h4>Copier une organisation existante</h4>
+          <p>Le bouton <strong>📋</strong> (copier) à côté d'une organisation permet de la dupliquer vers une nouvelle date en conservant tous les plongeurs et les palanquées.</p>
+          <h4>Organiser les palanquées</h4>
+          <p>La vue d'organisation libre fonctionne comme la page d'organisation des palanquées d'un créneau classique :</p>
+          <ul>
+            <li>Ajoutez des plongeurs via le formulaire en haut de la page (recherche utilisateur existant ou saisie manuelle).</li>
+            <li><strong>Sur ordinateur</strong> — glissez-déposez les fiches plongeur entre la zone <strong>Non assignés</strong> et les palanquées.</li>
+            <li><strong>Sur mobile</strong> — appuyez sur une fiche pour la sélectionner, puis utilisez la barre d'action en bas de l'écran pour choisir la destination (palanquée ou non assignés).</li>
+            <li>Créez de nouvelles palanquées avec <strong>+ Palanquée</strong>.</li>
+            <li>Définissez la profondeur et la durée de chaque palanquée via les menus déroulants dans l'en-tête de colonne.</li>
+          </ul>
+          <h4>Plongées multiples</h4>
+          <p>Comme pour les créneaux classiques, il est possible d'organiser une session libre en <strong>plusieurs plongées</strong> (matin / après-midi…) via le bouton <strong>+ Organiser en plusieurs plongées</strong>.</p>
+          <h4>Exports</h4>
+          <ul>
+            <li><strong>📋 Liste CSV</strong> — exporte la liste des plongeurs inscrits.</li>
+            <li><strong>📥 Fiche sécurité (Excel)</strong> — exporte la fiche de sécurité avec ou sans palanquées selon l'organisation.</li>
+          </ul>
+          <h4>Limites</h4>
+          <ul>
+            <li>Maximum <strong>15 organisations libres</strong> par directeur de plongée.</li>
+            <li>Les organisations libres ne sont <strong>pas visibles dans le calendrier</strong> et ne gèrent pas d'inscriptions libres pour les plongeurs.</li>
+          </ul>
+        </>
+      ),
+    },
+
     // ── AJOUTER À L'AGENDA ────────────────────────────────────────────────────
     {
       id: 'agenda',

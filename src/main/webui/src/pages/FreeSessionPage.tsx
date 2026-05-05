@@ -937,13 +937,11 @@ export function FreeSessionPage({ sessionId, onBack }: Props) {
             👁️ Vue d'ensemble — sélectionnez une plongée pour modifier les assignations
           </div>
         )}
-        <div className="palanquee-board" ref={boardRef} onDragEnd={() => { setDraggedId(null); setInsertTarget(null); }}>
-          {/* Pool non-assignés */}
+
+        {/* Pool non-assignés — sticky sur mobile, section normale sur desktop */}
+        <div className={`palanquee-pool-section${isMobile ? ' palanquee-pool-section--sticky' : ''}`}>
           {isMobile ? (
-            <div
-              className={`palanquee-dropzone palanquee-dropzone--unassigned${mobilePickedId !== null ? ' palanquee-dropzone--mobile-target' : ''}`}
-              onClick={() => mobilePickedId !== null && handleMobileAssign(null)}
-            >
+            <div className="palanquee-dropzone palanquee-dropzone--unassigned">
               <div className="palanquee-dropzone-header">
                 <span className="palanquee-dropzone-icon">🏊</span>
                 <span className="palanquee-dropzone-label">Non assignés</span>
@@ -967,14 +965,106 @@ export function FreeSessionPage({ sessionId, onBack }: Props) {
               insertBeforeId={insertTarget?.palId === null ? insertTarget.beforeId : undefined}
               isUnassigned isPool aptitudesOptions={aptitudesOptions} isReadOnly={isOverviewReadOnly} />
           )}
+        </div>
 
-          {/* Palanquées (mode desktop : toutes ; mobile : pagination) */}
-          {(() => {
-            const pals = isMobile ? [filteredPals[activePalIdx]].filter(Boolean) : filteredPals;
-            return pals.map((pal, idx) => {
-              const palGlobal = filteredPals.findIndex(p => p.id === pal.id);
-              const isPicked = mobilePickedId !== null;
-              return (
+        {/* Vue mobile : navigation par points + palanquée active */}
+        {isMobile && (
+          <div className="palanquee-mobile-view">
+            {filteredPals.length === 0 ? (
+              <div className="palanquee-empty-state">
+                <p>Aucune palanquée créée.</p>
+                {!isOverviewReadOnly && (
+                  <button className="palanquee-add-btn" onClick={handleAddPalanquee} disabled={saving}>
+                    + Créer la première palanquée
+                  </button>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className="palanquee-mobile-nav">
+                  <button className="palanquee-mobile-nav-btn" disabled={activePalIdx === 0} onClick={() => setActivePalIdx(i => Math.max(0, i - 1))}>‹</button>
+                  <div className="palanquee-mobile-nav-dots">
+                    {filteredPals.map((_, i) => (
+                      <button key={i} className={`palanquee-mobile-nav-dot${i === activePalIdx ? ' palanquee-mobile-nav-dot--active' : ''}`} onClick={() => setActivePalIdx(i)} />
+                    ))}
+                  </div>
+                  <button className="palanquee-mobile-nav-btn" disabled={activePalIdx >= filteredPals.length - 1} onClick={() => setActivePalIdx(i => Math.min(filteredPals.length - 1, i + 1))}>›</button>
+                </div>
+                {filteredPals[activePalIdx] && (() => {
+                  const pal = filteredPals[activePalIdx];
+                  const palGlobal = filteredPals.findIndex(p => p.id === pal.id);
+                  return (
+                    <div className="palanquee-column palanquee-column--mobile">
+                      <div className="palanquee-column-header">
+                        {renamingId === pal.id ? (
+                          <input ref={renameInputRef} className="palanquee-rename-input"
+                            value={renameDraft} onChange={e => setRenameDraft(e.target.value)}
+                            onBlur={() => commitRename(pal.id)}
+                            onKeyDown={e => { if (e.key === 'Enter') commitRename(pal.id); if (e.key === 'Escape') setRenamingId(null); }} />
+                        ) : (
+                          <div className="palanquee-column-header-top">
+                            <span className="palanquee-column-name" onDoubleClick={() => { setRenamingId(pal.id); setRenameDraft(pal.name); }}>
+                              P{palGlobal + 1} — {pal.name}
+                            </span>
+                            <button className="palanquee-delete-btn" onClick={() => handleDeletePalanquee(pal.id)} title="Supprimer la palanquée">✕</button>
+                          </div>
+                        )}
+                        <div className="palanquee-column-params">
+                          <select
+                            className={`palanquee-param-select${!pal.depth ? ' palanquee-param-select--empty' : ''}`}
+                            value={pal.depth ?? ''}
+                            onChange={e => handleDepthChange(pal.id, e.target.value)}
+                            title="Profondeur"
+                          >
+                            <option value="">Prof. ▾</option>
+                            {DEPTH_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
+                          </select>
+                          <select
+                            className={`palanquee-param-select${!pal.duration ? ' palanquee-param-select--empty' : ''}`}
+                            value={pal.duration ?? ''}
+                            onChange={e => handleDurationChange(pal.id, e.target.value)}
+                            title="Durée"
+                          >
+                            <option value="">Temps ▾</option>
+                            {DURATION_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="palanquee-dropzone">
+                        <div className="palanquee-cards-area">
+                          {pal.divers.map(d => (
+                            <DiverCard key={d.id} diver={d} onDragStart={() => {}} onDragEnter={() => {}} isDragging={false}
+                              onLevelChange={handleLevelChange} onAptitudesChange={handleAptitudesChange}
+                              onTap={isOverviewReadOnly ? undefined : id => handleMobilePick(id, pal.id)} isPicked={mobilePickedId === d.id}
+                              aptitudesOptions={aptitudesOptions} isReadOnly={isOverviewReadOnly} />
+                          ))}
+                          {pal.divers.length === 0 && <div className="palanquee-empty-hint">Appuyez sur un plongeur du pool pour l'assigner ici</div>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Vue desktop : plateau complet avec toutes les colonnes */}
+        {!isMobile && (
+          <div className="palanquee-board" ref={boardRef} onDragEnd={() => { setDraggedId(null); setInsertTarget(null); }}>
+            {filteredPals.length === 0 ? (
+              <div className="palanquee-column palanquee-column--empty">
+                <div className="palanquee-empty-state">
+                  <p>Aucune palanquée créée.</p>
+                  {!isOverviewReadOnly && (
+                    <button className="palanquee-add-btn" onClick={handleAddPalanquee} disabled={saving}>
+                      + Créer la première palanquée
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              filteredPals.map((pal, palGlobal) => (
                 <div key={pal.id} className="palanquee-column">
                   <div className="palanquee-column-header">
                     {renamingId === pal.id ? (
@@ -1011,45 +1101,50 @@ export function FreeSessionPage({ sessionId, onBack }: Props) {
                       </select>
                     </div>
                   </div>
-
-                  {isMobile ? (
-                    <div className={`palanquee-dropzone${isPicked ? ' palanquee-dropzone--mobile-target' : ''}`}
-                      onClick={() => isPicked && handleMobileAssign(pal.id)}>
-                      <div className="palanquee-cards-area">
-                        {pal.divers.map(d => (
-                          <DiverCard key={d.id} diver={d} onDragStart={() => {}} onDragEnter={() => {}} isDragging={false}
-                            onLevelChange={handleLevelChange} onAptitudesChange={handleAptitudesChange}
-                            onTap={id => handleMobilePick(id, pal.id)} isPicked={mobilePickedId === d.id}
-                            aptitudesOptions={aptitudesOptions} isReadOnly={isOverviewReadOnly} />
-                        ))}
-                        {pal.divers.length === 0 && <div className="palanquee-empty-hint">Déposer un plongeur ici</div>}
-                      </div>
-                    </div>
-                  ) : (
-                    <DropZone palanqueeId={pal.id} label={pal.name} divers={pal.divers}
-                      draggedId={draggedId} onDragStart={handleDragStart} onDragEnterCard={handleDragEnterCard}
-                      onDragEnterEnd={handleDragEnterEnd} onDrop={handleDrop}
-                      onLevelChange={handleLevelChange} onAptitudesChange={handleAptitudesChange}
-                      insertBeforeId={insertTarget?.palId === pal.id ? insertTarget.beforeId : undefined}
-                      palanqueeIndex={palGlobal + 1}
-                      aptitudesOptions={aptitudesOptions} isReadOnly={isOverviewReadOnly} />
-                  )}
-                  {idx === 0 && void idx}
+                  <DropZone palanqueeId={pal.id} label={pal.name} divers={pal.divers}
+                    draggedId={draggedId} onDragStart={handleDragStart} onDragEnterCard={handleDragEnterCard}
+                    onDragEnterEnd={handleDragEnterEnd} onDrop={handleDrop}
+                    onLevelChange={handleLevelChange} onAptitudesChange={handleAptitudesChange}
+                    insertBeforeId={insertTarget?.palId === pal.id ? insertTarget.beforeId : undefined}
+                    palanqueeIndex={palGlobal + 1}
+                    aptitudesOptions={aptitudesOptions} isReadOnly={isOverviewReadOnly} />
                 </div>
-              );
-            });
-          })()}
-        </div>
-
-        {/* Pagination mobile */}
-        {isMobile && filteredPals.length > 1 && (
-          <div className="palanquee-mobile-nav">
-            <button className="palanquee-mobile-nav-btn" disabled={activePalIdx === 0} onClick={() => setActivePalIdx(i => i - 1)}>‹</button>
-            <span className="palanquee-mobile-nav-label">{activePalIdx + 1} / {filteredPals.length}</span>
-            <button className="palanquee-mobile-nav-btn" disabled={activePalIdx >= filteredPals.length - 1} onClick={() => setActivePalIdx(i => i + 1)}>›</button>
+              ))
+            )}
           </div>
         )}
       </div>
+
+      {/* Barre d'action mobile — apparaît quand un plongeur est sélectionné */}
+      {isMobile && mobilePickedId !== null && (() => {
+        const picked = allDivers.find(d => d.id === mobilePickedId);
+        if (!picked) return null;
+        return (
+          <div className="palanquee-mobile-action-bar">
+            <div className="palanquee-mobile-action-info">
+              <span className="palanquee-mobile-action-name">{picked.firstName} {picked.lastName}</span>
+              <span className="palanquee-mobile-action-level" style={{ color: getLevelColor(picked.level) }}>{picked.level}</span>
+            </div>
+            <div className="palanquee-mobile-action-btns">
+              <button
+                className={`palanquee-mobile-action-btn palanquee-mobile-action-btn--pool${mobileFromPalId === null ? ' palanquee-mobile-action-btn--active' : ''}`}
+                onClick={() => handleMobileAssign(null)}
+              >📋 Non assignés</button>
+              {filteredPals.map((pal, i) => (
+                <button
+                  key={pal.id}
+                  className={`palanquee-mobile-action-btn${mobileFromPalId === pal.id ? ' palanquee-mobile-action-btn--active' : ''}`}
+                  onClick={() => { handleMobileAssign(pal.id); setActivePalIdx(i); }}
+                >P{i + 1} {pal.name}</button>
+              ))}
+              <button
+                className="palanquee-mobile-action-btn palanquee-mobile-action-btn--cancel"
+                onClick={() => { setMobilePickedId(null); setMobileFromPalId(null); }}
+              >✕ Annuler</button>
+            </div>
+          </div>
+        );
+      })()}
 
     </div>
   );
