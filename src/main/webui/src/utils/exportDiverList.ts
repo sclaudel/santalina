@@ -9,9 +9,9 @@ function fmtDate(d: string): string {
  * Génère et télécharge un fichier CSV avec la liste des plongeurs inscrits sur un créneau.
  * Colonnes : Nom, Prénom, Niveau, Email
  */
-export function exportDiverListCsv(slot: DiveSlot, divers: SlotDiver[]): void {
+export function exportDiverListCsv(slot: DiveSlot, divers: SlotDiver[], filenameOverride?: string): void {
   const dateLabel = slot.slotDate ? fmtDate(slot.slotDate) : '';
-  const filename = `${slot.slotDate ?? 'creneau'}-${slot.startTime?.replace(':', '-') ?? ''}-liste-plongeurs.csv`;
+  const filename = filenameOverride ?? `${slot.slotDate ?? 'creneau'}-${slot.startTime?.replace(':', '-') ?? ''}-liste-plongeurs.csv`;
 
   // En-tête CSV
   const lines: string[] = ['\uFEFF' + 'Nom;Prénom;Niveau;Email;Directeur de plongée;Club;Date certificat médical;Commentaire'];

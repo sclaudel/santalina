@@ -146,7 +146,11 @@ class BackupResourceIT {
                     .body("divers", notNullValue())
                     .body("palanquees", notNullValue())
                     .body("slotDives", notNullValue())
-                    .body("waitingListEntries", not(empty()));
+                    .body("waitingListEntries", not(empty()))
+                    .body("freeSessions", notNullValue())
+                    .body("freeSessionDivers", notNullValue())
+                    .body("freeSessionDives", notNullValue())
+                    .body("freePalanquees", notNullValue());
         } finally {
             cleanup(slot.id);
         }
@@ -167,7 +171,11 @@ class BackupResourceIT {
                 .body("slots", nullValue())
                 .body("divers", nullValue())
                 .body("palanquees", nullValue())
-                .body("waitingListEntries", nullValue());
+                .body("waitingListEntries", nullValue())
+                .body("freeSessions", nullValue())
+                .body("freeSessionDivers", nullValue())
+                .body("freeSessionDives", nullValue())
+                .body("freePalanquees", nullValue());
     }
 
     // ── Tests d'import ────────────────────────────────────────────────────────
@@ -672,5 +680,119 @@ class BackupResourceIT {
         if (slot == null) return;
         if (slot.createdBy != null) slot.createdBy.delete();
         slot.delete();
+    }
+
+    /**
+     * Vérifie qu'un import complet incluant des sessions libres (FreeDiveSession),
+     * des plongeurs libres, des plongées libres et des palanquées libres les restaure
+     * correctement. Le champ {@code freeSessionsRestored} doit valoir 1.
+     *
+     * ⚠️ Test destructif (vide la base) — placé en dernier.
+     */
+    @Test
+    @Order(19)
+    @TestSecurity(user = "admin@test.com", roles = {"ADMIN"})
+    void importBackup_withFreeSessions_shouldRestoreFreeSessions() {
+        String payload = """
+                {
+                    "version": "1.0",
+                    "type": "full",
+                    "exportedAt": "2099-01-01T00:00:00",
+                    "config": [],
+                    "users": [
+                        {
+                            "id": 9200,
+                            "email": "dp.freesession@test.com",
+                            "passwordHash": "$2a$10$test",
+                            "firstName": "Dp",
+                            "lastName": "FREESESSION",
+                            "phone": null,
+                            "licenseNumber": null,
+                            "club": null,
+                            "activated": true,
+                            "consentGiven": false,
+                            "consentDate": null,
+                            "roles": ["DIVE_DIRECTOR"],
+                            "notifOnRegistration": true,
+                            "notifOnApproved": true,
+                            "notifOnCancelled": true,
+                            "notifOnMovedToWaitlist": true,
+                            "notifOnDpRegistration": true,
+                            "notifOnCreatorRegistration": false,
+                            "notifOnSafetyReminder": true,
+                            "clubCertified": false,
+                            "dpOrganizerEmailTemplate": null
+                        }
+                    ],
+                    "slots": [],
+                    "divers": [],
+                    "palanquees": [],
+                    "slotDives": [],
+                    "waitingListEntries": [],
+                    "freeSessions": [
+                        {
+                            "id": 9200,
+                            "ownerId": 9200,
+                            "label": "Sortie lac import",
+                            "diveDate": "2099-09-15",
+                            "startTime": "09:00:00",
+                            "notes": "Notes import"
+                        }
+                    ],
+                    "freeSessionDivers": [
+                        {
+                            "id": 9200,
+                            "sessionId": 9200,
+                            "firstName": "Alice",
+                            "lastName": "MARTIN",
+                            "level": "N2",
+                            "email": null,
+                            "phone": null,
+                            "isDirector": false,
+                            "aptitudes": null,
+                            "licenseNumber": null,
+                            "medicalCertDate": null,
+                            "comment": null,
+                            "club": null
+                        }
+                    ],
+                    "freeSessionDives": [
+                        {
+                            "id": 9200,
+                            "sessionId": 9200,
+                            "diveIndex": 1,
+                            "label": "Plongée import",
+                            "startTime": "09:00:00",
+                            "endTime": "11:00:00",
+                            "depth": "18m",
+                            "duration": "35'"
+                        }
+                    ],
+                    "freePalanquees": [
+                        {
+                            "id": 9200,
+                            "sessionId": 9200,
+                            "diveId": 9200,
+                            "name": "Palanquée Import",
+                            "position": 0,
+                            "depth": "18m",
+                            "duration": "35'",
+                            "members": [
+                                { "diverId": 9200, "aptitudes": null }
+                            ]
+                        }
+                    ]
+                }
+                """;
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(payload)
+                .when().post("/api/admin/backup/import")
+                .then()
+                .statusCode(200)
+                .body("success", equalTo(true))
+                .body("freeSessionsRestored", equalTo(1))
+                .body("usersRestored", equalTo(1));
     }
 }

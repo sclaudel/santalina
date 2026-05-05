@@ -2,12 +2,30 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/authService';
 import { adminService } from '../services/adminService';
+import { freeSessionService } from '../services/freeSessionService';
 import { RichTextEditor } from '../components/RichTextEditor';
 import { DpOrganizerMailer } from '../utils/dpMailDefaults';
+import type { FreeDiveSession } from '../types';
 
-export function ProfilePage() {
+interface ProfilePageProps {
+  onNavigate?: (page: string) => void;
+}
+
+export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
   const { user } = useAuth();
   const notifSectionRef = useRef<HTMLDivElement>(null);
+  const [freeSessions, setFreeSessions] = useState<FreeDiveSession[]>([]);
+  const [freeSessionsLoading, setFreeSessionsLoading] = useState(false);
+  const [showNewSessionModal, setShowNewSessionModal] = useState(false);
+  const [newSessionLabel, setNewSessionLabel] = useState('');
+  const [newSessionDate, setNewSessionDate] = useState('');
+  const [newSessionTime, setNewSessionTime] = useState('');
+  const [editSession, setEditSession] = useState<FreeDiveSession | null>(null);
+  const [copySource, setCopySource] = useState<FreeDiveSession | null>(null);
+  const [copyDate, setCopyDate] = useState('');
+  const [copyTime, setCopyTime] = useState('');
+  const [copyLabel, setCopyLabel] = useState('');
+  const [fsError, setFsError] = useState('');
   const [firstName, setFirstName] = useState(user?.firstName || '');
   const [lastName, setLastName]   = useState(user?.lastName  || '');
   const [phone, setPhone]         = useState(user?.phone || '');
@@ -30,6 +48,55 @@ export function ProfilePage() {
   const [dpTemplate, setDpTemplate]     = useState(DpOrganizerMailer.DEFAULT_TEMPLATE);
   const [dpTemplateKey, setDpTemplateKey] = useState(0);
   const [dpTemplateLoading, setDpTemplateLoading] = useState(false);
+
+  // Charge les sessions libres pour les DP/ADMIN
+  useEffect(() => {
+    if (user?.role === 'DIVE_DIRECTOR' || user?.role === 'ADMIN') {
+      setFreeSessionsLoading(true);
+      freeSessionService.list().then(setFreeSessions).catch(() => {}).finally(() => setFreeSessionsLoading(false));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.role]);
+
+  const handleCreateSession = async () => {
+    if (!newSessionDate || !newSessionTime) return;
+    setFsError('');
+    try {
+      const created = await freeSessionService.create(newSessionLabel.trim() || null, newSessionDate, newSessionTime);
+      setFreeSessions(prev => [created, ...prev]);
+      setShowNewSessionModal(false); setNewSessionLabel(''); setNewSessionDate(''); setNewSessionTime('');
+    } catch { setFsError('Impossible de créer la session.'); }
+  };
+
+  const handleUpdateSession = async () => {
+    if (!editSession || !editSession.diveDate || !editSession.startTime) return;
+    setFsError('');
+    try {
+      const updated = await freeSessionService.update(editSession.id, editSession.label ?? null, editSession.diveDate, editSession.startTime);
+      setFreeSessions(prev => prev.map(s => s.id === updated.id ? updated : s));
+      setEditSession(null);
+    } catch { setFsError('Impossible de modifier la session.'); }
+  };
+
+  const handleCopySession = async () => {
+    if (!copySource || !copyDate || !copyTime) return;
+    setFsError('');
+    try {
+      const created = await freeSessionService.copy(copySource.id, copyLabel.trim() || null, copyDate, copyTime);
+      setFreeSessions(prev => [created, ...prev]);
+      setCopySource(null); setCopyDate(''); setCopyTime(''); setCopyLabel('');
+    } catch { setFsError('Impossible de copier la session.'); }
+  };
+
+  const handleDeleteSession = async (id: number) => {
+    if (!window.confirm('Supprimer cette organisation ? Toutes les données associées seront perdues.')) return;
+    try {
+      await freeSessionService.delete(id);
+      setFreeSessions(prev => prev.filter(s => s.id !== id));
+    } catch { setFsError('Impossible de supprimer la session.'); }
+  };
+
+  const fmtDate = (d: string) => { const [y, m, day] = d.split('-'); return `${day}/${m}/${y}`; };
 
   // Scroll vers la section notifications si le hash #notifications est présent dans l'URL
   useEffect(() => {
@@ -249,6 +316,92 @@ export function ProfilePage() {
             {notifLoading ? '...' : '💾 Enregistrer'}
           </button>
         </div>
+
+        {(user.role === 'DIVE_DIRECTOR' || user.role === 'ADMIN') && (
+          <div className="profile-section">
+            <h3>🧩 Organisations libres{freeSessions.length > 0 ? ` (${freeSessions.length}/15)` : ''} <span style={{ fontSize: 10, fontWeight: 600, background: '#f59e0b', color: '#fff', borderRadius: 4, padding: '1px 6px', verticalAlign: 'middle', letterSpacing: '0.05em' }}>BETA</span></h3>
+            <p style={{ color: '#6b7280', fontSize: 13, marginBottom: 12 }}>
+              Organisez des palanquées sans créer de créneau. Jusqu'à 15 organisations au maximum.
+            </p>
+            {fsError && <div className="alert alert-error">{fsError}</div>}
+            {freeSessionsLoading ? <p style={{ color: '#9ca3af' }}>Chargement…</p> : (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+                  {freeSessions.length === 0 && <p style={{ color: '#9ca3af', fontSize: 13 }}>Aucune organisation. Créez-en une ci-dessous.</p>}
+                  {freeSessions.map(s => (
+                    editSession?.id === s.id ? (
+                      <div key={s.id} style={{ background: '#f9fafb', borderRadius: 8, padding: '10px 12px', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div className="form-row">
+                          <div className="form-group" style={{ flex: 1 }}>
+                            <label>Libellé</label>
+                            <input value={editSession.label ?? ''} onChange={e => setEditSession(es => es ? { ...es, label: e.target.value } : es)} placeholder="Optionnel" />
+                          </div>
+                          <div className="form-group"><label>Date *</label><input type="date" value={editSession.diveDate} onChange={e => setEditSession(es => es ? { ...es, diveDate: e.target.value } : es)} required /></div>
+                          <div className="form-group"><label>Heure *</label><input type="time" value={editSession.startTime.slice(0,5)} onChange={e => setEditSession(es => es ? { ...es, startTime: e.target.value } : es)} required /></div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button className="btn btn-primary" style={{ padding: '4px 12px', fontSize: 13 }} onClick={handleUpdateSession}>💾 Enregistrer</button>
+                          <button className="btn btn-secondary" style={{ padding: '4px 12px', fontSize: 13 }} onClick={() => setEditSession(null)}>Annuler</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div key={s.id} style={{ background: '#f9fafb', borderRadius: 8, padding: '8px 12px', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ flex: 1 }}>
+                          <span style={{ fontWeight: 600 }}>{fmtDate(s.diveDate)}</span>
+                          <span style={{ margin: '0 6px', color: '#9ca3af' }}>·</span>
+                          <span>{s.startTime.slice(0,5)}</span>
+                          {s.label && <><span style={{ margin: '0 6px', color: '#9ca3af' }}>·</span><span style={{ color: '#374151' }}>{s.label}</span></>}
+                        </div>
+                        <button className="btn btn-primary" style={{ padding: '3px 10px', fontSize: 12 }} onClick={() => onNavigate?.(`free-session-${s.id}`)}>🧩 Ouvrir</button>
+                        <button className="btn btn-secondary" style={{ padding: '3px 10px', fontSize: 12 }} title="Copier (garder les plongeurs)" onClick={() => { setCopySource(s); setCopyLabel(s.label ?? ''); setCopyDate(''); setCopyTime(''); setFsError(''); }}>📋</button>
+                        <button className="btn btn-secondary" style={{ padding: '3px 10px', fontSize: 12 }} onClick={() => setEditSession(s)}>✏️</button>
+                        <button className="btn btn-secondary" style={{ padding: '3px 10px', fontSize: 12, color: '#ef4444' }} onClick={() => handleDeleteSession(s.id)}>🗑️</button>
+                      </div>
+                    )
+                  ))}
+                </div>
+                {/* Modal copie */}
+                {copySource && (
+                  <div style={{ background: '#f0fdf4', borderRadius: 8, padding: 12, border: '1px solid #bbf7d0', marginBottom: 4 }}>
+                    <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>📋 Copier « {copySource.label ?? fmtDate(copySource.diveDate)} » — choisissez la nouvelle date</p>
+                    <div className="form-row">
+                      <div className="form-group" style={{ flex: 1 }}>
+                        <label>Libellé <span style={{ fontWeight: 400, color: '#6b7280' }}>(optionnel)</span></label>
+                        <input value={copyLabel} onChange={e => setCopyLabel(e.target.value)} placeholder="Ex : Sortie club…" />
+                      </div>
+                      <div className="form-group"><label>Date *</label><input type="date" value={copyDate} onChange={e => setCopyDate(e.target.value)} required /></div>
+                      <div className="form-group"><label>Heure *</label><input type="time" value={copyTime} onChange={e => setCopyTime(e.target.value)} required /></div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                      <button className="btn btn-primary" onClick={handleCopySession} disabled={!copyDate || !copyTime}>📋 Copier</button>
+                      <button className="btn btn-secondary" onClick={() => { setCopySource(null); setCopyDate(''); setCopyTime(''); setCopyLabel(''); }}>Annuler</button>
+                    </div>
+                  </div>
+                )}
+
+                {freeSessions.length < 15 && !showNewSessionModal && (
+                  <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => { setShowNewSessionModal(true); setFsError(''); }}>+ Nouvelle organisation</button>
+                )}
+                {showNewSessionModal && (
+                  <div style={{ background: '#f0f9ff', borderRadius: 8, padding: 12, border: '1px solid #bae6fd' }}>
+                    <div className="form-row">
+                      <div className="form-group" style={{ flex: 1 }}>
+                        <label>Libellé <span style={{ fontWeight: 400, color: '#6b7280' }}>(optionnel)</span></label>
+                        <input value={newSessionLabel} onChange={e => setNewSessionLabel(e.target.value)} placeholder="Ex : Sortie club, Lac du Bourget…" />
+                      </div>
+                      <div className="form-group"><label>Date *</label><input type="date" value={newSessionDate} onChange={e => setNewSessionDate(e.target.value)} required /></div>
+                      <div className="form-group"><label>Heure *</label><input type="time" value={newSessionTime} onChange={e => setNewSessionTime(e.target.value)} required /></div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                      <button className="btn btn-primary" onClick={handleCreateSession} disabled={!newSessionDate || !newSessionTime}>💾 Créer</button>
+                      <button className="btn btn-secondary" onClick={() => { setShowNewSessionModal(false); setNewSessionLabel(''); setNewSessionDate(''); setNewSessionTime(''); }}>Annuler</button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
 
         {(user.role === 'DIVE_DIRECTOR' || user.role === 'ADMIN') && (
           <div className="profile-section">

@@ -312,6 +312,53 @@ export interface SlotDiveRequest {
   duration?: string | null;
 }
 
+// ── Sessions libres (DP sans créneau) ────────────────────────────────────────
+
+export interface FreeDiveSession {
+  id: number;
+  label?: string | null;
+  diveDate: string;      // YYYY-MM-DD
+  startTime: string;     // HH:mm
+  notes?: string | null;
+  diverCount: number;
+  palanqueeCount: number;
+}
+
+export interface FreeSessionDiver {
+  id: number;
+  firstName: string;
+  lastName: string;
+  level: string;
+  email?: string;
+  phone?: string;
+  isDirector: boolean;
+  aptitudes?: string;
+  licenseNumber?: string;
+  medicalCertDate?: string;
+  comment?: string;
+  club?: string;
+}
+
+export interface FreePalanquee {
+  id: number;
+  name: string;
+  position: number;
+  depth?: string;
+  duration?: string;
+  diveId?: number | null;
+  divers: FreeSessionDiver[];
+}
+
+export interface FreeSessionDive {
+  id: number;
+  diveIndex: number;
+  label?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
+  depth?: string | null;
+  duration?: string | null;
+}
+
 // ── Fiches de sécurité ────────────────────────────────────────────────────────
 
 export interface SafetySheetFile {

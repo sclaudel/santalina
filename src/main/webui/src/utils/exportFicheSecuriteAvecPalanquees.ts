@@ -62,6 +62,7 @@ function fillHeader(
   allDivers: SlotDiver[],
   diveStartTime?: string | null,
   diveEndTime?: string | null,
+  freeSessionLabel?: string,
 ) {
   const director   = allDivers.find(d => d.isDirector);
   const dirName    = director ? `${director.lastName.toUpperCase()} ${cap(director.firstName)}` : '';
@@ -92,6 +93,12 @@ function fillHeader(
 
   ws.getCell('J4').value = `Nb Plongeurs\n${allDivers.length} / ${slot.diverCount}`;
   ws.getCell('J4').alignment = { wrapText: true, vertical: 'middle', horizontal: 'center' };
+
+  // Organisation libre : remplacer le titre B2 et vider H2
+  if (freeSessionLabel) {
+    ws.getCell('B2').value = `Fiche Sécurité : ${freeSessionLabel}`;
+    ws.getCell('H2').value = '';
+  }
 }
 
 /**
@@ -249,6 +256,7 @@ export async function buildFicheSecuriteBuffer(
   diveLabel?: string,
   diveStartTime?: string | null,
   diveEndTime?: string | null,
+  freeSessionLabel?: string,
 ): Promise<{ buffer: ArrayBuffer; filename: string }> {
   // ── Construire la liste des groupes à exporter ────────────────────────────
   const assignedIds = new Set(palanquees.flatMap(p => p.divers.map(d => d.id)));
@@ -299,7 +307,7 @@ export async function buildFicheSecuriteBuffer(
 
   // ── Page 1 ────────────────────────────────────────────────────────────────
   ws1.name = 'Fiche sécurité (palanquées)';
-  fillHeader(ws1, slot, allDivers, diveStartTime, diveEndTime);
+  fillHeader(ws1, slot, allDivers, diveStartTime, diveEndTime, freeSessionLabel);
 
   const page1Groups = Array.from({ length: MAX_GROUPS_PER_PAGE }, (_, i) => exportGroups[i]);
   fillSheetGroups(ws1, page1Groups, modelStyles, modelHeight);
@@ -314,7 +322,7 @@ export async function buildFicheSecuriteBuffer(
     const pageGroups = Array.from({ length: MAX_GROUPS_PER_PAGE }, (_, i) => exportGroups[offset + i]);
     const wsNew      = extraSheets[page - 2];
 
-    fillHeader(wsNew, slot, allDivers, diveStartTime, diveEndTime);
+    fillHeader(wsNew, slot, allDivers, diveStartTime, diveEndTime, freeSessionLabel);
     fillSheetGroups(wsNew, pageGroups, modelStyles, modelHeight);
   }
 
@@ -343,11 +351,13 @@ export async function exportFicheSecuriteAvecPalanquees(
   diveLabel?: string,
   diveStartTime?: string | null,
   diveEndTime?: string | null,
+  filenameOverride?: string,
+  freeSessionLabel?: string,
 ): Promise<void> {
-  const { buffer, filename } = await buildFicheSecuriteBuffer(slot, allDivers, palanquees, diveLabel, diveStartTime, diveEndTime);
+  const { buffer, filename } = await buildFicheSecuriteBuffer(slot, allDivers, palanquees, diveLabel, diveStartTime, diveEndTime, freeSessionLabel);
   downloadBlob(
     new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
-    filename,
+    filenameOverride ?? filename,
   );
 }
 

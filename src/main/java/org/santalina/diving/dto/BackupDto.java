@@ -20,7 +20,11 @@ public class BackupDto {
             List<DiverEntry> divers,      // null si type="config-users"
             List<PalanqueeEntry> palanquees, // null si type="config-users"
             List<WaitingListBackupEntry> waitingListEntries, // null si type="config-users"
-            List<SlotDiveEntry> slotDives // null si type="config-users"
+            List<SlotDiveEntry> slotDives, // null si type="config-users"
+            List<FreeSessionEntry> freeSessions, // null si type="config-users"
+            List<FreeSessionDiverEntry> freeSessionDivers,
+            List<FreeSessionDiveEntry> freeSessionDives,
+            List<FreePalanqueeEntry> freePalanquees
     ) {}
 
     public record ConfigEntry(
@@ -137,6 +141,60 @@ public class BackupDto {
             // (les fichiers ne sont pas sauvegardés dans le JSON)
     ) {}
 
+    // ── Sessions libres ──────────────────────────────────────────────────────
+
+    public record FreeSessionEntry(
+            Long id,
+            Long ownerId,
+            String label,
+            LocalDate diveDate,
+            LocalTime startTime,
+            String notes
+    ) {}
+
+    public record FreeSessionDiverEntry(
+            Long id,
+            Long sessionId,
+            String firstName,
+            String lastName,
+            String level,
+            String email,
+            String phone,
+            boolean isDirector,
+            String aptitudes,
+            String licenseNumber,
+            LocalDate medicalCertDate,
+            String comment,
+            String club
+    ) {}
+
+    public record FreeSessionDiveEntry(
+            Long id,
+            Long sessionId,
+            int diveIndex,
+            String label,
+            LocalTime startTime,
+            LocalTime endTime,
+            String depth,
+            String duration
+    ) {}
+
+    public record FreePalanqueeEntry(
+            Long id,
+            Long sessionId,
+            Long diveId,
+            String name,
+            int position,
+            String depth,
+            String duration,
+            List<FreePalanqueeMemberEntry> members
+    ) {}
+
+    public record FreePalanqueeMemberEntry(
+            Long diverId,
+            String aptitudes
+    ) {}
+
     /** Réponse d'un import */
     public record ImportResult(
             boolean success,
@@ -147,7 +205,8 @@ public class BackupDto {
             int diversRestored,
             int palanqueesRestored,
             int waitingListRestored,
-            int slotDivesRestored
+            int slotDivesRestored,
+            int freeSessionsRestored
     ) {}
 
     /** Entrée du manifeste d'un backup de pièces jointes */
