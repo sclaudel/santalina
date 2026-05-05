@@ -21,9 +21,20 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'utils-vendor': ['axios', 'dayjs'],
+        manualChunks(id) {
+          // ── Vendors lourds ────────────────────────────────────────────────
+          if (id.includes('node_modules/exceljs'))      return 'vendor-exceljs';
+          if (id.includes('node_modules/html2canvas'))  return 'vendor-html2canvas';
+          if (id.includes('node_modules/jspdf'))        return 'vendor-jspdf';
+          if (id.includes('node_modules/fflate'))       return 'vendor-fflate';
+          if (id.includes('node_modules/react'))        return 'vendor-react';
+          if (id.includes('node_modules/axios') || id.includes('node_modules/dayjs')) return 'vendor-utils';
+          // ── Pages lourdes (code-split par page) ───────────────────────────
+          if (id.includes('/pages/PalanqueePage'))      return 'page-palanquee';
+          if (id.includes('/pages/FreeSessionPage'))    return 'page-free-session';
+          if (id.includes('/pages/AdminPage'))          return 'page-admin';
+          if (id.includes('/pages/HelpPage'))           return 'page-help';
+          if (id.includes('/pages/StatsPage'))          return 'page-stats';
         },
       },
     },

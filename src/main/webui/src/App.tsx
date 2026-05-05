@@ -10,6 +10,7 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { ActivatePage } from './pages/ActivatePage';
 import { HelpPage } from './pages/HelpPage';
 import { PalanqueePage } from './pages/PalanqueePage';
+import { FreeSessionPage } from './pages/FreeSessionPage';
 import { adminService } from './services/adminService';
 import AnnouncementModal from './components/AnnouncementModal';
 import type { AppConfig } from './types';
@@ -65,6 +66,7 @@ function AppContent() {
     if (page === 'my-stats' && !hasRole('DIVE_DIRECTOR')) return;
     if (page === 'profile' && !isAuthenticated) return;
     if (page.startsWith('palanquee-') && !hasRole('ADMIN') && !hasRole('DIVE_DIRECTOR')) return;
+    if (page.startsWith('free-session-') && !hasRole('ADMIN') && !hasRole('DIVE_DIRECTOR')) return;
     // Mémoriser le viewMode encodé dans la navigation palanquée (palanquee-{id}-{viewMode})
     if (page.startsWith('palanquee-')) {
       const parts = page.split('-');
@@ -124,11 +126,17 @@ function AppContent() {
             initialSlotId={slotParam ? parseInt(slotParam, 10) : undefined}
           />
         )}
-        {currentPage === 'profile' && isAuthenticated && <ProfilePage />}
+        {currentPage === 'profile' && isAuthenticated && <ProfilePage onNavigate={navigate} />}
         {currentPage === 'admin' && user?.role === 'ADMIN' && <AdminPage />}
         {currentPage === 'stats' && user?.role === 'ADMIN' && <StatsPage />}
         {currentPage === 'my-stats' && hasRole('DIVE_DIRECTOR') && <MyStatsPage />}
         {currentPage === 'help' && <HelpPage />}
+        {currentPage.startsWith('free-session-') && (hasRole('ADMIN') || hasRole('DIVE_DIRECTOR')) && (
+          <FreeSessionPage
+            sessionId={parseInt(currentPage.split('-')[2], 10)}
+            onBack={() => navigate('profile')}
+          />
+        )}
         {currentPage.startsWith('palanquee-') && (hasRole('ADMIN') || hasRole('DIVE_DIRECTOR')) && (
           <PalanqueePage
             slotId={parseInt(currentPage.split('-')[1], 10)}

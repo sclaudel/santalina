@@ -64,7 +64,7 @@ public class BackupService {
 
         LOG.infof("Export config-users : %d entrées de config, %d utilisateurs", config.size(), users.size());
         return new BackupData(BACKUP_VERSION, "config-users", LocalDateTime.now(),
-                config, users, null, null, null, null, null);
+                config, users, null, null, null, null, null, null, null, null, null);
     }
 
     /** Export complet (config + utilisateurs + créneaux + plongeurs). */
@@ -104,10 +104,31 @@ public class BackupService {
                 .map(this::toSlotDiveEntry)
                 .collect(Collectors.toList());
 
-        LOG.infof("Export full : %d config, %d users, %d slots, %d divers, %d palanquees, %d waitingList, %d slotDives",
-                config.size(), users.size(), slots.size(), divers.size(), palanquees.size(), waitingList.size(), slotDives.size());
+        List<FreeSessionEntry> freeSessions = FreeDiveSession.<FreeDiveSession>listAll()
+                .stream()
+                .map(this::toFreeSessionEntry)
+                .collect(Collectors.toList());
+
+        List<FreeSessionDiverEntry> freeSessionDivers = FreeSessionDiver.<FreeSessionDiver>listAll()
+                .stream()
+                .map(this::toFreeSessionDiverEntry)
+                .collect(Collectors.toList());
+
+        List<FreeSessionDiveEntry> freeSessionDives = FreeSessionDive.<FreeSessionDive>listAll()
+                .stream()
+                .map(this::toFreeSessionDiveEntry)
+                .collect(Collectors.toList());
+
+        List<FreePalanqueeEntry> freePalanquees = FreePalanquee.<FreePalanquee>listAll()
+                .stream()
+                .map(this::toFreePalanqueeEntry)
+                .collect(Collectors.toList());
+
+        LOG.infof("Export full : %d config, %d users, %d slots, %d divers, %d palanquees, %d waitingList, %d slotDives, %d freeSessions",
+                config.size(), users.size(), slots.size(), divers.size(), palanquees.size(), waitingList.size(), slotDives.size(), freeSessions.size());
         return new BackupData(BACKUP_VERSION, "full", LocalDateTime.now(),
-                config, users, slots, divers, palanquees, waitingList, slotDives);
+                config, users, slots, divers, palanquees, waitingList, slotDives,
+                freeSessions, freeSessionDivers, freeSessionDives, freePalanquees);
     }
 
     // ---- Import ----
@@ -127,6 +148,11 @@ public class BackupService {
         em.createNativeQuery("DELETE FROM palanquees").executeUpdate();
         em.createNativeQuery("DELETE FROM slot_dives").executeUpdate();
         em.createNativeQuery("DELETE FROM dive_slots").executeUpdate();
+        em.createNativeQuery("DELETE FROM free_palanquee_members").executeUpdate();
+        em.createNativeQuery("DELETE FROM free_palanquees").executeUpdate();
+        em.createNativeQuery("DELETE FROM free_session_divers").executeUpdate();
+        em.createNativeQuery("DELETE FROM free_session_dives").executeUpdate();
+        em.createNativeQuery("DELETE FROM free_dive_sessions").executeUpdate();
         em.createNativeQuery("DELETE FROM user_roles").executeUpdate();
         em.createNativeQuery("DELETE FROM users").executeUpdate();
         em.createNativeQuery("DELETE FROM app_config").executeUpdate();
@@ -426,17 +452,121 @@ public class BackupService {
         }
         em.flush();
 
-        // 8. S'assurer qu'un admin existe toujours (au cas où le backup importé
-        //    ne contenait aucun utilisateur admin).
+        // 8. Restaurer les sessions libres
+        int freeSessionCount = 0;
+        if (backup.freeSessions() != null && backup.users() != null) {
+            // Map : ancien id session → nouvelle entité
+            java.util.Map<Long, FreeDiveSession> freeSessionMap = new java.util.HashMap<>();
+            for (FreeSessionEntry fse : backup.freeSessions()) {
+                // Retrouver le propriétaire
+                User owner = null;
+                if (fse.ownerId() != null) {
+                    String ownerEmail = backup.users().stream()
+                            .filter(u -> fse.ownerId().equals(u.id()))
+                            .map(UserEntry::email).findFirst().orElse(null);
+                    if (ownerEmail != null) owner = User.find("email", ownerEmail).firstResult();
+                }
+                if (owner == null) continue;
+
+                FreeDiveSession fs = new FreeDiveSession();
+                fs.owner     = owner;
+                fs.label     = fse.label();
+                fs.diveDate  = fse.diveDate();
+                fs.startTime = fse.startTime();
+                fs.notes     = fse.notes();
+                fs.persist();
+                freeSessionMap.put(fse.id(), fs);
+                freeSessionCount++;
+            }
+            em.flush();
+
+            // Plongeurs libres
+            java.util.Map<Long, FreeSessionDiver> freeDiverMap = new java.util.HashMap<>();
+            if (backup.freeSessionDivers() != null) {
+                for (FreeSessionDiverEntry fde : backup.freeSessionDivers()) {
+                    FreeDiveSession linkedSession = freeSessionMap.get(fde.sessionId());
+                    if (linkedSession == null) continue;
+                    FreeSessionDiver fd = new FreeSessionDiver();
+                    fd.session      = linkedSession;
+                    fd.firstName    = NameUtil.capitalize(fde.firstName());
+                    fd.lastName     = fde.lastName() != null ? fde.lastName().trim().toUpperCase() : null;
+                    fd.level        = fde.level();
+                    fd.email        = fde.email();
+                    fd.phone        = fde.phone();
+                    fd.isDirector   = fde.isDirector();
+                    fd.aptitudes    = fde.aptitudes();
+                    fd.licenseNumber = fde.licenseNumber();
+                    fd.medicalCertDate = fde.medicalCertDate();
+                    fd.comment      = fde.comment();
+                    fd.club         = fde.club();
+                    fd.persist();
+                    freeDiverMap.put(fde.id(), fd);
+                }
+            }
+            em.flush();
+
+            // Plongées libres
+            java.util.Map<Long, FreeSessionDive> freeDiveMap = new java.util.HashMap<>();
+            if (backup.freeSessionDives() != null) {
+                for (FreeSessionDiveEntry fdive : backup.freeSessionDives()) {
+                    FreeDiveSession linkedSession = freeSessionMap.get(fdive.sessionId());
+                    if (linkedSession == null) continue;
+                    FreeSessionDive fsd = new FreeSessionDive();
+                    fsd.session   = linkedSession;
+                    fsd.diveIndex = fdive.diveIndex();
+                    fsd.label     = fdive.label();
+                    fsd.startTime = fdive.startTime();
+                    fsd.endTime   = fdive.endTime();
+                    fsd.depth     = fdive.depth();
+                    fsd.duration  = fdive.duration();
+                    fsd.persist();
+                    freeDiveMap.put(fdive.id(), fsd);
+                }
+            }
+            em.flush();
+
+            // Palanquées libres + membres
+            if (backup.freePalanquees() != null) {
+                for (FreePalanqueeEntry fpe : backup.freePalanquees()) {
+                    FreeDiveSession linkedSession = freeSessionMap.get(fpe.sessionId());
+                    if (linkedSession == null) continue;
+                    FreePalanquee fp = new FreePalanquee();
+                    fp.session  = linkedSession;
+                    fp.name     = fpe.name();
+                    fp.position = fpe.position();
+                    fp.depth    = fpe.depth();
+                    fp.duration = fpe.duration();
+                    if (fpe.diveId() != null) fp.dive = freeDiveMap.get(fpe.diveId());
+                    fp.persist();
+
+                    if (fpe.members() != null) {
+                        for (int pos = 0; pos < fpe.members().size(); pos++) {
+                            FreePalanqueeMemberEntry mEntry = fpe.members().get(pos);
+                            FreeSessionDiver fd = freeDiverMap.get(mEntry.diverId());
+                            if (fd == null) continue;
+                            FreePalanqueeMember fm = new FreePalanqueeMember();
+                            fm.palanquee = fp;
+                            fm.diver     = fd;
+                            fm.position  = pos;
+                            fm.aptitudes = mEntry.aptitudes();
+                            fm.persist();
+                        }
+                    }
+                }
+            }
+            em.flush();
+        }
+
+        // 9. S'assurer qu'un admin existe toujours
         authService.ensureAdminExists();
 
-        LOG.infof("Import terminé : %d config, %d users, %d slots, %d divers, %d palanquees, %d waitingList, %d slotDives",
-                configCount, userCount, slotCount, diverCount, palanqueeCount, waitingListCount, slotDiveCount);
+        LOG.infof("Import terminé : %d config, %d users, %d slots, %d divers, %d palanquees, %d waitingList, %d slotDives, %d freeSessions",
+                configCount, userCount, slotCount, diverCount, palanqueeCount, waitingListCount, slotDiveCount, freeSessionCount);
 
         return new ImportResult(true,
-                String.format("Import réussi : %d config, %d utilisateurs, %d créneaux, %d plongeurs, %d palanquées, %d liste d'attente, %d plongées",
-                        configCount, userCount, slotCount, diverCount, palanqueeCount, waitingListCount, slotDiveCount),
-                configCount, userCount, slotCount, diverCount, palanqueeCount, waitingListCount, slotDiveCount);
+                String.format("Import réussi : %d config, %d utilisateurs, %d créneaux, %d plongeurs, %d palanquées, %d liste d'attente, %d plongées, %d sessions libres",
+                        configCount, userCount, slotCount, diverCount, palanqueeCount, waitingListCount, slotDiveCount, freeSessionCount),
+                configCount, userCount, slotCount, diverCount, palanqueeCount, waitingListCount, slotDiveCount, freeSessionCount);
     }
 
     // ---- Mappeurs ----
@@ -480,6 +610,32 @@ public class BackupService {
     private SlotDiveEntry toSlotDiveEntry(SlotDive d) {
         return new SlotDiveEntry(d.id, d.slot != null ? d.slot.id : null,
                 d.diveIndex, d.label, d.startTime, d.endTime, d.depth, d.duration);
+    }
+
+    private FreeSessionEntry toFreeSessionEntry(FreeDiveSession s) {
+        return new FreeSessionEntry(s.id, s.owner != null ? s.owner.id : null,
+                s.label, s.diveDate, s.startTime, s.notes);
+    }
+
+    private FreeSessionDiverEntry toFreeSessionDiverEntry(FreeSessionDiver d) {
+        return new FreeSessionDiverEntry(d.id, d.session != null ? d.session.id : null,
+                d.firstName, d.lastName, d.level, d.email, d.phone,
+                d.isDirector, d.aptitudes, d.licenseNumber, d.medicalCertDate, d.comment, d.club);
+    }
+
+    private FreeSessionDiveEntry toFreeSessionDiveEntry(FreeSessionDive d) {
+        return new FreeSessionDiveEntry(d.id, d.session != null ? d.session.id : null,
+                d.diveIndex, d.label, d.startTime, d.endTime, d.depth, d.duration);
+    }
+
+    private FreePalanqueeEntry toFreePalanqueeEntry(FreePalanquee p) {
+        List<FreePalanqueeMember> members = FreePalanqueeMember.findByPalanquee(p.id);
+        List<FreePalanqueeMemberEntry> memberEntries = members.stream()
+                .map(m -> new FreePalanqueeMemberEntry(m.diver.id, m.aptitudes))
+                .collect(Collectors.toList());
+        return new FreePalanqueeEntry(p.id, p.session != null ? p.session.id : null,
+                p.dive != null ? p.dive.id : null,
+                p.name, p.position, p.depth, p.duration, memberEntries);
     }
 
     private WaitingListBackupEntry toWaitingListEntry(WaitingListEntry e) {

@@ -1018,13 +1018,15 @@ export function PalanqueePage({ slotId, onBack }: Props) {
           )}
         </div>
         <div className="palanquee-page-actions">
-          <button
-            className="palanquee-add-btn"
-            onClick={handleAddPalanquee}
-            disabled={saving}
-          >
-            + Nouvelle palanquée
-          </button>
+          {!isOverviewReadOnly && (
+            <button
+              className="palanquee-add-btn"
+              onClick={handleAddPalanquee}
+              disabled={saving}
+            >
+              + Nouvelle palanquée
+            </button>
+          )}
           <button
             className="palanquee-export-btn palanquee-export-btn--calendar"
             onClick={() => slot && downloadSlotIcs(slot)}
@@ -1402,9 +1404,11 @@ export function PalanqueePage({ slotId, onBack }: Props) {
           {filteredPalanquees.length === 0 ? (
             <div className="palanquee-empty-state">
               <p>Aucune palanquée créée{activeDiveId !== null ? ' pour cette plongée' : ''}.</p>
-              <button className="palanquee-add-btn" onClick={handleAddPalanquee} disabled={saving}>
-                + Créer la première palanquée
-              </button>
+              {!isOverviewReadOnly && (
+                <button className="palanquee-add-btn" onClick={handleAddPalanquee} disabled={saving}>
+                  + Créer la première palanquée
+                </button>
+              )}
             </div>
           ) : (
             <>
@@ -1541,9 +1545,11 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                 <div className="palanquee-column palanquee-column--empty">
                   <div className="palanquee-empty-state">
                     <p>Aucune palanquée créée{activeDiveId !== null ? ' pour cette plongée' : ''}.</p>
-                    <button className="palanquee-add-btn" onClick={handleAddPalanquee} disabled={saving}>
-                      + Créer la première palanquée
-                    </button>
+                    {!isOverviewReadOnly && (
+                      <button className="palanquee-add-btn" onClick={handleAddPalanquee} disabled={saving}>
+                        + Créer la première palanquée
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -1569,8 +1575,8 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                     <div className="palanquee-column-header-top">
                       <span
                         className="palanquee-column-name"
-                        title="Double-clic pour renommer"
-                        onDoubleClick={() => !isOverviewReadOnly && startRename(p)}
+                        title={!isOverviewReadOnly ? 'Double-clic pour renommer' : undefined}
+                        onDoubleClick={!isOverviewReadOnly ? () => startRename(p) : undefined}
                       >
                         P{idx + 1} – {p.name}
                       </span>

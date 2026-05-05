@@ -113,7 +113,7 @@ public class BackupResource {
     public Response importBackup(BackupData backup) {
         if (backup == null) {
             return Response.status(400)
-                    .entity(new ImportResult(false, "Données de sauvegarde manquantes", 0, 0, 0, 0, 0, 0, 0))
+                    .entity(new ImportResult(false, "Données de sauvegarde manquantes", 0, 0, 0, 0, 0, 0, 0, 0))
                     .build();
         }
         try {
@@ -123,7 +123,7 @@ public class BackupResource {
         } catch (Exception e) {
             LOG.errorf(e, "Erreur lors de l'import de sauvegarde");
             return Response.status(500)
-                    .entity(new ImportResult(false, "Erreur : " + e.getMessage(), 0, 0, 0, 0, 0, 0, 0))
+                    .entity(new ImportResult(false, "Erreur : " + e.getMessage(), 0, 0, 0, 0, 0, 0, 0, 0))
                     .build();
         }
     }
