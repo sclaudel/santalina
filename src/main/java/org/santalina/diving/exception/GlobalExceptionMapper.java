@@ -34,6 +34,10 @@ public class GlobalExceptionMapper implements ExceptionMapper<Exception> {
             LOG.warnf("403 Forbidden: %s", e.getMessage());
             return error(403, e.getMessage());
         }
+        if (exception instanceof NotAllowedException e) {
+            LOG.debugf("405 Method Not Allowed: %s", e.getMessage());
+            return error(405, "Méthode HTTP non autorisée");
+        }
         if (exception instanceof ServiceUnavailableException e) {
             LOG.warnf("503 Service Unavailable: %s", e.getMessage());
             return error(503, e.getMessage());
