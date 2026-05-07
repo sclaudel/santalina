@@ -1,6 +1,7 @@
 package org.santalina.diving.resource;
 
 import org.santalina.diving.dto.AuthDto.*;
+import org.santalina.diving.security.RateLimiter;
 import org.santalina.diving.service.AuthService;
 import org.santalina.diving.service.CaptchaService;
 import jakarta.annotation.security.PermitAll;
@@ -8,8 +9,10 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import io.vertx.core.http.HttpServerRequest;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
@@ -26,7 +29,21 @@ public class AuthResource {
     CaptchaService captchaService;
 
     @Inject
+    RateLimiter rateLimiter;
+
+    @Inject
     JsonWebToken jwt;
+
+    @Context
+    HttpServerRequest httpRequest;
+
+    private String clientIp() {
+        String forwarded = httpRequest.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].trim();
+        }
+        return httpRequest.remoteAddress().host();
+    }
 
     @GET
     @Path("/captcha")
@@ -39,6 +56,8 @@ public class AuthResource {
     @Path("/register")
     @PermitAll
     public Response register(@Valid RegisterRequest request) {
+        rateLimiter.check("register:" + clientIp(),
+                RateLimiter.REGISTER_MAX_ATTEMPTS, RateLimiter.REGISTER_WINDOW_SECONDS);
         return Response.ok(authService.register(request)).build();
     }
 
@@ -53,6 +72,8 @@ public class AuthResource {
     @Path("/login")
     @PermitAll
     public Response login(@Valid LoginRequest request) {
+        rateLimiter.check("login:" + clientIp(),
+                RateLimiter.AUTH_MAX_ATTEMPTS, RateLimiter.AUTH_WINDOW_SECONDS);
         return Response.ok(authService.login(request)).build();
     }
 
@@ -60,6 +81,8 @@ public class AuthResource {
     @Path("/password-reset/request")
     @PermitAll
     public Response requestPasswordReset(@Valid PasswordResetRequest request) {
+        rateLimiter.check("pwd-reset:" + clientIp(),
+                RateLimiter.AUTH_MAX_ATTEMPTS, RateLimiter.AUTH_WINDOW_SECONDS);
         authService.requestPasswordReset(request);
         return Response.ok(java.util.Map.of("message",
                 "Si cet email existe, un lien de réinitialisation a été envoyé")).build();

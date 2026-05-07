@@ -41,6 +41,7 @@ public class SlotService {
     /**
      * Retourne les créneaux d'une journée
      */
+    @Transactional
     public List<SlotResponse> getSlotsByDate(LocalDate date) {
         return DiveSlot.findByDate(date).stream()
                 .map(SlotResponse::from)
@@ -50,6 +51,7 @@ public class SlotService {
     /**
      * Retourne les créneaux d'une semaine
      */
+    @Transactional
     public List<SlotResponse> getSlotsByWeek(LocalDate from) {
         LocalDate to = from.plusDays(6);
         return DiveSlot.findByDateRange(from, to).stream()
@@ -60,6 +62,7 @@ public class SlotService {
     /**
      * Retourne les créneaux d'un mois (du 1er au dernier jour)
      */
+    @Transactional
     public List<SlotResponse> getSlotsByMonth(int year, int month) {
         LocalDate from = LocalDate.of(year, month, 1);
         LocalDate to   = from.withDayOfMonth(from.lengthOfMonth());
@@ -71,6 +74,7 @@ public class SlotService {
     /**
      * Retourne un créneau par ID
      */
+    @Transactional
     public SlotResponse getById(Long id) {
         DiveSlot slot = DiveSlot.findById(id);
         if (slot == null) throw new NotFoundException("Créneau non trouvé");

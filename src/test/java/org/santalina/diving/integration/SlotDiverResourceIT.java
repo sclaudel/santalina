@@ -99,11 +99,25 @@ class SlotDiverResourceIT {
         slot.delete();
     }
 
-    // ── GET public ───────────────────────────────────────────────────────────
+    // ── GET — authentification requise depuis la correction de sécurité ─────────
 
     @Test
-    void getDivers_shouldReturn200_withoutAuthentication() {
+    void getDivers_shouldReturn401_withoutAuthentication() {
         DiveSlot slot = createSlotWithDp("dp_get_" + System.nanoTime() + "@test.com");
+        try {
+            given()
+                .when().get("/api/slots/" + slot.id + "/divers")
+                .then()
+                .statusCode(401);
+        } finally {
+            cleanup(slot.id);
+        }
+    }
+
+    @Test
+    @TestSecurity(user = "diver_get@test.com", roles = {"DIVER"})
+    void getDivers_shouldReturn200_whenAuthenticated() {
+        DiveSlot slot = createSlotWithDp("dp_get_auth_" + System.nanoTime() + "@test.com");
         try {
             given()
                 .when().get("/api/slots/" + slot.id + "/divers")
