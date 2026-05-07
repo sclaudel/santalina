@@ -29,6 +29,7 @@ public class UserService {
     @Inject
     JwtUtil jwtUtil;
 
+    @Transactional
     public UserResponse getProfile(String email) {
         User user = User.findByEmail(email);
         if (user == null) throw new NotFoundException("Utilisateur non trouvé");
@@ -68,29 +69,52 @@ public class UserService {
                 user.primaryRole(), user.id, user.roles, user.phone, user.licenseNumber, user.club);
     }
 
+    @Transactional
     public List<UserResponse> getAllUsers() {
         return User.<User>listAll().stream()
                 .map(UserResponse::from)
                 .toList();
     }
 
-    /** Recherche d'utilisateurs par nom ou email (insensible à la casse ET aux accents, max 10 résultats) */
+    /** Recherche d'utilisateurs par nom ou email (insensible à la casse ET aux accents, max 10 résultats).
+     *  Utilise d'abord une requête SQL LIKE pour limiter le scan, puis applique la normalisation
+     *  des accents sur l'ensemble réduit pour couvrir les requêtes accentuées. */
+    @Transactional
     public List<UserSearchResult> searchUsers(String query) {
         if (query == null || query.isBlank()) return List.of();
         String normalized = stripAccents(query.trim().toLowerCase());
-        return User.<User>listAll()
-                .stream()
+        String rawPattern = "%" + query.trim().toLowerCase() + "%";
+
+        // Pré-filtre SQL : réduit le nombre d'entités chargées en mémoire
+        List<User> candidates = User.<User>list(
+                "LOWER(firstName) LIKE ?1 OR LOWER(lastName) LIKE ?1 OR LOWER(email) LIKE ?1 " +
+                "OR LOWER(CONCAT(firstName, ' ', lastName)) LIKE ?1", rawPattern);
+
+        // Post-filtre avec normalisation des accents sur le sous-ensemble
+        List<UserSearchResult> results = candidates.stream()
                 .filter(u -> stripAccents(u.fullName().toLowerCase()).contains(normalized)
                           || stripAccents(u.email.toLowerCase()).contains(normalized))
                 .limit(10)
                 .map(UserSearchResult::from)
                 .toList();
+
+        // Fallback : si la requête contient des accents non couverts par le LIKE brut,
+        // on élargit la recherche sur la base entière
+        if (results.isEmpty() && !normalized.equals(query.trim().toLowerCase())) {
+            return User.<User>listAll().stream()
+                    .filter(u -> stripAccents(u.fullName().toLowerCase()).contains(normalized)
+                              || stripAccents(u.email.toLowerCase()).contains(normalized))
+                    .limit(10)
+                    .map(UserSearchResult::from)
+                    .toList();
+        }
+        return results;
     }
 
+    @Transactional
     public List<UserSearchResult> getDiveDirectors() {
-        return User.<User>listAll()
+        return User.<User>list("activated = true AND ?1 MEMBER OF roles", UserRole.DIVE_DIRECTOR)
                 .stream()
-                .filter(u -> u.activated && u.roles.contains(UserRole.DIVE_DIRECTOR))
                 .sorted(Comparator.comparing((User u) -> u.lastName)
                                   .thenComparing(u -> u.firstName))
                 .map(UserSearchResult::from)

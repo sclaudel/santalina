@@ -245,6 +245,16 @@ class AuthResourceIT {
                 .body("message", containsString("réinitialisation"));
     }
 
+    @Test
+    @Order(9)
+    void passwordResetRequest_shouldReturn405_whenGet() {
+        // Valide que GET sur un endpoint POST renvoie bien 405 (et non 500 comme avant la correction)
+        given()
+                .when().get(RESET_REQUEST_URL)
+                .then()
+                .statusCode(405);
+    }
+
     /* ── Mode maintenance ── */
 
     @Test

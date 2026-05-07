@@ -388,6 +388,19 @@ export function PalanqueePage({ slotId, onBack }: Props) {
     }
   }, [palanquees.length, activePalIdx]);
 
+  // Sélectionner automatiquement la première plongée si aucune n'est sélectionnée ou valide.
+  // Supprime le concept de vue « Toutes » : en mode multi-plongées, une plongée est toujours active.
+  useEffect(() => {
+    if (slotDives.length === 0) {
+      if (activeDiveId !== null) setActiveDiveId(null);
+      return;
+    }
+    if (activeDiveId === null || !slotDives.some(d => d.id === activeDiveId)) {
+      setActiveDiveId(slotDives[0].id);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slotDives]);
+
   // ── changement de niveau inline sur le post-it ─────────────────────────────
   const handleLevelChange = useCallback(async (diverId: number, newLevel: string) => {
     const diver = allDivers.find(d => d.id === diverId);
@@ -520,9 +533,9 @@ export function PalanqueePage({ slotId, onBack }: Props) {
     ? palanquees
     : palanquees.filter(p => p.slotDiveId === activeDiveId);
 
-  // Vue "Toutes" en mode multi-plongées = lecture seule (un plongeur peut être
-  // dans plusieurs palanquées simultanément, le drag serait ambigu)
-  const isOverviewReadOnly = activeDiveId === null && slotDives.length > 0;
+  // La vue « Toutes » a été supprimée : en mode multi-plongées une plongée est toujours active.
+  // isOverviewReadOnly est conservé par sécurité mais vaut toujours false.
+  const isOverviewReadOnly = false;
 
   // ── calcul des non-assignés (pool propre à la plongée active) ─────────────
   // En mode multi-plongée, chaque plongée a son propre pool : un plongeur
@@ -676,6 +689,13 @@ export function PalanqueePage({ slotId, onBack }: Props) {
         startTime: slot?.startTime ?? null,
         endTime: slot?.endTime ?? null,
       });
+      // Première plongée créée : assigner automatiquement toutes les palanquées existantes
+      if (slotDives.length === 0 && palanquees.length > 0) {
+        await Promise.all(
+          palanquees.map(p => slotDiveService.assignPalanquee(slotId, p.id, created.id))
+        );
+        setPalanquees(prev => prev.map(p => ({ ...p, slotDiveId: created.id })));
+      }
       setSlotDives(prev => [...prev, created]);
       setActiveDiveId(created.id);
     } catch {
@@ -698,16 +718,20 @@ export function PalanqueePage({ slotId, onBack }: Props) {
       });
       const duplicateCount = [...diverPalCount.values()].filter(c => c > 1).length;
 
-      let message = `Supprimer « ${diveLabel} » ? C'est la dernière plongée du créneau.`;
+      let message = `Supprimer « ${diveLabel} » ? C'est la dernière plongée — l'organisation en plongées multiples sera désactivée et le créneau reviendra en mode plongée unique.`;
       if (duplicateCount > 0) {
-        message += `\n\n⚠️ ${duplicateCount} plongeur${duplicateCount > 1 ? 's sont présents' : ' est présent'} dans plusieurs palanquées (multi-plongées). En supprimant cette plongée, les doublons seront automatiquement supprimés\u00a0: chaque plongeur sera conservé uniquement dans sa première palanquée.`;
+        message += `\n\n⚠️ ${duplicateCount} plongeur${duplicateCount > 1 ? 's sont présents' : ' est présent'} dans plusieurs palanquées. Les doublons seront supprimés automatiquement\u00a0: chaque plongeur sera conservé uniquement dans sa première palanquée.`;
+      } else {
+        message += '\n\nLes palanquées existantes seront conservées.';
       }
       message += '\n\nConfirmer la suppression ?';
       if (!window.confirm(message)) return;
     } else {
       const palanqueesForDive = palanquees.filter(p => p.slotDiveId === diveId);
       if (palanqueesForDive.length > 0) {
-        if (!window.confirm(`Supprimer « ${diveLabel} » ? Ses ${palanqueesForDive.length} palanquée(s) ne seront plus associées à une plongée.`)) return;
+        if (!window.confirm(`Supprimer « ${diveLabel} » ? Ses ${palanqueesForDive.length} palanquée(s) seront désassociées mais conservées.`)) return;
+      } else {
+        if (!window.confirm(`Supprimer « ${diveLabel} » ?`)) return;
       }
     }
 
@@ -1266,33 +1290,37 @@ export function PalanqueePage({ slotId, onBack }: Props) {
         </div>
       )}
 
-      {/* ── Onglets plongées multiples ── */}
+      {/* ── Onglets plongées multiples (sans onglet « Toutes ») ── */}
       {slotDives.length > 0 && (
         <div className="dive-tabs">
-          <button
-            className={`dive-tab${activeDiveId === null ? ' dive-tab--active' : ''}`}
-            onClick={() => setActiveDiveId(null)}
-          >
-            🌊 Toutes
-          </button>
-          {slotDives.map(dive => (
-            <span key={dive.id} className={`dive-tab-wrapper${activeDiveId === dive.id ? ' dive-tab-wrapper--active' : ''}`}>
-              <button
-                className={`dive-tab${activeDiveId === dive.id ? ' dive-tab--active' : ''}`}
-                onClick={() => setActiveDiveId(dive.id)}
-              >
-                🤿 {dive.label ?? `Plongée ${dive.diveIndex}`}
-              </button>
-              <button
-                className="dive-tab-delete"
-                onClick={() => handleDeleteDive(dive.id)}
-                title={slotDives.length === 1
-                  ? `Supprimer ${dive.label ?? `Plongée ${dive.diveIndex}`} — dernière plongée du créneau. Si des plongeurs sont dans plusieurs palanquées, les doublons seront automatiquement supprimés.`
-                  : `Supprimer ${dive.label ?? `Plongée ${dive.diveIndex}`}`
-                }
-              >✕</button>
-            </span>
-          ))}
+          {slotDives.map(dive => {
+            const divePals = palanquees.filter(p => p.slotDiveId === dive.id);
+            const assignedIds = new Set(divePals.flatMap(p => p.divers.map(d => d.id)));
+            const assignedCount = assignedIds.size;
+            const hasUnassigned = allDivers.some(d => !assignedIds.has(d.id));
+            return (
+              <span key={dive.id} className={`dive-tab-wrapper${activeDiveId === dive.id ? ' dive-tab-wrapper--active' : ''}`}>
+                <button
+                  className={`dive-tab${activeDiveId === dive.id ? ' dive-tab--active' : ''}`}
+                  onClick={() => setActiveDiveId(dive.id)}
+                >
+                  🤿 {dive.label ?? `Plongée ${dive.diveIndex}`}
+                  <span className="dive-tab-count"> {assignedCount}/{allDivers.length}</span>
+                  {hasUnassigned && (
+                    <span className="dive-tab-warning" title="Des plongeurs ne sont pas encore assignés à cette plongée"> ⚠️</span>
+                  )}
+                </button>
+                <button
+                  className="dive-tab-delete"
+                  onClick={() => handleDeleteDive(dive.id)}
+                  title={slotDives.length === 1
+                    ? `Supprimer ${dive.label ?? `Plongée ${dive.diveIndex}`} — revenir en mode plongée unique`
+                    : `Supprimer ${dive.label ?? `Plongée ${dive.diveIndex}`}`
+                  }
+                >✕</button>
+              </span>
+            );
+          })}
           <button
             className="dive-tab dive-tab--add"
             onClick={handleAddDive}

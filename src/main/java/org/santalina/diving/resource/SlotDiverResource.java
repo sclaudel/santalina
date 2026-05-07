@@ -40,9 +40,9 @@ public class SlotDiverResource {
     @Inject
     DelayedNotificationService delayedNotif;
 
-    // GET /api/slots/{slotId}/divers — public
+    // GET /api/slots/{slotId}/divers — authentifié uniquement (données personnelles)
     @GET
-    @PermitAll
+    @RolesAllowed({"ADMIN", "DIVE_DIRECTOR", "DIVER"})
     public List<SlotDiverResponse> getDivers(@PathParam("slotId") Long slotId) {
         DiveSlot slot = DiveSlot.findById(slotId);
         if (slot == null) throw new NotFoundException("Créneau non trouvé");

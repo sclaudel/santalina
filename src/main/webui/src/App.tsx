@@ -12,6 +12,7 @@ import { HelpPage } from './pages/HelpPage';
 import { PalanqueePage } from './pages/PalanqueePage';
 import { FreeSessionPage } from './pages/FreeSessionPage';
 import { adminService } from './services/adminService';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import AnnouncementModal from './components/AnnouncementModal';
 import type { AppConfig } from './types';
 import './App.css';
@@ -38,7 +39,9 @@ function AppContent() {
   const calendarViewModeRef = useRef<string>('day');
 
   useEffect(() => {
-    adminService.getConfig().then(setAppConfig).catch(() => {});
+    adminService.getConfig()
+      .then(setAppConfig)
+      .catch((err) => console.warn('[App] Impossible de charger la configuration :', err));
   }, []);
 
   // Afficher l'annonce après connexion si activée
@@ -158,9 +161,11 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

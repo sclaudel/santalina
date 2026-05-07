@@ -42,6 +42,12 @@ public class GlobalExceptionMapper implements ExceptionMapper<Exception> {
             LOG.warnf("503 Service Unavailable: %s", e.getMessage());
             return error(503, e.getMessage());
         }
+        if (exception instanceof WebApplicationException e) {
+            // Cas générique : transmettre la réponse intégrée (ex. 429 du RateLimiter)
+            int status = e.getResponse().getStatus();
+            LOG.debugf("%d WebApplicationException: %s", status, e.getMessage());
+            return e.getResponse();
+        }
         if (exception instanceof ConstraintViolationException e) {
             String msg = e.getConstraintViolations().stream()
                     .map(v -> v.getPropertyPath() + ": " + v.getMessage())
