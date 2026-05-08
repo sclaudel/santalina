@@ -7,16 +7,21 @@ import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
 import org.santalina.diving.domain.DiveSlot;
 import org.santalina.diving.domain.SlotDiver;
+import org.santalina.diving.domain.SlotSafetySheet;
 import org.santalina.diving.mail.WaitingListMailer;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /**
  * Service planifié : envoie chaque matin un rappel de fiche de sécurité
  * au DP assigné sur les créneaux passés depuis N jours (configurable).
  * Activée/désactivée via la config {@code notif.safety_reminder.enabled}.
+ * 
+ * Le rappel est envoyé dès que le nombre de jours réels écoulés depuis le créneau
+ * atteint ou dépasse la valeur configurée (indépendant des redémarrages serveur).
  */
 @ApplicationScoped
 public class SafetySheetReminderService {
@@ -39,18 +44,37 @@ public class SafetySheetReminderService {
         }
 
         int delayDays = configService.getSafetyReminderDelayDays();
-        LocalDate cutoff = LocalDate.now().minusDays(delayDays);
         LocalDate activationDate = configService.getSafetyReminderActivationDate();
+        LocalDate today = LocalDate.now();
 
-        // Créneaux dont la date est <= cutoff et pour lesquels le rappel n'a pas encore été envoyé
-        // Si une date d'activation est définie, on exclut les créneaux antérieurs à cette date.
-        List<DiveSlot> slots = activationDate != null
-                ? DiveSlot.list("slotDate <= ?1 AND slotDate >= ?2 AND reminderSentAt IS NULL", cutoff, activationDate)
-                : DiveSlot.list("slotDate <= ?1 AND reminderSentAt IS NULL", cutoff);
+        // Récupérer tous les créneaux pour lesquels le rappel n'a pas encore été envoyé
+        List<DiveSlot> allSlots = DiveSlot.list("reminderSentAt IS NULL ORDER BY slotDate");
 
         int sent = 0;
         int skipped = 0;
-        for (DiveSlot slot : slots) {
+        for (DiveSlot slot : allSlots) {
+            // Vérifier la date d'activation si définie
+            if (activationDate != null && slot.slotDate.isBefore(activationDate)) {
+                continue;
+            }
+
+            // Calculer le nombre de jours réels écoulés depuis le créneau
+            long daysSinceSlot = ChronoUnit.DAYS.between(slot.slotDate, today);
+
+            // Envoyer le rappel si le délai est atteint
+            if (daysSinceSlot < delayDays) {
+                continue;
+            }
+
+            // Vérifier si une fiche de sécurité a déjà été déposée
+            if (SlotSafetySheet.countBySlot(slot.id) > 0) {
+                LOG.debugf("[SafetyReminder] Fiche de sécurité déjà déposée pour le créneau %d (%s), rappel annulé", slot.id, slot.slotDate);
+                slot.reminderSentAt = LocalDateTime.now();
+                slot.persist();
+                skipped++;
+                continue;
+            }
+
             List<SlotDiver> directors = SlotDiver.list(
                     "slot = ?1 AND isDirector = true", slot);
 
@@ -77,8 +101,8 @@ public class SafetySheetReminderService {
         }
 
         if (sent > 0 || skipped > 0) {
-            LOG.infof("[SafetyReminder] %d rappel(s) envoyé(s), %d créneau(x) ignoré(s) (sans DP/email) — seuil : %s",
-                    sent, skipped, cutoff);
+            LOG.infof("[SafetyReminder] %d rappel(s) envoyé(s), %d créneau(x) ignoré(s) (sans DP/email) — délai configuré : %d jours",
+                    sent, skipped, delayDays);
         }
     }
 }
