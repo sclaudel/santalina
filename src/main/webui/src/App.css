@@ -1370,10 +1370,10 @@ body {
   flex-shrink: 0;
 }
 
-/* Plateau (board) — colonnes en flex wrap, horizontales */
+/* Plateau (board) — grille CSS pour meilleur alignement */
 .palanquee-board {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 12px;
   align-items: start;
 }
@@ -1408,16 +1408,14 @@ body {
   color: #64748b;
 }
 .palanquee-dive-group-columns {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 12px;
   align-items: start;
 }
 
 /* Colonne */
 .palanquee-column {
-  flex: 0 0 220px;
-  min-width: 200px;
   display: flex;
   flex-direction: column;
   gap: 6px;

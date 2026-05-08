@@ -84,7 +84,7 @@ public class SlotDiveResource {
         return SlotDiveResponse.from(dive);
     }
 
-    /** DELETE /api/slots/{slotId}/dives/{diveId} — supprime une plongée (détache les palanquées) */
+    /** DELETE /api/slots/{slotId}/dives/{diveId} — supprime une plongée et gère les palanquées associées */
     @DELETE
     @Path("/{diveId}")
     @Transactional
@@ -93,13 +93,25 @@ public class SlotDiveResource {
         checkSlotAccess(slotId);
         SlotDive dive = findDive(slotId, diveId);
 
-        // Détacher toutes les palanquées liées
-        Palanquee.update("slotDive = null WHERE slotDive.id = ?1", diveId);
+        // Récupérer les plongées restantes AVANT suppression
+        List<SlotDive> remaining = SlotDive.findBySlot(slotId)
+                .stream()
+                .filter(d -> !d.id.equals(diveId))
+                .toList();
+        boolean isLastDive = remaining.isEmpty();
+
+        // Gérer les palanquées associées à cette plongée
+        if (isLastDive) {
+            // Dernière plongée : détacher les palanquées pour revenir en mode mono-plongée
+            Palanquee.update("slotDive = null WHERE slotDive.id = ?1", diveId);
+        } else {
+            // Ce n'est pas la dernière : supprimer les palanquées associées
+            Palanquee.delete("slotDive.id = ?1", diveId);
+        }
 
         dive.delete();
 
         // Réindexer les plongées restantes
-        List<SlotDive> remaining = SlotDive.findBySlot(slotId);
         for (int i = 0; i < remaining.size(); i++) {
             remaining.get(i).diveIndex = i + 1;
         }
@@ -107,7 +119,7 @@ public class SlotDiveResource {
         // Si c'était la dernière plongée, dédupliquer les membres de palanquée :
         // un plongeur peut figurer dans plusieurs palanquées (multi-plongées) ; en mode
         // simple il ne doit apparaître qu'une seule fois (dans la première palanquée trouvée).
-        if (remaining.isEmpty()) {
+        if (isLastDive) {
             deduplicatePalanqueeMembers(slotId);
         }
 

@@ -318,6 +318,11 @@ export function HelpPage() {
             <li>Cliquez sur ce bouton pour annuler la place du plongeur et le replacer en liste d'attente : une confirmation est demandée avant l'action.</li>
             <li>Ce bouton est <strong>masqué automatiquement</strong> lorsque les inscriptions sont fermées ou pas encore ouvertes sur le créneau.</li>
           </ul>
+          <h4>Alignement des palanquées</h4>
+          <ul>
+            <li>Les colonnes de palanquées sont automatiquement alignées en grille pour une présentation claire et organisée.</li>
+            <li>Chaque palanquée occupe une colonne dédiée, permettant une vue d'ensemble optimale même avec de nombreux groupes.</li>
+          </ul>
           <div className="help-tip">💡 Les modifications de niveau, aptitudes, profondeur et temps sont enregistrées immédiatement sur le serveur.</div>
         </>
       ),
@@ -352,7 +357,9 @@ export function HelpPage() {
           <h4>Supprimer une plongée</h4>
           <ul>
             <li>Cliquez sur le <strong>✕</strong> affiché à droite du nom de la plongée dans son onglet.</li>
-            <li>Les palanquées liées sont <strong>détachées</strong> (non supprimées) et repassent dans l'onglet Toutes.</li>
+            <li><strong>Si ce n'est pas la dernière plongée</strong> : les palanquées liées à cette plongée sont <strong>supprimées</strong> (car elles n'ont plus de sens dans un contexte multi-plongées).</li>
+            <li><strong>Si c'est la dernière plongée</strong> : les palanquées sont <strong>préservées</strong> mais deviennent des palanquées mono-plongée (détachées de toute plongée spécifique).</li>
+            <li>Dans tous les cas, les plongeurs restent inscrits sur le créneau.</li>
           </ul>
           <h4>Renseigner l'horaire d'une plongée</h4>
           <ul>
