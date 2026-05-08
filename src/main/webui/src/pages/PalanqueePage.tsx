@@ -729,7 +729,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
     } else {
       const palanqueesForDive = palanquees.filter(p => p.slotDiveId === diveId);
       if (palanqueesForDive.length > 0) {
-        if (!window.confirm(`Supprimer « ${diveLabel} » ? Ses ${palanqueesForDive.length} palanquée(s) seront désassociées mais conservées.`)) return;
+        if (!window.confirm(`Supprimer « ${diveLabel} » ? Ses ${palanqueesForDive.length} palanquée(s) seront supprimées.`)) return;
       } else {
         if (!window.confirm(`Supprimer « ${diveLabel} » ?`)) return;
       }

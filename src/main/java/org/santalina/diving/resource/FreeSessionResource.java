@@ -297,26 +297,37 @@ public class FreeSessionResource {
                                @PathParam("diveId") Long diveId) {
         checkAccess(id);
         FreeSessionDive dive = findDive(id, diveId);
-        // Détacher toutes les palanquées liées à cette plongée
-        FreePalanquee.update("dive = null WHERE dive.id = ?1", diveId);
 
-        // Dédupliquer les membres si nécessaire (un plongeur peut être dans plusieurs
-        // palanquées de plongées différentes → après suppression d'une plongée,
-        // éviter qu'il apparaisse en double dans la vue sans plongée)
-        List<FreePalanquee> sessionPalanquees = FreePalanquee.findBySession(id);
-        if (sessionPalanquees.size() <= 1) {
-            // Mode sans multi-plongées : conserver au maximum 1 palanquée par plongeur
-            for (FreePalanquee pal : sessionPalanquees) {
-                List<FreePalanqueeMember> members = FreePalanqueeMember.findByPalanquee(pal.id);
-                java.util.Set<Long> seen = new java.util.HashSet<>();
-                for (FreePalanqueeMember m : members) {
-                    if (!seen.add(m.diver.id)) {
-                        m.delete();
-                    }
-                }
-            }
+        // Récupérer les plongées restantes AVANT suppression
+        List<FreeSessionDive> remaining = FreeSessionDive.findBySession(id)
+                .stream()
+                .filter(d -> !d.id.equals(diveId))
+                .toList();
+        boolean isLastDive = remaining.isEmpty();
+
+        // Gérer les palanquées associées à cette plongée
+        if (isLastDive) {
+            // Dernière plongée : détacher les palanquées pour revenir en mode mono-plongée
+            FreePalanquee.update("dive = null WHERE dive.id = ?1", diveId);
+        } else {
+            // Ce n'est pas la dernière : supprimer les palanquées associées
+            FreePalanquee.delete("dive.id = ?1", diveId);
         }
+
         dive.delete();
+
+        // Réindexer les plongées restantes
+        for (int i = 0; i < remaining.size(); i++) {
+            remaining.get(i).diveIndex = i + 1;
+        }
+
+        // Si c'était la dernière plongée, dédupliquer les membres de palanquée :
+        // un plongeur peut figurer dans plusieurs palanquées (multi-plongées) ; en mode
+        // simple il ne doit apparaître qu'une seule fois (dans la première palanquée trouvée).
+        if (isLastDive) {
+            deduplicatePalanqueeMembers(id);
+        }
+
         return Response.noContent().build();
     }
 
@@ -505,5 +516,25 @@ public class FreeSessionResource {
             throw new NotFoundException("Palanquée non trouvée dans cette session");
         }
         return p;
+    }
+
+    /**
+     * Déduplication des FreePalanqueeMember après suppression de la dernière plongée.
+     * En mode multi-plongées, un plongeur peut figurer dans plusieurs palanquées.
+     * Quand on revient en mode simple (0 plongée), on ne garde que la première
+     * appartenance (ordre palanquée par position puis id) et on supprime les doublons.
+     */
+    private void deduplicatePalanqueeMembers(Long sessionId) {
+        List<FreePalanquee> palList = FreePalanquee.list("session.id = ?1 ORDER BY position, id", sessionId);
+        java.util.Set<Long> seenDiverIds = new java.util.HashSet<>();
+        for (FreePalanquee pal : palList) {
+            List<FreePalanqueeMember> members = FreePalanqueeMember.findByPalanquee(pal.id);
+            for (FreePalanqueeMember m : members) {
+                if (!seenDiverIds.add(m.diver.id)) {
+                    // Ce plongeur est déjà dans une palanquée précédente → doublon
+                    m.delete();
+                }
+            }
+        }
     }
 }

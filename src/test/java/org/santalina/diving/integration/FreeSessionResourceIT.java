@@ -450,6 +450,109 @@ class FreeSessionResourceIT {
         }
     }
 
+    /**
+     * Vérifie que la suppression d'une plongée non-dernière supprime les palanquées
+     * qui lui étaient associées (et non pas les détache simplement).
+     */
+    @Test
+    @TestSecurity(user = "fs_dive_del_pal@test.com", roles = {"DIVE_DIRECTOR"})
+    void deleteDive_shouldDeleteAssociatedPalanquees_whenNotLastDive() {
+        createDp("fs_dive_del_pal@test.com");
+        FreeDiveSession s = createSession("fs_dive_del_pal@test.com");
+        FreeSessionDive dive1 = addDive(s.id, "Matin");
+        FreeSessionDive dive2 = addDive(s.id, "Après-midi");
+        FreePalanquee pal1 = addPalanquee(s.id, "P1");
+        FreePalanquee pal2 = addPalanquee(s.id, "P2");
+        FreePalanquee pal3 = addPalanquee(s.id, "P3");
+
+        // Assigner P1 et P2 à la première plongée, P3 reste non assignée
+        given()
+            .contentType(ContentType.JSON)
+            .body("{\"palanqueeId\":" + pal1.id + ",\"diveId\":" + dive1.id + "}")
+            .when().put(BASE + "/" + s.id + "/dives/assign")
+            .then().statusCode(200);
+
+        given()
+            .contentType(ContentType.JSON)
+            .body("{\"palanqueeId\":" + pal2.id + ",\"diveId\":" + dive1.id + "}")
+            .when().put(BASE + "/" + s.id + "/dives/assign")
+            .then().statusCode(200);
+
+        try {
+            // Vérifier la situation initiale
+            given()
+                .when().get(BASE + "/" + s.id + "/palanquees")
+                .then().statusCode(200)
+                .body("$", hasSize(3))
+                .body("find { it.id == " + pal1.id + " }.diveId", equalTo(dive1.id.intValue()))
+                .body("find { it.id == " + pal2.id + " }.diveId", equalTo(dive1.id.intValue()))
+                .body("find { it.id == " + pal3.id + " }.diveId", nullValue());
+
+            // Supprimer la première plongée (il en reste une)
+            given()
+                .when().delete(BASE + "/" + s.id + "/dives/" + dive1.id)
+                .then().statusCode(204);
+
+            // Vérifier que P1 et P2 ont été supprimées, P3 est conservée
+            given()
+                .when().get(BASE + "/" + s.id + "/palanquees")
+                .then().statusCode(200)
+                .body("$", hasSize(1))
+                .body("[0].id", equalTo(pal3.id.intValue()))
+                .body("[0].diveId", nullValue());
+
+        } finally {
+            cleanup(s.id);
+        }
+    }
+
+    /**
+     * Vérifie que la suppression de la dernière plongée détache les palanquées
+     * (les rend sans plongée associée) au lieu de les supprimer.
+     */
+    @Test
+    @TestSecurity(user = "fs_dive_del_last@test.com", roles = {"DIVE_DIRECTOR"})
+    void deleteDive_shouldDetachAssociatedPalanquees_whenLastDive() {
+        createDp("fs_dive_del_last@test.com");
+        FreeDiveSession s = createSession("fs_dive_del_last@test.com");
+        FreeSessionDive dive1 = addDive(s.id, "Seule");
+        FreePalanquee pal1 = addPalanquee(s.id, "P1");
+        FreePalanquee pal2 = addPalanquee(s.id, "P2");
+
+        // Assigner P1 à la plongée
+        given()
+            .contentType(ContentType.JSON)
+            .body("{\"palanqueeId\":" + pal1.id + ",\"diveId\":" + dive1.id + "}")
+            .when().put(BASE + "/" + s.id + "/dives/assign")
+            .then().statusCode(200);
+
+        try {
+            // Vérifier la situation initiale
+            given()
+                .when().get(BASE + "/" + s.id + "/palanquees")
+                .then().statusCode(200)
+                .body("$", hasSize(2))
+                .body("find { it.id == " + pal1.id + " }.diveId", equalTo(dive1.id.intValue()))
+                .body("find { it.id == " + pal2.id + " }.diveId", nullValue());
+
+            // Supprimer la seule plongée
+            given()
+                .when().delete(BASE + "/" + s.id + "/dives/" + dive1.id)
+                .then().statusCode(204);
+
+            // Vérifier que P1 a été détachée (diveId = null), P2 est conservée
+            given()
+                .when().get(BASE + "/" + s.id + "/palanquees")
+                .then().statusCode(200)
+                .body("$", hasSize(2))
+                .body("find { it.id == " + pal1.id + " }.diveId", nullValue())
+                .body("find { it.id == " + pal2.id + " }.diveId", nullValue());
+
+        } finally {
+            cleanup(s.id);
+        }
+    }
+
     // ── PALANQUÉES — CREATE ───────────────────────────────────────────────────
 
     @Test
