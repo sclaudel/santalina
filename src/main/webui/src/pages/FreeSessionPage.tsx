@@ -464,6 +464,19 @@ export function FreeSessionPage({ sessionId, onBack }: Props) {
     if (palanquees.length > 0 && activePalIdx >= palanquees.length) setActivePalIdx(palanquees.length - 1);
   }, [palanquees.length, activePalIdx]);
 
+  // Sélectionner automatiquement la première plongée si aucune n'est sélectionnée ou valide.
+  // Supprime le concept de vue « Toutes » : en mode multi-plongées, une plongée est toujours active.
+  useEffect(() => {
+    if (dives.length === 0) {
+      if (activeDiveId !== null) setActiveDiveId(null);
+      return;
+    }
+    if (activeDiveId === null || !dives.some(d => d.id === activeDiveId)) {
+      setActiveDiveId(dives[0].id);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dives]);
+
   useEffect(() => { if (renamingId !== null) renameInputRef.current?.focus(); }, [renamingId]);
 
   // auto-scroll horizontal pendant drag
@@ -489,8 +502,10 @@ export function FreeSessionPage({ sessionId, onBack }: Props) {
   }, []);
 
   // ── vues filtrées ─────────────────────────────────────────────────────────
-  const filteredPals = activeDiveId === null ? palanquees : palanquees.filter(p => p.diveId === activeDiveId);
-  const isOverviewReadOnly = activeDiveId === null && dives.length > 0;
+  const filteredPals = palanquees.filter(p => p.diveId === activeDiveId);
+  // La vue « Toutes » a été supprimée : en mode multi-plongées une plongée est toujours active.
+  // isOverviewReadOnly est conservé par sécurité mais vaut toujours false.
+  const isOverviewReadOnly = false;
   const assignedIds = new Set(filteredPals.flatMap(p => p.divers.map(d => d.id)));
   const unassigned = allDivers.filter(d => !assignedIds.has(d.id));
 
@@ -501,7 +516,7 @@ export function FreeSessionPage({ sessionId, onBack }: Props) {
     beforeId: number | null = null,
     fromPalId?: number | null,
   ) => {
-    const ctxPals = activeDiveId === null ? palanquees : palanquees.filter(p => p.diveId === activeDiveId);
+    const ctxPals = filteredPals;
     const currentPalId = fromPalId !== undefined ? fromPalId : (ctxPals.find(p => p.divers.some(d => d.id === diverId))?.id ?? null);
     const diver = allDivers.find(d => d.id === diverId);
     if (!diver) return;
@@ -638,14 +653,34 @@ export function FreeSessionPage({ sessionId, onBack }: Props) {
     const dive = dives.find(d => d.id === diveId);
     const label = dive?.label ?? `Plongée ${dive?.diveIndex}`;
     const isLast = dives.length === 1;
-    if (!window.confirm(isLast ? `Supprimer « ${label} » ? C'est la dernière plongée.` : `Supprimer « ${label} » ?`)) return;
+    
+    if (isLast) {
+      if (!window.confirm(`Supprimer « ${label} » ? C'est la dernière plongée — l'organisation reviendra en mode plongée unique. Les palanquées existantes seront conservées.`)) return;
+    } else {
+      const palanqueesForDive = palanquees.filter(p => p.diveId === diveId);
+      if (palanqueesForDive.length > 0) {
+        if (!window.confirm(`Supprimer « ${label} » ? Ses ${palanqueesForDive.length} palanquée(s) seront supprimées.`)) return;
+      } else {
+        if (!window.confirm(`Supprimer « ${label} » ?`)) return;
+      }
+    }
+    
     try {
       await freeSessionService.deleteDive(sessionId, diveId);
       setDives(prev => prev.filter(d => d.id !== diveId).map((d, i) => ({ ...d, diveIndex: i + 1 })));
       if (activeDiveId === diveId) setActiveDiveId(null);
-      if (isLast) await loadAll();
-      else setPalanquees(prev => prev.map(p => p.diveId === diveId ? { ...p, diveId: null } : p));
-    } catch { setError('Impossible de supprimer la plongée.'); }
+      // Si c'était la dernière plongée, recharger les palanquées depuis le serveur
+      // (le backend a détaché les palanquées)
+      if (isLast) {
+        await loadAll();
+      } else {
+        setPalanquees(prev => prev.filter(p => p.diveId !== diveId));
+      }
+    } catch {
+      setError('Impossible de supprimer la plongée.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDiveTimeChange = useCallback(async (diveId: number, field: 'startTime' | 'endTime', value: string) => {
@@ -804,12 +839,6 @@ export function FreeSessionPage({ sessionId, onBack }: Props) {
       {/* Onglets plongées */}
       {dives.length > 0 && (
         <div className="dive-tabs">
-          <button
-            className={`dive-tab${activeDiveId === null ? ' dive-tab--active' : ''}`}
-            onClick={() => setActiveDiveId(null)}
-          >
-            🌊 Toutes
-          </button>
           {dives.map(dive => (
             <span key={dive.id} className={`dive-tab-wrapper${activeDiveId === dive.id ? ' dive-tab-wrapper--active' : ''}`}>
               <button

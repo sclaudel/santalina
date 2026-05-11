@@ -476,6 +476,12 @@ export function HelpPage() {
           </ul>
           <h4>Plongées multiples</h4>
           <p>Comme pour les créneaux classiques, il est possible d'organiser une session libre en <strong>plusieurs plongées</strong> (matin / après-midi…) via le bouton <strong>+ Organiser en plusieurs plongées</strong>.</p>
+          <p>Lorsque vous organisez en plusieurs plongées :</p>
+          <ul>
+            <li>Chaque plongée a sa propre organisation de palanquées.</li>
+            <li>Supprimer une plongée (sauf la dernière) supprime également toutes les palanquées qui lui étaient associées.</li>
+            <li>Supprimer la dernière plongée conserve les palanquées existantes mais revient en mode plongée unique.</li>
+          </ul>
           <h4>Exports</h4>
           <ul>
             <li><strong>📋 Liste CSV</strong> — exporte la liste des plongeurs inscrits.</li>
