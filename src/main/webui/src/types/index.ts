@@ -321,8 +321,17 @@ export interface FreeDiveSession {
   startTime: string;     // HH:mm
   notes?: string | null;
   diverCount: number;
-  palanqueeCount: number;
+  palanqueeCount: number;  ownerId?: number | null;
+  ownerName?: string | null;
+  accessLevel?: 'OWNER' | 'READ' | 'WRITE';  // absent = 'OWNER' pour rétro-compat
 }
+
+export interface FreeSessionShare {
+  id: number;
+  sharedWithId: number;
+  sharedWithName: string;
+  sharedWithEmail: string;
+  accessLevel: 'READ' | 'WRITE';}
 
 export interface FreeSessionDiver {
   id: number;

@@ -4,6 +4,7 @@ import type {
   FreeSessionDiver,
   FreePalanquee,
   FreeSessionDive,
+  FreeSessionShare,
 } from '../types';
 
 const BASE = '/free-sessions';
@@ -13,6 +14,12 @@ const BASE = '/free-sessions';
 export const freeSessionService = {
   list: (): Promise<FreeDiveSession[]> =>
     api.get<FreeDiveSession[]>(BASE).then(r => r.data),
+
+  listShared: (): Promise<FreeDiveSession[]> =>
+    api.get<FreeDiveSession[]>(`${BASE}/shared`).then(r => r.data),
+
+  get: (id: number): Promise<FreeDiveSession> =>
+    api.get<FreeDiveSession>(`${BASE}/${id}`).then(r => r.data),
 
   create: (label: string | null, diveDate: string, startTime: string, notes?: string | null): Promise<FreeDiveSession> =>
     api.post<FreeDiveSession>(BASE, { label, diveDate, startTime, notes }).then(r => r.data),
@@ -25,6 +32,26 @@ export const freeSessionService = {
 
   copy: (sourceId: number, label: string | null, diveDate: string, startTime: string): Promise<FreeDiveSession> =>
     api.post<FreeDiveSession>(`${BASE}/${sourceId}/copy`, { label, diveDate, startTime }).then(r => r.data),
+
+  // ── Partage ──────────────────────────────────────────────────────────────────────
+
+  listShares: (id: number): Promise<FreeSessionShare[]> =>
+    api.get<FreeSessionShare[]>(`${BASE}/${id}/shares`).then(r => r.data),
+
+  shareWith: (id: number, sharedWithUserId: number, accessLevel: 'READ' | 'WRITE'): Promise<FreeSessionShare> =>
+    api.post<FreeSessionShare>(`${BASE}/${id}/shares`, { sharedWithUserId, accessLevel }).then(r => r.data),
+
+  updateShare: (id: number, shareId: number, accessLevel: 'READ' | 'WRITE'): Promise<FreeSessionShare> =>
+    api.put<FreeSessionShare>(`${BASE}/${id}/shares/${shareId}`, { accessLevel }).then(r => r.data),
+
+  deleteShare: (id: number, shareId: number): Promise<void> =>
+    api.delete(`${BASE}/${id}/shares/${shareId}`).then(() => undefined),
+
+  leaveShare: (id: number): Promise<void> =>
+    api.delete(`${BASE}/${id}/shares/me`).then(() => undefined),
+
+  searchDp: (id: number, q: string): Promise<{ id: number; name: string; email: string }[]> =>
+    api.get(`${BASE}/${id}/search-dp`, { params: { q } }).then(r => r.data as { id: number; name: string; email: string }[]),
 
   // ── Plongeurs ───────────────────────────────────────────────────────────────
 

@@ -64,7 +64,7 @@ public class BackupService {
 
         LOG.infof("Export config-users : %d entrées de config, %d utilisateurs", config.size(), users.size());
         return new BackupData(BACKUP_VERSION, "config-users", LocalDateTime.now(),
-                config, users, null, null, null, null, null, null, null, null, null);
+                config, users, null, null, null, null, null, null, null, null, null, null);
     }
 
     /** Export complet (config + utilisateurs + créneaux + plongeurs). */
@@ -124,11 +124,19 @@ public class BackupService {
                 .map(this::toFreePalanqueeEntry)
                 .collect(Collectors.toList());
 
+        List<FreeSessionShareEntry> freeSessionShares = FreeDiveSessionShare.<FreeDiveSessionShare>listAll()
+                .stream()
+                .map(s -> new FreeSessionShareEntry(
+                        s.session != null ? s.session.id : null,
+                        s.sharedWith != null ? s.sharedWith.id : null,
+                        s.accessLevel))
+                .collect(Collectors.toList());
+
         LOG.infof("Export full : %d config, %d users, %d slots, %d divers, %d palanquees, %d waitingList, %d slotDives, %d freeSessions",
                 config.size(), users.size(), slots.size(), divers.size(), palanquees.size(), waitingList.size(), slotDives.size(), freeSessions.size());
         return new BackupData(BACKUP_VERSION, "full", LocalDateTime.now(),
                 config, users, slots, divers, palanquees, waitingList, slotDives,
-                freeSessions, freeSessionDivers, freeSessionDives, freePalanquees);
+                freeSessions, freeSessionDivers, freeSessionDives, freePalanquees, freeSessionShares);
     }
 
     // ---- Import ----
@@ -150,6 +158,7 @@ public class BackupService {
         em.createNativeQuery("DELETE FROM dive_slots").executeUpdate();
         em.createNativeQuery("DELETE FROM free_palanquee_members").executeUpdate();
         em.createNativeQuery("DELETE FROM free_palanquees").executeUpdate();
+        em.createNativeQuery("DELETE FROM free_session_shares").executeUpdate();
         em.createNativeQuery("DELETE FROM free_session_divers").executeUpdate();
         em.createNativeQuery("DELETE FROM free_session_dives").executeUpdate();
         em.createNativeQuery("DELETE FROM free_dive_sessions").executeUpdate();
@@ -557,7 +566,49 @@ public class BackupService {
             em.flush();
         }
 
-        // 9. S'assurer qu'un admin existe toujours
+        // 9. Restaurer les partages de sessions libres
+        int freeSessionShareCount = 0; // déclaré ici pour être visible dans le log
+        if (backup.freeSessionShares() != null && backup.freeSessions() != null && backup.users() != null) {
+            // On a besoin de la map sessionId original → entité persistée,
+            // mais les sessions sont déjà persistées : on les retrouve par propriétaire+date+heure.
+            for (FreeSessionShareEntry fss : backup.freeSessionShares()) {
+                if (fss.sessionId() == null || fss.sharedWithUserId() == null) continue;
+                // Retrouver la session originale dans le backup pour avoir ses clés naturelles
+                FreeSessionEntry origEntry = backup.freeSessions().stream()
+                        .filter(fs -> fss.sessionId().equals(fs.id()))
+                        .findFirst().orElse(null);
+                if (origEntry == null) continue;
+                // Retrouver l'utilisateur propriétaire pour identifier la session en base
+                String ownerEmail = backup.users().stream()
+                        .filter(u -> origEntry.ownerId() != null && origEntry.ownerId().equals(u.id()))
+                        .map(UserEntry::email).findFirst().orElse(null);
+                if (ownerEmail == null) continue;
+                User owner = User.find("email", ownerEmail).firstResult();
+                if (owner == null) continue;
+                FreeDiveSession linkedSession = FreeDiveSession.find(
+                        "owner = ?1 AND diveDate = ?2 AND startTime = ?3",
+                        owner, origEntry.diveDate(), origEntry.startTime()).firstResult();
+                if (linkedSession == null) continue;
+                // Retrouver le destinataire
+                String sharedWithEmail = backup.users().stream()
+                        .filter(u -> fss.sharedWithUserId().equals(u.id()))
+                        .map(UserEntry::email).findFirst().orElse(null);
+                if (sharedWithEmail == null) continue;
+                User sharedWith = User.find("email", sharedWithEmail).firstResult();
+                if (sharedWith == null) continue;
+                // Éviter les doublons
+                if (FreeDiveSessionShare.findBySessionAndUser(linkedSession.id, sharedWith.id) != null) continue;
+                FreeDiveSessionShare share = new FreeDiveSessionShare();
+                share.session    = linkedSession;
+                share.sharedWith = sharedWith;
+                share.accessLevel = fss.accessLevel() != null ? fss.accessLevel() : "READ";
+                share.persist();
+                freeSessionShareCount++;
+            }
+            em.flush();
+        }
+
+        // 10. S'assurer qu'un admin existe toujours
         authService.ensureAdminExists();
 
         LOG.infof("Import terminé : %d config, %d users, %d slots, %d divers, %d palanquees, %d waitingList, %d slotDives, %d freeSessions",

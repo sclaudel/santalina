@@ -6,6 +6,7 @@ import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.Test;
 import org.santalina.diving.domain.FreeDiveSession;
+import org.santalina.diving.domain.FreeDiveSessionShare;
 import org.santalina.diving.domain.FreePalanquee;
 import org.santalina.diving.domain.FreePalanqueeMember;
 import org.santalina.diving.domain.FreeSessionDive;
@@ -127,6 +128,7 @@ class FreeSessionResourceIT {
         FreePalanquee.delete("session.id", sessionId);
         FreeSessionDiver.delete("session.id", sessionId);
         FreeSessionDive.delete("session.id", sessionId);
+        FreeDiveSessionShare.delete("session.id", sessionId);
         User owner = session.owner;
         session.delete();
         if (owner != null) owner.delete();
@@ -452,11 +454,12 @@ class FreeSessionResourceIT {
 
     /**
      * Vérifie que la suppression d'une plongée non-dernière supprime les palanquées
-     * qui lui étaient associées (et non pas les détache simplement).
+     * Vérifie que la suppression d'une plongée (qui n'est pas la dernière) DÉTACHE
+     * les palanquées qui lui étaient associées (même comportement que pour la dernière plongée).
      */
     @Test
     @TestSecurity(user = "fs_dive_del_pal@test.com", roles = {"DIVE_DIRECTOR"})
-    void deleteDive_shouldDeleteAssociatedPalanquees_whenNotLastDive() {
+    void deleteDive_shouldDetachAssociatedPalanquees_whenNotLastDive() {
         createDp("fs_dive_del_pal@test.com");
         FreeDiveSession s = createSession("fs_dive_del_pal@test.com");
         FreeSessionDive dive1 = addDive(s.id, "Matin");
@@ -488,18 +491,19 @@ class FreeSessionResourceIT {
                 .body("find { it.id == " + pal2.id + " }.diveId", equalTo(dive1.id.intValue()))
                 .body("find { it.id == " + pal3.id + " }.diveId", nullValue());
 
-            // Supprimer la première plongée (il en reste une)
+            // Supprimer la première plongée (il en reste une : dive2)
             given()
                 .when().delete(BASE + "/" + s.id + "/dives/" + dive1.id)
                 .then().statusCode(204);
 
-            // Vérifier que P1 et P2 ont été supprimées, P3 est conservée
+            // Vérifier que P1 et P2 sont DÉTACHÉES (diveId null) — pas supprimées
             given()
                 .when().get(BASE + "/" + s.id + "/palanquees")
                 .then().statusCode(200)
-                .body("$", hasSize(1))
-                .body("[0].id", equalTo(pal3.id.intValue()))
-                .body("[0].diveId", nullValue());
+                .body("$", hasSize(3))
+                .body("find { it.id == " + pal1.id + " }.diveId", nullValue())
+                .body("find { it.id == " + pal2.id + " }.diveId", nullValue())
+                .body("find { it.id == " + pal3.id + " }.diveId", nullValue());
 
         } finally {
             cleanup(s.id);
@@ -794,5 +798,238 @@ class FreeSessionResourceIT {
         } finally {
             cleanup(s.id);
         }
+    }
+
+    // ── Sharing tests ────────────────────────────────────────────────────────
+
+    /**
+     * Le propriétaire peut partager, lister, modifier et révoquer un partage.
+     */
+    @Test
+    @TestSecurity(user = "fs_share_owner@test.com", roles = {"DIVE_DIRECTOR"})
+    void sharing_ownerCanShareAndManageShares() {
+        createDp("fs_share_owner@test.com");
+        User target = createDp("fs_share_target@test.com");
+        FreeDiveSession s = createSession("fs_share_owner@test.com");
+
+        try {
+            // Créer un partage READ
+            int shareId = given()
+                .contentType(ContentType.JSON)
+                .body("{\"sharedWithUserId\":" + target.id + ",\"accessLevel\":\"READ\"}")
+                .when().post(BASE + "/" + s.id + "/shares")
+                .then().statusCode(201)
+                .body("accessLevel", equalTo("READ"))
+                .body("sharedWithId", equalTo(target.id.intValue()))
+                .extract().path("id");
+
+            // Lister les partages
+            given()
+                .when().get(BASE + "/" + s.id + "/shares")
+                .then().statusCode(200)
+                .body("$", hasSize(1))
+                .body("[0].id", equalTo(shareId));
+
+            // Mettre à jour le niveau d'accès
+            given()
+                .contentType(ContentType.JSON)
+                .body("{\"accessLevel\":\"WRITE\"}")
+                .when().put(BASE + "/" + s.id + "/shares/" + shareId)
+                .then().statusCode(200)
+                .body("accessLevel", equalTo("WRITE"));
+
+            // Révoquer le partage
+            given()
+                .when().delete(BASE + "/" + s.id + "/shares/" + shareId)
+                .then().statusCode(204);
+
+            // La liste doit être vide
+            given()
+                .when().get(BASE + "/" + s.id + "/shares")
+                .then().statusCode(200)
+                .body("$", hasSize(0));
+
+        } finally {
+            cleanup(s.id);
+            cleanupUser("fs_share_target@test.com");
+        }
+    }
+
+    /**
+     * Le destinataire d'un partage READ ne peut pas modifier la session.
+     */
+    @Test
+    @TestSecurity(user = "fs_share_reader@test.com", roles = {"DIVE_DIRECTOR"})
+    void sharing_readAccessDeniesWrite() {
+        createDp("fs_share_owner2@test.com");
+        User reader = createDp("fs_share_reader@test.com");
+        FreeDiveSession s = createSession("fs_share_owner2@test.com");
+        shareSession(s.id, reader.id, "READ");
+
+        try {
+            // Lecture OK
+            given()
+                .when().get(BASE + "/" + s.id + "/palanquees")
+                .then().statusCode(200);
+
+            // Écriture refusée
+            given()
+                .contentType(ContentType.JSON)
+                .body("{\"firstName\":\"X\",\"lastName\":\"Y\",\"level\":\"Niveau 1\",\"isDirector\":false}")
+                .when().post(BASE + "/" + s.id + "/divers")
+                .then().statusCode(403);
+
+        } finally {
+            cleanup(s.id);
+            cleanupUser("fs_share_owner2@test.com");
+        }
+    }
+
+    /**
+     * Le destinataire d'un partage WRITE peut modifier la session.
+     */
+    @Test
+    @TestSecurity(user = "fs_share_writer@test.com", roles = {"DIVE_DIRECTOR"})
+    void sharing_writeAccessAllowsWrite() {
+        createDp("fs_share_owner3@test.com");
+        User writer = createDp("fs_share_writer@test.com");
+        FreeDiveSession s = createSession("fs_share_owner3@test.com");
+        shareSession(s.id, writer.id, "WRITE");
+
+        try {
+            given()
+                .contentType(ContentType.JSON)
+                .body("{\"firstName\":\"X\",\"lastName\":\"Y\",\"level\":\"Niveau 1\",\"isDirector\":false}")
+                .when().post(BASE + "/" + s.id + "/divers")
+                .then().statusCode(201);
+
+        } finally {
+            cleanup(s.id);
+            cleanupUser("fs_share_owner3@test.com");
+        }
+    }
+
+    /**
+     * Un utilisateur tiers ne peut pas accéder à une session qui n'est pas partagée avec lui.
+     */
+    @Test
+    @TestSecurity(user = "fs_share_stranger@test.com", roles = {"DIVE_DIRECTOR"})
+    void sharing_unknownUserDenied() {
+        createDp("fs_share_owner4@test.com");
+        createDp("fs_share_stranger@test.com");
+        FreeDiveSession s = createSession("fs_share_owner4@test.com");
+
+        try {
+            given()
+                .when().get(BASE + "/" + s.id + "/palanquees")
+                .then().statusCode(403);
+        } finally {
+            cleanup(s.id);
+            cleanupUser("fs_share_owner4@test.com");
+        }
+    }
+
+    /**
+     * GET /shared retourne les sessions partagées avec l'utilisateur courant.
+     */
+    @Test
+    @TestSecurity(user = "fs_share_listed@test.com", roles = {"DIVE_DIRECTOR"})
+    void sharing_listSharedSessions() {
+        createDp("fs_share_owner5@test.com");
+        User me = createDp("fs_share_listed@test.com");
+        FreeDiveSession s = createSession("fs_share_owner5@test.com");
+        shareSession(s.id, me.id, "READ");
+
+        try {
+            given()
+                .when().get(BASE + "/shared")
+                .then().statusCode(200)
+                .body("$", hasSize(greaterThanOrEqualTo(1)))
+                .body("find { it.id == " + s.id + " }.accessLevel", equalTo("READ"));
+        } finally {
+            cleanup(s.id);
+            cleanupUser("fs_share_owner5@test.com");
+        }
+    }
+
+    /**
+     * Le destinataire peut quitter une session partagée.
+     */
+    @Test
+    @TestSecurity(user = "fs_share_leave@test.com", roles = {"DIVE_DIRECTOR"})
+    void sharing_recipientCanLeave() {
+        createDp("fs_share_owner6@test.com");
+        User me = createDp("fs_share_leave@test.com");
+        FreeDiveSession s = createSession("fs_share_owner6@test.com");
+        shareSession(s.id, me.id, "READ");
+
+        try {
+            given()
+                .when().delete(BASE + "/" + s.id + "/shares/me")
+                .then().statusCode(204);
+
+            // Plus dans la liste shared
+            given()
+                .when().get(BASE + "/shared")
+                .then().statusCode(200)
+                .body("findAll { it.id == " + s.id + " }", hasSize(0));
+
+        } finally {
+            cleanup(s.id);
+            cleanupUser("fs_share_owner6@test.com");
+        }
+    }
+
+    /**
+     * Les sessions partagées ne comptent pas dans le quota de 15 du destinataire.
+     */
+    @Test
+    @TestSecurity(user = "fs_share_quota@test.com", roles = {"DIVE_DIRECTOR"})
+    void sharing_sharedSessionsDoNotCountInQuota() {
+        User owner = createDp("fs_share_quota_owner@test.com");
+        User me    = createDp("fs_share_quota@test.com");
+
+        // Créer 15 sessions pour le propriétaire
+        java.util.List<Long> ids = new java.util.ArrayList<>();
+        for (int i = 0; i < 15; i++) {
+            FreeDiveSession s = createSession("fs_share_quota_owner@test.com");
+            ids.add(s.id);
+            shareSession(s.id, me.id, "READ");
+        }
+
+        try {
+            // Le destinataire voit 15 sessions partagées
+            given()
+                .when().get(BASE + "/shared")
+                .then().statusCode(200)
+                .body("$", hasSize(greaterThanOrEqualTo(15)));
+
+            // Mais peut quand même créer sa propre session (quota non affecté)
+            given()
+                .contentType(ContentType.JSON)
+                .body("{\"label\":null,\"diveDate\":\"2099-07-01\",\"startTime\":\"10:00\"}")
+                .when().post(BASE)
+                .then().statusCode(201);
+
+        } finally {
+            for (Long id : ids) cleanup(id);
+            cleanupUser("fs_share_quota_owner@test.com");
+            // supprimer la session créée par le destinataire
+            FreeDiveSession.find("owner.email", "fs_share_quota@test.com")
+                .<FreeDiveSession>list().forEach(sx -> cleanup(sx.id));
+        }
+    }
+
+    // ── Helpers partage ──────────────────────────────────────────────────────
+
+    @Transactional
+    void shareSession(Long sessionId, Long userId, String accessLevel) {
+        FreeDiveSession s = FreeDiveSession.findById(sessionId);
+        User u = User.findById(userId);
+        FreeDiveSessionShare share = new FreeDiveSessionShare();
+        share.session    = s;
+        share.sharedWith = u;
+        share.accessLevel = accessLevel;
+        share.persist();
     }
 }

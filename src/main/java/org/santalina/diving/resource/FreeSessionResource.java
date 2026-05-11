@@ -22,29 +22,38 @@ import java.util.List;
  * <p>
  * Accessible aux rôles {@code ADMIN} et {@code DIVE_DIRECTOR}.
  * Chaque DP ne peut posséder que 15 sessions au maximum.
+ * Les sessions partagées avec un DP ne comptent pas dans son quota.
  * <p>
  * Endpoints :
  * <ul>
- *   <li>GET    /api/free-sessions                                             — liste ses sessions</li>
+ *   <li>GET    /api/free-sessions                                             — liste ses sessions (propriétaire)</li>
+ *   <li>GET    /api/free-sessions/{id}                                        — détail d'une session avec niveau d'accès</li>
+ *   <li>GET    /api/free-sessions/shared                                      — sessions partagées avec moi</li>
  *   <li>POST   /api/free-sessions                                             — créer</li>
- *   <li>PUT    /api/free-sessions/{id}                                        — modifier</li>
- *   <li>DELETE /api/free-sessions/{id}                                        — supprimer</li>
+ *   <li>PUT    /api/free-sessions/{id}                                        — modifier (propriétaire)</li>
+ *   <li>DELETE /api/free-sessions/{id}                                        — supprimer (propriétaire)</li>
+ *   <li>GET    /api/free-sessions/{id}/shares                                 — liste des partages (propriétaire)</li>
+ *   <li>POST   /api/free-sessions/{id}/shares                                 — partager (propriétaire)</li>
+ *   <li>PUT    /api/free-sessions/{id}/shares/{shareId}                       — modifier niveau accès (propriétaire)</li>
+ *   <li>DELETE /api/free-sessions/{id}/shares/{shareId}                       — révoquer partage (propriétaire)</li>
+ *   <li>DELETE /api/free-sessions/{id}/shares/me                              — quitter une session partagée</li>
+ *   <li>GET    /api/free-sessions/{id}/search-dp                              — rechercher un DP pour partager</li>
  *   <li>GET    /api/free-sessions/{id}/divers                                 — liste plongeurs</li>
- *   <li>POST   /api/free-sessions/{id}/divers                                 — ajouter</li>
- *   <li>PUT    /api/free-sessions/{id}/divers/{did}                           — modifier</li>
- *   <li>DELETE /api/free-sessions/{id}/divers/{did}                           — supprimer</li>
+ *   <li>POST   /api/free-sessions/{id}/divers                                 — ajouter (accès WRITE)</li>
+ *   <li>PUT    /api/free-sessions/{id}/divers/{did}                           — modifier (accès WRITE)</li>
+ *   <li>DELETE /api/free-sessions/{id}/divers/{did}                           — supprimer (accès WRITE)</li>
  *   <li>GET    /api/free-sessions/{id}/dives                                  — liste plongées</li>
- *   <li>POST   /api/free-sessions/{id}/dives                                  — créer plongée</li>
- *   <li>PATCH  /api/free-sessions/{id}/dives/{diveId}                         — modifier</li>
- *   <li>DELETE /api/free-sessions/{id}/dives/{diveId}                         — supprimer</li>
- *   <li>PUT    /api/free-sessions/{id}/dives/assign                           — assigner palanquée ↔ plongée</li>
+ *   <li>POST   /api/free-sessions/{id}/dives                                  — créer plongée (accès WRITE)</li>
+ *   <li>PATCH  /api/free-sessions/{id}/dives/{diveId}                         — modifier (accès WRITE)</li>
+ *   <li>DELETE /api/free-sessions/{id}/dives/{diveId}                         — supprimer (accès WRITE)</li>
+ *   <li>PUT    /api/free-sessions/{id}/dives/assign                           — assigner palanquée ↔ plongée (accès WRITE)</li>
  *   <li>GET    /api/free-sessions/{id}/palanquees                             — liste palanquées</li>
- *   <li>POST   /api/free-sessions/{id}/palanquees                             — créer</li>
- *   <li>PUT    /api/free-sessions/{id}/palanquees/{pid}                       — renommer</li>
- *   <li>DELETE /api/free-sessions/{id}/palanquees/{pid}                       — supprimer</li>
- *   <li>PUT    /api/free-sessions/{id}/palanquees/assign                      — assigner plongeur</li>
- *   <li>PUT    /api/free-sessions/{id}/palanquees/{pid}/reorder               — réordonner</li>
- *   <li>PATCH  /api/free-sessions/{id}/palanquees/{pid}/members/{did}/aptitudes — aptitudes</li>
+ *   <li>POST   /api/free-sessions/{id}/palanquees                             — créer (accès WRITE)</li>
+ *   <li>PUT    /api/free-sessions/{id}/palanquees/{pid}                       — renommer (accès WRITE)</li>
+ *   <li>DELETE /api/free-sessions/{id}/palanquees/{pid}                       — supprimer (accès WRITE)</li>
+ *   <li>PUT    /api/free-sessions/{id}/palanquees/assign                      — assigner plongeur (accès WRITE)</li>
+ *   <li>PUT    /api/free-sessions/{id}/palanquees/{pid}/reorder               — réordonner (accès WRITE)</li>
+ *   <li>PATCH  /api/free-sessions/{id}/palanquees/{pid}/members/{did}/aptitudes — aptitudes (accès WRITE)</li>
  * </ul>
  */
 @Path("/api/free-sessions")
@@ -54,7 +63,7 @@ import java.util.List;
 @Tag(name = "Sessions libres")
 public class FreeSessionResource {
 
-    /** Nombre maximum de sessions libres par DP. */
+    /** Nombre maximum de sessions libres par DP (sessions dont le DP est propriétaire). */
     private static final int MAX_SESSIONS = 15;
 
     @Inject
@@ -70,6 +79,25 @@ public class FreeSessionResource {
         return FreeDiveSession.findByOwner(me.id).stream()
                 .map(SessionResponse::from)
                 .toList();
+    }
+
+    @GET
+    @Path("/shared")
+    public List<SessionResponse> listSharedSessions() {
+        User me = currentUser();
+        return FreeDiveSessionShare.findBySharedWith(me.id).stream()
+                .map(share -> SessionResponse.fromShared(share.session, share))
+                .toList();
+    }
+
+    @GET
+    @Path("/{id}")
+    public SessionResponse getSession(@PathParam("id") Long id) {
+        Access a = checkAccess(id);
+        return a.isOwner()
+                ? SessionResponse.from(a.session())
+                : SessionResponse.fromShared(a.session(),
+                        FreeDiveSessionShare.findBySessionAndUser(id, currentUser().id));
     }
 
     @POST
@@ -97,7 +125,7 @@ public class FreeSessionResource {
     @Transactional
     public SessionResponse updateSession(@PathParam("id") Long id,
                                          @Valid UpdateSessionRequest req) {
-        FreeDiveSession s = checkAccess(id);
+        FreeDiveSession s = requireOwner(id);
         s.label     = req.label();
         s.diveDate  = req.diveDate();
         s.startTime = req.startTime();
@@ -110,7 +138,7 @@ public class FreeSessionResource {
     @Path("/{id}")
     @Transactional
     public Response deleteSession(@PathParam("id") Long id) {
-        FreeDiveSession s = checkAccess(id);
+        FreeDiveSession s = requireOwner(id);
         // Cascade en base via ON DELETE CASCADE sur toutes les tables filles
         s.delete();
         return Response.noContent().build();
@@ -125,7 +153,7 @@ public class FreeSessionResource {
     @Transactional
     public Response copySession(@PathParam("id") Long id,
                                 @Valid CreateSessionRequest req) {
-        FreeDiveSession original = checkAccess(id);
+        FreeDiveSession original = requireRead(id);
         User me = currentUser();
         if (FreeDiveSession.countByOwner(me.id) >= MAX_SESSIONS) {
             throw new WebApplicationException(
@@ -166,7 +194,7 @@ public class FreeSessionResource {
     @GET
     @Path("/{id}/divers")
     public List<DiverResponse> listDivers(@PathParam("id") Long id) {
-        checkAccess(id);
+        requireRead(id);
         return FreeSessionDiver.findBySession(id).stream()
                 .sorted(Comparator.<FreeSessionDiver, Boolean>comparing(d -> !d.isDirector)
                         .thenComparing(d -> d.lastName))
@@ -179,7 +207,7 @@ public class FreeSessionResource {
     @Transactional
     public Response addDiver(@PathParam("id") Long id,
                              @Valid CreateDiverRequest req) {
-        FreeDiveSession session = checkAccess(id);
+        FreeDiveSession session = requireWrite(id);
         if (FreeSessionDiver.existsBySessionAndName(id, req.firstName(), req.lastName())) {
             throw new WebApplicationException(
                     Response.status(Response.Status.CONFLICT)
@@ -207,7 +235,7 @@ public class FreeSessionResource {
     public DiverResponse updateDiver(@PathParam("id") Long id,
                                      @PathParam("did") Long did,
                                      @Valid UpdateDiverRequest req) {
-        checkAccess(id);
+        requireWrite(id);
         FreeSessionDiver d = findDiver(id, did);
         if (FreeSessionDiver.existsBySessionAndNameExcluding(id, req.firstName(), req.lastName(), did)) {
             throw new BadRequestException(
@@ -230,7 +258,7 @@ public class FreeSessionResource {
     @Transactional
     public Response removeDiver(@PathParam("id") Long id,
                                 @PathParam("did") Long did) {
-        checkAccess(id);
+        requireWrite(id);
         FreeSessionDiver d = findDiver(id, did);
         // Supprime les appartenances aux palanquées (cascade)
         FreePalanqueeMember.deleteByDiver(d.id);
@@ -245,7 +273,7 @@ public class FreeSessionResource {
     @GET
     @Path("/{id}/dives")
     public List<DiveResponse> listDives(@PathParam("id") Long id) {
-        checkAccess(id);
+        requireRead(id);
         return FreeSessionDive.findBySession(id).stream()
                 .map(DiveResponse::from)
                 .toList();
@@ -256,7 +284,7 @@ public class FreeSessionResource {
     @Transactional
     public Response createDive(@PathParam("id") Long id,
                                CreateDiveRequest req) {
-        FreeDiveSession session = checkAccess(id);
+        FreeDiveSession session = requireWrite(id);
         long count = FreeSessionDive.count("session.id", id);
         FreeSessionDive dive = new FreeSessionDive();
         dive.session   = session;
@@ -278,7 +306,7 @@ public class FreeSessionResource {
     public DiveResponse updateDive(@PathParam("id") Long id,
                                    @PathParam("diveId") Long diveId,
                                    UpdateDiveRequest req) {
-        checkAccess(id);
+        requireWrite(id);
         FreeSessionDive dive = findDive(id, diveId);
         if (req != null) {
             dive.label     = req.label();
@@ -295,7 +323,7 @@ public class FreeSessionResource {
     @Transactional
     public Response deleteDive(@PathParam("id") Long id,
                                @PathParam("diveId") Long diveId) {
-        checkAccess(id);
+        requireWrite(id);
         FreeSessionDive dive = findDive(id, diveId);
 
         // Récupérer les plongées restantes AVANT suppression
@@ -336,7 +364,7 @@ public class FreeSessionResource {
     @Transactional
     public Response assignPalanqueeToDive(@PathParam("id") Long id,
                                           @Valid AssignPalanqueeToDiveRequest req) {
-        checkAccess(id);
+        requireWrite(id);
         FreePalanquee pal = FreePalanquee.findById(req.palanqueeId());
         if (pal == null || !pal.session.id.equals(id)) {
             throw new NotFoundException("Palanquée non trouvée dans cette session");
@@ -357,7 +385,7 @@ public class FreeSessionResource {
     @GET
     @Path("/{id}/palanquees")
     public List<PalanqueeResponse> listPalanquees(@PathParam("id") Long id) {
-        checkAccess(id);
+        requireRead(id);
         return FreePalanquee.findBySession(id).stream()
                 .map(PalanqueeResponse::from)
                 .toList();
@@ -368,7 +396,7 @@ public class FreeSessionResource {
     @Transactional
     public Response createPalanquee(@PathParam("id") Long id,
                                     @Valid CreatePalanqueeRequest req) {
-        FreeDiveSession session = checkAccess(id);
+        FreeDiveSession session = requireWrite(id);
         long count = FreePalanquee.count("session.id", id);
         FreePalanquee p = new FreePalanquee();
         p.session  = session;
@@ -384,7 +412,7 @@ public class FreeSessionResource {
     public PalanqueeResponse updatePalanquee(@PathParam("id") Long id,
                                              @PathParam("pid") Long pid,
                                              @Valid UpdatePalanqueeRequest req) {
-        checkAccess(id);
+        requireWrite(id);
         FreePalanquee p = findPalanquee(id, pid);
         p.name     = req.name();
         p.depth    = req.depth();
@@ -397,7 +425,7 @@ public class FreeSessionResource {
     @Transactional
     public Response deletePalanquee(@PathParam("id") Long id,
                                     @PathParam("pid") Long pid) {
-        checkAccess(id);
+        requireWrite(id);
         FreePalanquee p = findPalanquee(id, pid);
         // Les membres sont supprimés en cascade via ON DELETE CASCADE
         p.delete();
@@ -409,7 +437,7 @@ public class FreeSessionResource {
     @Transactional
     public Response assignDiver(@PathParam("id") Long id,
                                 @Valid AssignDiverRequest req) {
-        checkAccess(id);
+        requireWrite(id);
         FreeSessionDiver diver = FreeSessionDiver.findById(req.diverId());
         if (diver == null || !diver.session.id.equals(id)) {
             throw new NotFoundException("Plongeur non trouvé dans cette session");
@@ -443,7 +471,7 @@ public class FreeSessionResource {
     public Response reorderPalanquee(@PathParam("id") Long id,
                                      @PathParam("pid") Long pid,
                                      @Valid ReorderRequest req) {
-        checkAccess(id);
+        requireWrite(id);
         findPalanquee(id, pid);
         List<Long> ids = req.diverIds();
         for (int i = 0; i < ids.size(); i++) {
@@ -460,7 +488,7 @@ public class FreeSessionResource {
                                           @PathParam("pid") Long pid,
                                           @PathParam("did") Long did,
                                           UpdateMemberAptitudesRequest req) {
-        checkAccess(id);
+        requireWrite(id);
         FreePalanqueeMember member = FreePalanqueeMember.findByDiverAndPalanquee(did, pid);
         if (member == null) throw new NotFoundException("Membre non trouvé dans cette palanquée");
         member.aptitudes = (req != null && req.aptitudes() != null && !req.aptitudes().isBlank())
@@ -469,22 +497,158 @@ public class FreeSessionResource {
     }
 
     // ════════════════════════════════════════════════════════════════════════
+    // Partage
+    // ════════════════════════════════════════════════════════════════════════
+
+    /** Liste les partages d'une session (propriétaire uniquement). */
+    @GET
+    @Path("/{id}/shares")
+    public List<ShareResponse> listShares(@PathParam("id") Long id) {
+        requireOwner(id);
+        return FreeDiveSessionShare.findBySession(id).stream()
+                .map(ShareResponse::from)
+                .toList();
+    }
+
+    /** Partage une session avec un autre DP (propriétaire uniquement). */
+    @POST
+    @Path("/{id}/shares")
+    @Transactional
+    public Response addShare(@PathParam("id") Long id,
+                             @Valid ShareRequest req) {
+        FreeDiveSession session = requireOwner(id);
+        User me = currentUser();
+        if (req.sharedWithUserId().equals(me.id)) {
+            throw new BadRequestException("Vous ne pouvez pas partager une session avec vous-même");
+        }
+        User target = User.findById(req.sharedWithUserId());
+        if (target == null) throw new NotFoundException("Utilisateur destinataire non trouvé");
+        if (!target.roles.contains(UserRole.DIVE_DIRECTOR) && !target.roles.contains(UserRole.ADMIN)) {
+            throw new BadRequestException("Le partage est réservé aux directeurs de plongée");
+        }
+        if (FreeDiveSessionShare.findBySessionAndUser(session.id, target.id) != null) {
+            throw new WebApplicationException(
+                    Response.status(Response.Status.CONFLICT)
+                            .entity("Cette session est déjà partagée avec cet utilisateur")
+                            .build());
+        }
+        String level = "READ".equals(req.accessLevel()) || "WRITE".equals(req.accessLevel())
+                ? req.accessLevel() : "READ";
+        FreeDiveSessionShare share = new FreeDiveSessionShare();
+        share.session    = session;
+        share.sharedWith = target;
+        share.accessLevel = level;
+        share.persist();
+        return Response.status(201).entity(ShareResponse.from(share)).build();
+    }
+
+    /** Modifie le niveau d'accès d'un partage (propriétaire uniquement). */
+    @PUT
+    @Path("/{id}/shares/{shareId}")
+    @Transactional
+    public ShareResponse updateShare(@PathParam("id") Long id,
+                                     @PathParam("shareId") Long shareId,
+                                     @Valid UpdateShareRequest req) {
+        requireOwner(id);
+        FreeDiveSessionShare share = FreeDiveSessionShare.findById(shareId);
+        if (share == null || !share.session.id.equals(id)) throw new NotFoundException("Partage non trouvé");
+        String level = "READ".equals(req.accessLevel()) || "WRITE".equals(req.accessLevel())
+                ? req.accessLevel() : "READ";
+        share.accessLevel = level;
+        return ShareResponse.from(share);
+    }
+
+    /** Révoque un partage (propriétaire uniquement). */
+    @DELETE
+    @Path("/{id}/shares/{shareId}")
+    @Transactional
+    public Response deleteShare(@PathParam("id") Long id,
+                                @PathParam("shareId") Long shareId) {
+        requireOwner(id);
+        FreeDiveSessionShare share = FreeDiveSessionShare.findById(shareId);
+        if (share == null || !share.session.id.equals(id)) throw new NotFoundException("Partage non trouvé");
+        share.delete();
+        return Response.noContent().build();
+    }
+
+    /** Quitter une session partagée (destinataire uniquement). */
+    @DELETE
+    @Path("/{id}/shares/me")
+    @Transactional
+    public Response leaveShare(@PathParam("id") Long id) {
+        User me = currentUser();
+        FreeDiveSessionShare share = FreeDiveSessionShare.findBySessionAndUser(id, me.id);
+        if (share == null) throw new NotFoundException("Vous n'avez pas accès à cette session partagée");
+        share.delete();
+        return Response.noContent().build();
+    }
+
+    /** Recherche de directeurs de plongée pour le partage (uniquement si propriétaire). */
+    @GET
+    @Path("/{id}/search-dp")
+    public List<DpSearchResult> searchDpForShare(@PathParam("id") Long id,
+                                                  @QueryParam("q") String q) {
+        requireOwner(id);
+        User me = currentUser();
+        if (q == null || q.isBlank()) return List.of();
+        String pattern = "%" + q.trim().toLowerCase() + "%";
+        // Chercher les DP/ADMIN, exclure le propriétaire lui-même
+        return User.<User>list(
+                        "(LOWER(firstName) LIKE ?1 OR LOWER(lastName) LIKE ?1 OR LOWER(email) LIKE ?1"
+                        + " OR LOWER(CONCAT(firstName, ' ', lastName)) LIKE ?1)"
+                        + " AND id != ?2", pattern, me.id)
+                .stream()
+                .filter(u -> u.roles.contains(UserRole.DIVE_DIRECTOR) || u.roles.contains(UserRole.ADMIN))
+                .limit(10)
+                .map(DpSearchResult::from)
+                .toList();
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
     // Helpers
     // ════════════════════════════════════════════════════════════════════════
 
-    /** Vérifie que la session existe et que l'utilisateur courant en est propriétaire (ou ADMIN). */
-    private FreeDiveSession checkAccess(Long sessionId) {
+    private record Access(FreeDiveSession session, String level) {
+        boolean isOwner()  { return "OWNER".equals(level); }
+        boolean canWrite() { return "OWNER".equals(level) || "WRITE".equals(level); }
+    }
+
+    /**
+     * Vérifie qu'on a au moins un accès en lecture (propriétaire, partagé READ ou WRITE, ou ADMIN).
+     * Retourne un objet Access avec le niveau réel.
+     */
+    private Access checkAccess(Long sessionId) {
         FreeDiveSession s = FreeDiveSession.findById(sessionId);
         if (s == null) throw new NotFoundException("Session libre non trouvée");
 
-        if (identity.hasRole("ADMIN")) return s;
+        if (identity.hasRole("ADMIN")) return new Access(s, "OWNER");
 
-        String principalName = identity.getPrincipal().getName();
-        User me = User.findByEmail(principalName);
-        if (me == null || s.owner == null || !s.owner.id.equals(me.id)) {
-            throw new ForbiddenException("Accès réservé au propriétaire de la session");
-        }
-        return s;
+        User me = currentUser();
+        if (s.owner != null && s.owner.id.equals(me.id)) return new Access(s, "OWNER");
+
+        FreeDiveSessionShare share = FreeDiveSessionShare.findBySessionAndUser(sessionId, me.id);
+        if (share != null) return new Access(s, share.accessLevel);
+
+        throw new ForbiddenException("Accès refusé à cette session");
+    }
+
+    /** Accès en lecture seule (ou plus). */
+    private FreeDiveSession requireRead(Long id) {
+        return checkAccess(id).session();
+    }
+
+    /** Accès en écriture (WRITE ou propriétaire). */
+    private FreeDiveSession requireWrite(Long id) {
+        Access a = checkAccess(id);
+        if (!a.canWrite()) throw new ForbiddenException("Accès en écriture requis");
+        return a.session();
+    }
+
+    /** Accès propriétaire uniquement. Retourne le User courant pour éviter une double lookup. */
+    private FreeDiveSession requireOwner(Long id) {
+        Access a = checkAccess(id);
+        if (!a.isOwner()) throw new ForbiddenException("Réservé au propriétaire de la session");
+        return a.session();
     }
 
     private User currentUser() {

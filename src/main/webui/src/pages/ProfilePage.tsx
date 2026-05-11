@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/authService';
 import { adminService } from '../services/adminService';
 import { freeSessionService } from '../services/freeSessionService';
 import { RichTextEditor } from '../components/RichTextEditor';
 import { DpOrganizerMailer } from '../utils/dpMailDefaults';
-import type { FreeDiveSession } from '../types';
+import type { FreeDiveSession, FreeSessionShare } from '../types';
 
 interface ProfilePageProps {
   onNavigate?: (page: string) => void;
@@ -16,6 +16,8 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
   const notifSectionRef = useRef<HTMLDivElement>(null);
   const [freeSessions, setFreeSessions] = useState<FreeDiveSession[]>([]);
   const [freeSessionsLoading, setFreeSessionsLoading] = useState(false);
+  const [sharedSessions, setSharedSessions] = useState<FreeDiveSession[]>([]);
+  const [sharedSessionsLoading, setSharedSessionsLoading] = useState(false);
   const [showNewSessionModal, setShowNewSessionModal] = useState(false);
   const [newSessionLabel, setNewSessionLabel] = useState('');
   const [newSessionDate, setNewSessionDate] = useState('');
@@ -25,6 +27,14 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
   const [copyDate, setCopyDate] = useState('');
   const [copyTime, setCopyTime] = useState('');
   const [copyLabel, setCopyLabel] = useState('');
+  // partage : état du panneau de gestion par session
+  const [sharingSessionId, setSharingSessionId] = useState<number | null>(null);
+  const [shares, setShares] = useState<FreeSessionShare[]>([]);
+  const [shareSearchQuery, setShareSearchQuery] = useState('');
+  const [shareSearchResults, setShareSearchResults] = useState<{ id: number; name: string; email: string }[]>([]);
+  const [shareSearching, setShareSearching] = useState(false);
+  const [shareLevel, setShareLevel] = useState<'READ' | 'WRITE'>('READ');
+  const [sharingError, setSharingError] = useState('');
   const [fsError, setFsError] = useState('');
   const [firstName, setFirstName] = useState(user?.firstName || '');
   const [lastName, setLastName]   = useState(user?.lastName  || '');
@@ -54,6 +64,8 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
     if (user?.role === 'DIVE_DIRECTOR' || user?.role === 'ADMIN') {
       setFreeSessionsLoading(true);
       freeSessionService.list().then(setFreeSessions).catch(() => {}).finally(() => setFreeSessionsLoading(false));
+      setSharedSessionsLoading(true);
+      freeSessionService.listShared().then(setSharedSessions).catch(() => {}).finally(() => setSharedSessionsLoading(false));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.role]);
@@ -94,6 +106,76 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
       await freeSessionService.delete(id);
       setFreeSessions(prev => prev.filter(s => s.id !== id));
     } catch { setFsError('Impossible de supprimer la session.'); }
+  };
+
+  // ── Gestion du partage ──────────────────────────────────────────────────
+
+  const openSharing = async (sessionId: number) => {
+    setSharingSessionId(sessionId);
+    setSharingError('');
+    setShareSearchQuery('');
+    setShareSearchResults([]);
+    setShareLevel('READ');
+    try {
+      const list = await freeSessionService.listShares(sessionId);
+      setShares(list);
+    } catch { setSharingError('Impossible de charger les partages.'); }
+  };
+
+  const closeSharing = () => {
+    setSharingSessionId(null);
+    setShares([]);
+    setShareSearchQuery('');
+    setShareSearchResults([]);
+    setSharingError('');
+  };
+
+  const handleShareSearch = async (q: string) => {
+    setShareSearchQuery(q);
+    if (!q.trim() || !sharingSessionId) { setShareSearchResults([]); return; }
+    setShareSearching(true);
+    try {
+      const results = await freeSessionService.searchDp(sharingSessionId, q);
+      setShareSearchResults(results);
+    } catch { /* ignore */ } finally { setShareSearching(false); }
+  };
+
+  const handleAddShare = async (targetUserId: number) => {
+    if (!sharingSessionId) return;
+    setSharingError('');
+    try {
+      const share = await freeSessionService.shareWith(sharingSessionId, targetUserId, shareLevel);
+      setShares(prev => [...prev, share]);
+      setShareSearchQuery('');
+      setShareSearchResults([]);
+    } catch (err: unknown) {
+      const m = (err as { response?: { data?: string } })?.response?.data;
+      setSharingError(typeof m === 'string' ? m : 'Impossible de partager la session.');
+    }
+  };
+
+  const handleUpdateShare = async (shareId: number, accessLevel: 'READ' | 'WRITE') => {
+    if (!sharingSessionId) return;
+    try {
+      const updated = await freeSessionService.updateShare(sharingSessionId, shareId, accessLevel);
+      setShares(prev => prev.map(s => s.id === shareId ? updated : s));
+    } catch { setSharingError('Impossible de modifier le partage.'); }
+  };
+
+  const handleDeleteShare = async (shareId: number) => {
+    if (!sharingSessionId) return;
+    try {
+      await freeSessionService.deleteShare(sharingSessionId, shareId);
+      setShares(prev => prev.filter(s => s.id !== shareId));
+    } catch { setSharingError('Impossible de révoquer le partage.'); }
+  };
+
+  const handleLeaveShare = async (sessionId: number) => {
+    if (!window.confirm('Quitter cette session partagée ? Vous n\'y aurez plus accès.')) return;
+    try {
+      await freeSessionService.leaveShare(sessionId);
+      setSharedSessions(prev => prev.filter(s => s.id !== sessionId));
+    } catch { /* ignore */ }
   };
 
   const fmtDate = (d: string) => { const [y, m, day] = d.split('-'); return `${day}/${m}/${y}`; };
@@ -345,7 +427,8 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
                         </div>
                       </div>
                     ) : (
-                      <div key={s.id} style={{ background: '#f9fafb', borderRadius: 8, padding: '8px 12px', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <Fragment key={s.id}>
+                      <div style={{ background: '#f9fafb', borderRadius: 8, padding: '8px 12px', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                         <div style={{ flex: '1 1 160px', minWidth: 0 }}>
                           <span style={{ fontWeight: 600 }}>{fmtDate(s.diveDate)}</span>
                           <span style={{ margin: '0 6px', color: '#9ca3af' }}>·</span>
@@ -354,11 +437,65 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
                         </div>
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', flexShrink: 0 }}>
                           <button className="btn btn-primary" style={{ padding: '3px 10px', fontSize: 12 }} onClick={() => onNavigate?.(`free-session-${s.id}`)}>🧩 Ouvrir</button>
+                          <button className="btn btn-secondary" style={{ padding: '3px 10px', fontSize: 12 }} title="Partager avec un autre DP" onClick={() => sharingSessionId === s.id ? closeSharing() : openSharing(s.id)}>🔗</button>
                           <button className="btn btn-secondary" style={{ padding: '3px 10px', fontSize: 12 }} title="Copier (garder les plongeurs)" onClick={() => { setCopySource(s); setCopyLabel(s.label ?? ''); setCopyDate(''); setCopyTime(''); setFsError(''); }}>📋</button>
                           <button className="btn btn-secondary" style={{ padding: '3px 10px', fontSize: 12 }} onClick={() => setEditSession(s)}>✏️</button>
                           <button className="btn btn-secondary" style={{ padding: '3px 10px', fontSize: 12, color: '#ef4444' }} onClick={() => handleDeleteSession(s.id)}>🗑️</button>
                         </div>
                       </div>
+                      {/* Panneau de gestion des partages */}
+                      {sharingSessionId === s.id && (
+                        <div style={{ background: '#fafaf9', border: '1px solid #d1fae5', borderRadius: 8, padding: 12, marginTop: 4 }}>
+                          <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>🔗 Partager « {s.label ?? fmtDate(s.diveDate)} »</p>
+                          {sharingError && <div className="alert alert-error" style={{ marginBottom: 8 }}>{sharingError}</div>}
+                          {/* Partages existants */}
+                          {shares.length > 0 && (
+                            <div style={{ marginBottom: 10 }}>
+                              {shares.map(sh => (
+                                <div key={sh.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                  <span style={{ flex: 1, fontSize: 13 }}>{sh.sharedWithName} <span style={{ color: '#6b7280', fontSize: 11 }}>({sh.sharedWithEmail})</span></span>
+                                  <select
+                                    value={sh.accessLevel}
+                                    style={{ fontSize: 12, padding: '2px 6px' }}
+                                    onChange={e => handleUpdateShare(sh.id, e.target.value as 'READ' | 'WRITE')}
+                                  >
+                                    <option value="READ">Lecture</option>
+                                    <option value="WRITE">Écriture</option>
+                                  </select>
+                                  <button className="btn btn-secondary" style={{ padding: '2px 8px', fontSize: 12, color: '#ef4444' }} onClick={() => handleDeleteShare(sh.id)}>✕</button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {shares.length === 0 && <p style={{ color: '#9ca3af', fontSize: 12, marginBottom: 8 }}>Pas encore de partage.</p>}
+                          {/* Recherche de DP */}
+                          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                            <input
+                              style={{ flex: 1, minWidth: 140, fontSize: 13 }}
+                              placeholder="Rechercher un DP (nom, e-mail…)"
+                              value={shareSearchQuery}
+                              onChange={e => handleShareSearch(e.target.value)}
+                            />
+                            <select value={shareLevel} onChange={e => setShareLevel(e.target.value as 'READ' | 'WRITE')} style={{ fontSize: 12, padding: '4px 6px' }}>
+                              <option value="READ">Lecture</option>
+                              <option value="WRITE">Écriture</option>
+                            </select>
+                          </div>
+                          {shareSearching && <p style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>Recherche…</p>}
+                          {shareSearchResults.length > 0 && (
+                            <div style={{ border: '1px solid #e5e7eb', borderRadius: 6, marginTop: 4, background: '#fff' }}>
+                              {shareSearchResults.map(r => (
+                                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderBottom: '1px solid #f3f4f6' }}>
+                                  <span style={{ flex: 1, fontSize: 13 }}>{r.name} <span style={{ color: '#6b7280', fontSize: 11 }}>({r.email})</span></span>
+                                  <button className="btn btn-primary" style={{ padding: '2px 10px', fontSize: 12 }} onClick={() => handleAddShare(r.id)}>+ Partager</button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          <button className="btn btn-secondary" style={{ marginTop: 8, padding: '3px 10px', fontSize: 12 }} onClick={closeSharing}>Fermer</button>
+                        </div>
+                      )}
+                      </Fragment>
                     )
                   ))}
                 </div>
@@ -401,6 +538,39 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
                   </div>
                 )}
               </>
+            )}
+          </div>
+        )}
+
+        {/* Section : sessions partagées avec moi */}
+        {(user.role === 'DIVE_DIRECTOR' || user.role === 'ADMIN') && (sharedSessionsLoading || sharedSessions.length > 0) && (
+          <div className="profile-section">
+            <h3>🔗 Partagées avec moi</h3>
+            <p style={{ color: '#6b7280', fontSize: 13, marginBottom: 12 }}>
+              Organisations libres que d'autres directeurs de plongée ont partagées avec vous.
+              Elles ne comptent pas dans votre quota.
+            </p>
+            {sharedSessionsLoading ? <p style={{ color: '#9ca3af' }}>Chargement…</p> : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {sharedSessions.map(s => (
+                  <div key={s.id} style={{ background: '#f9fafb', borderRadius: 8, padding: '8px 12px', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <div style={{ flex: '1 1 160px', minWidth: 0 }}>
+                      <span style={{ fontWeight: 600 }}>{fmtDate(s.diveDate)}</span>
+                      <span style={{ margin: '0 6px', color: '#9ca3af' }}>·</span>
+                      <span>{s.startTime.slice(0, 5)}</span>
+                      {s.label && <><span style={{ margin: '0 6px', color: '#9ca3af' }}>·</span><span style={{ color: '#374151', wordBreak: 'break-word' }}>{s.label}</span></>}
+                      {s.ownerName && <><span style={{ margin: '0 6px', color: '#9ca3af' }}>·</span><span style={{ color: '#6b7280', fontSize: 12 }}>par {s.ownerName}</span></>}
+                      <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 600, background: s.accessLevel === 'WRITE' ? '#d1fae5' : '#e0e7ff', color: s.accessLevel === 'WRITE' ? '#065f46' : '#3730a3', borderRadius: 4, padding: '1px 6px' }}>
+                        {s.accessLevel === 'WRITE' ? 'Écriture' : 'Lecture'}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                      <button className="btn btn-primary" style={{ padding: '3px 10px', fontSize: 12 }} onClick={() => onNavigate?.(`free-session-${s.id}`)}>🧩 Ouvrir</button>
+                      <button className="btn btn-secondary" style={{ padding: '3px 10px', fontSize: 12, color: '#ef4444' }} title="Quitter cette session" onClick={() => handleLeaveShare(s.id)}>Quitter</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         )}

@@ -435,10 +435,9 @@ export function FreeSessionPage({ sessionId, onBack }: Props) {
     }
   }, [sessionId]);
 
-  // Charge la session courante depuis la liste
+  // Charge la session courante avec son niveau d'accès via GET /{id}
   useEffect(() => {
-    freeSessionService.list().then(list => {
-      const s = list.find(x => x.id === sessionId) ?? null;
+    freeSessionService.get(sessionId).then(s => {
       setSession(s);
     }).catch(() => {});
   }, [sessionId]);
@@ -503,9 +502,8 @@ export function FreeSessionPage({ sessionId, onBack }: Props) {
 
   // ── vues filtrées ─────────────────────────────────────────────────────────
   const filteredPals = palanquees.filter(p => p.diveId === activeDiveId);
-  // La vue « Toutes » a été supprimée : en mode multi-plongées une plongée est toujours active.
-  // isOverviewReadOnly est conservé par sécurité mais vaut toujours false.
-  const isOverviewReadOnly = false;
+  // isOverviewReadOnly = true quand l'accès est READ uniquement (session partagée en lecture)
+  const isOverviewReadOnly = session?.accessLevel === 'READ';
   const assignedIds = new Set(filteredPals.flatMap(p => p.divers.map(d => d.id)));
   const unassigned = allDivers.filter(d => !assignedIds.has(d.id));
 
@@ -796,6 +794,15 @@ export function FreeSessionPage({ sessionId, onBack }: Props) {
               <span className="palanquee-separator">·</span>
               <span>{session.startTime.slice(0, 5)}</span>
               {session.label && <><span className="palanquee-separator">·</span><span>{session.label}</span></>}
+              {session.ownerName && session.accessLevel !== 'OWNER' && (
+                <><span className="palanquee-separator">·</span><span style={{ color: '#6b7280', fontSize: 12 }}>par {session.ownerName}</span></>
+              )}
+              {session.accessLevel === 'READ' && (
+                <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 600, background: '#e0e7ff', color: '#3730a3', borderRadius: 4, padding: '1px 6px' }}>Lecture seule</span>
+              )}
+              {session.accessLevel === 'WRITE' && (
+                <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 600, background: '#d1fae5', color: '#065f46', borderRadius: 4, padding: '1px 6px' }}>Écriture partagée</span>
+              )}
               <span className="palanquee-separator">·</span>
               <span>🤿 {allDivers.length} plongeur{allDivers.length !== 1 ? 's' : ''}</span>
             </div>
