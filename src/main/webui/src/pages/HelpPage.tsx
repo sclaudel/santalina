@@ -494,6 +494,25 @@ export function HelpPage() {
             <li>Maximum <strong>15 organisations libres</strong> par directeur de plongée.</li>
             <li>Les organisations libres ne sont <strong>pas visibles dans le calendrier</strong> et ne gèrent pas d'inscriptions libres pour les plongeurs.</li>
           </ul>
+          <h4>Partager une organisation</h4>
+          <p>
+            Un directeur de plongée peut <strong>partager</strong> une de ses organisations libres avec d'autres
+            directeurs de plongée de la plateforme.
+          </p>
+          <ol>
+            <li>Dans la liste de vos organisations, cliquez sur le bouton <strong>🔗</strong> à côté d'une organisation.</li>
+            <li>Dans le panneau qui s'ouvre, saisissez le <strong>nom ou l'e-mail</strong> d'un autre directeur de plongée.</li>
+            <li>Choisissez le niveau d'accès : <strong>Lecture</strong> (consultation uniquement) ou <strong>Écriture</strong> (ajout/modification de plongeurs et palanquées).</li>
+            <li>Cliquez sur <strong>+ Partager</strong>. Le destinataire voit la session dans sa section « Partagées avec moi ».</li>
+          </ol>
+          <p>Notes importantes :</p>
+          <ul>
+            <li>Seul le <strong>propriétaire</strong> peut modifier les métadonnées de la session (date, heure, libellé), gérer les partages ou supprimer la session.</li>
+            <li>Les accès <strong>WRITE</strong> permettent d'ajouter/modifier/supprimer des plongeurs, plongées et palanquées.</li>
+            <li>Les accès <strong>READ</strong> permettent uniquement de consulter l'organisation.</li>
+            <li>Les sessions partagées <strong>ne comptent pas</strong> dans le quota de 15 du destinataire.</li>
+            <li>Le destinataire peut <strong>quitter</strong> une session partagée via le bouton « Quitter » dans la section « Partagées avec moi ».</li>
+          </ul>
         </>
       ),
     },

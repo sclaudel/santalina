@@ -24,7 +24,8 @@ public class BackupDto {
             List<FreeSessionEntry> freeSessions, // null si type="config-users"
             List<FreeSessionDiverEntry> freeSessionDivers,
             List<FreeSessionDiveEntry> freeSessionDives,
-            List<FreePalanqueeEntry> freePalanquees
+            List<FreePalanqueeEntry> freePalanquees,
+            List<FreeSessionShareEntry> freeSessionShares  // null si type="config-users" ou ancien format
     ) {}
 
     public record ConfigEntry(
@@ -193,6 +194,12 @@ public class BackupDto {
     public record FreePalanqueeMemberEntry(
             Long diverId,
             String aptitudes
+    ) {}
+
+    public record FreeSessionShareEntry(
+            Long sessionId,
+            Long sharedWithUserId,
+            String accessLevel
     ) {}
 
     /** Réponse d'un import */
