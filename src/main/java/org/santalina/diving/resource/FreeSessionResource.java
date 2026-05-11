@@ -310,8 +310,8 @@ public class FreeSessionResource {
             // Dernière plongée : détacher les palanquées pour revenir en mode mono-plongée
             FreePalanquee.update("dive = null WHERE dive.id = ?1", diveId);
         } else {
-            // Ce n'est pas la dernière : supprimer les palanquées associées
-            FreePalanquee.delete("dive.id = ?1", diveId);
+            // Ce n'est pas la dernière : détacher les palanquées (conservées sans plongée assignée)
+            FreePalanquee.update("dive = null WHERE dive.id = ?1", diveId);
         }
 
         dive.delete();
