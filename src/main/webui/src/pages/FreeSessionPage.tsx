@@ -644,6 +644,13 @@ export function FreeSessionPage({ sessionId, onBack }: Props) {
     try {
       const n = dives.length + 1;
       const created = await freeSessionService.createDive(sessionId, { label: `Plongée ${n}`, startTime: session?.startTime ?? null });
+      // Première plongée créée : assigner automatiquement toutes les palanquées existantes
+      if (dives.length === 0 && palanquees.length > 0) {
+        await Promise.all(
+          palanquees.map(p => freeSessionService.assignPalanqueeToDive(sessionId, p.id, created.id))
+        );
+        setPalanquees(prev => prev.map(p => ({ ...p, diveId: created.id })));
+      }
       setDives(prev => [...prev, created]);
       setActiveDiveId(created.id);
     } catch { setError('Impossible de créer la plongée.'); } finally { setSaving(false); }
@@ -659,7 +666,7 @@ export function FreeSessionPage({ sessionId, onBack }: Props) {
     } else {
       const palanqueesForDive = palanquees.filter(p => p.diveId === diveId);
       if (palanqueesForDive.length > 0) {
-        if (!window.confirm(`Supprimer « ${label} » ? Ses ${palanqueesForDive.length} palanquée(s) seront supprimées.`)) return;
+        if (!window.confirm(`Supprimer « ${label} » ? Ses ${palanqueesForDive.length} palanquée(s) seront désassociées mais conservées.`)) return;
       } else {
         if (!window.confirm(`Supprimer « ${label} » ?`)) return;
       }
@@ -674,7 +681,7 @@ export function FreeSessionPage({ sessionId, onBack }: Props) {
       if (isLast) {
         await loadAll();
       } else {
-        setPalanquees(prev => prev.filter(p => p.diveId !== diveId));
+        setPalanquees(prev => prev.map(p => p.diveId === diveId ? { ...p, diveId: null } : p));
       }
     } catch {
       setError('Impossible de supprimer la plongée.');

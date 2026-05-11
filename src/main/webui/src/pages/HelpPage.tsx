@@ -303,7 +303,7 @@ export function HelpPage() {
             <li>Sélectionnez parmi : <strong>PE12, PE20, PE40, PE60, PA12, PA20, PA40, PA60, E1, E2, E3, E4, GP</strong>.</li>
             <li>Choisissez <strong>— aucune —</strong> pour effacer l'aptitude.</li>
             <li>Les aptitudes saisies ici apparaissent dans la <strong>colonne D</strong> de la fiche de sécurité Excel exportée.</li>
-            <li>En mode <strong>plongées multiples</strong>, les aptitudes modifiées depuis l'onglet d'une plongée spécifique sont <strong>propres à cette plongée</strong> et apparaissent dans sa fiche de sécurité. Les aptitudes modifiées depuis l'onglet <strong>Toutes</strong> ou le pool mettent à jour les aptitudes globales du plongeur.</li>
+            <li>En mode <strong>plongées multiples</strong>, les aptitudes modifiées depuis l'onglet d'une plongée spécifique sont <strong>propres à cette plongée</strong> et apparaissent dans sa fiche de sécurité. Les aptitudes modifiées depuis le pool (plongeurs non assignés) mettent à jour les aptitudes globales du plongeur.</li>
           </ul>
           <h4>Définir la profondeur et le temps d'une palanquée</h4>
           <ul>
@@ -341,24 +341,25 @@ export function HelpPage() {
           <ol>
             <li>Ouvrez la page <strong>🫧 Organisation des palanquées</strong> d'un créneau.</li>
             <li>Cliquez sur <strong>+ Organiser en plusieurs plongées</strong> (si aucune plongée n'existe encore) ou sur <strong>+ Plongée</strong> pour ajouter une plongée supplémentaire.</li>
-            <li>Chaque plongée créée apparaît sous forme d'onglet au-dessus du tableau (<strong>Toutes / Plongée 1 / Plongée 2 / …</strong>).</li>
+            <li>Lors de la création de la <strong>première plongée</strong>, toutes les palanquées déjà organisées lui sont automatiquement assignées.</li>
+            <li>Chaque plongée créée apparaît sous forme d'onglet au-dessus du tableau (<strong>Plongée 1 / Plongée 2 / …</strong>).</li>
           </ol>
           <h4>Filtrer le tableau par plongée</h4>
           <ul>
             <li>Cliquez sur un onglet de plongée pour n'afficher que les palanquées qui lui sont rattachées.</li>
-            <li>L'onglet <strong>Toutes</strong> affiche l'ensemble des palanquées, quelle que soit leur plongée.</li>
+            <li>Chaque onglet indique le nombre de plongeurs assignés (ex. <strong>4/8</strong>) et affiche un badge <strong>⚠️</strong> si des plongeurs inscrits ne sont pas encore dans une palanquée de cette plongée.</li>
           </ul>
           <h4>Rattacher une palanquée à une plongée</h4>
           <ul>
             <li>Lorsqu'au moins une plongée existe, un sélecteur <strong>Plongée ▾</strong> apparaît dans l'en-tête de chaque colonne palanquée.</li>
             <li>Sélectionnez la plongée souhaitée (ou <em>— aucune —</em> pour ne pas associer la palanquée à une plongée particulière).</li>
-            <li>Les palanquées sans plongée associée restent visibles dans l'onglet <strong>Toutes</strong>.</li>
+            <li>Les palanquées sans plongée associée n'apparaissent dans aucun onglet — elles sont masquées jusqu'à être rattachées.</li>
           </ul>
           <h4>Supprimer une plongée</h4>
           <ul>
             <li>Cliquez sur le <strong>✕</strong> affiché à droite du nom de la plongée dans son onglet.</li>
-            <li><strong>Si ce n'est pas la dernière plongée</strong> : les palanquées liées à cette plongée sont <strong>supprimées</strong> (car elles n'ont plus de sens dans un contexte multi-plongées).</li>
-            <li><strong>Si c'est la dernière plongée</strong> : les palanquées sont <strong>préservées</strong> mais deviennent des palanquées mono-plongée (détachées de toute plongée spécifique).</li>
+            <li><strong>Dans tous les cas</strong> : les palanquées liées à cette plongée sont <strong>désassociées mais conservées</strong> (elles ne sont pas supprimées).</li>
+            <li><strong>Si c'est la dernière plongée</strong> : le créneau revient en mode plongée unique et les palanquées redeviennent des palanquées simples. Si un plongeur figurait dans plusieurs palanquées, les doublons sont supprimés automatiquement.</li>
             <li>Dans tous les cas, les plongeurs restent inscrits sur le créneau.</li>
           </ul>
           <h4>Renseigner l'horaire d'une plongée</h4>
@@ -478,9 +479,10 @@ export function HelpPage() {
           <p>Comme pour les créneaux classiques, il est possible d'organiser une session libre en <strong>plusieurs plongées</strong> (matin / après-midi…) via le bouton <strong>+ Organiser en plusieurs plongées</strong>.</p>
           <p>Lorsque vous organisez en plusieurs plongées :</p>
           <ul>
+            <li>Lors de la création de la <strong>première plongée</strong>, toutes les palanquées déjà organisées lui sont automatiquement assignées.</li>
             <li>Chaque plongée a sa propre organisation de palanquées.</li>
-            <li>Supprimer une plongée (sauf la dernière) supprime également toutes les palanquées qui lui étaient associées.</li>
-            <li>Supprimer la dernière plongée conserve les palanquées existantes mais revient en mode plongée unique.</li>
+            <li>Supprimer une plongée <strong>désassocie</strong> les palanquées qui lui étaient rattachées (elles sont conservées, pas supprimées).</li>
+            <li>Supprimer la dernière plongée conserve les palanquées existantes et revient en mode plongée unique.</li>
           </ul>
           <h4>Exports</h4>
           <ul>

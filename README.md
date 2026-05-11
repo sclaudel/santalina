@@ -24,7 +24,7 @@ Application de réservation de créneaux de plongée en lac, développée avec *
 - **Liste d'attente** : inscription libre, validation/refus par le DP responsable
 - **Inscriptions libres** : le DP assigné peut ouvrir les inscriptions avec date d'ouverture optionnelle
 - **Organisation des palanquées** : drag-and-drop, gestion des aptitudes, export Excel fiche de sécurité, export CSV
-- **Plongées multiples par créneau** : découpage optionnel d'un créneau en plusieurs plongées distinctes (matin/après-midi…), filtrage du tableau des palanquées par plongée, horaires par plongée, aptitudes différentes par plongée, fiches de sécurité individuelles par plongée ; l'onglet **Toutes** est en lecture seule (vue d'ensemble) pour éviter les doublons, avec séparation visuelle des palanquées par plongée
+- **Plongées multiples par créneau** : découpage optionnel d'un créneau en plusieurs plongées distinctes (matin/après-midi…), filtrage du tableau des palanquées par plongée, horaires par plongée, aptitudes différentes par plongée, fiches de sécurité individuelles par plongée ; les palanquées existantes sont automatiquement assignées à la première plongée créée ; chaque onglet affiche le nombre de plongeurs assignés et un badge ⚠️ si des plongeurs ne sont pas encore répartis
 - **Mail d'organisation** (DIVE_DIRECTOR) : envoi groupé depuis la page Palanquées — plongeurs en BCC, DP en CC, Reply-To = DP ; éditeur WYSIWYG avec variables `{siteName}`, `{slotDate}`, `{dpName}`… ; modèle personnalisable par DP dans son profil
 - **Normalisation des données** : prénoms capitalisés, emails en minuscules
 - **Docker-ready** : Dockerfile multi-stage + docker-compose
@@ -71,74 +71,15 @@ L'application est disponible sur **http://localhost:8085**
 
 ---
 
-## 🐳 Installation et démarrage avec Docker
+## 🐳 Déploiement Docker
 
-> **Note** : Cette section concerne l'installation locale pour développement/test. Pour le déploiement en production sur un serveur, consultez le [guide de déploiement manuel](../deploy/README.md).
-
-### Prérequis pour Docker
-- **Docker** et **Docker Compose** installés
-- **Python 3** (pour générer les clés JWT)
-- **Node.js 18+** et **npm** (pour builder le frontend)
-- **Java 21+** (pour builder le backend)
-
-### Installation rapide (recommandée)
-
-Pour une installation simplifiée, utilisez le script automatique selon votre système :
-
-#### Sur Linux/Mac
 ```bash
-./setup-docker.sh
-```
-
-#### Sur Windows
-Double-cliquez sur `setup-docker.bat` ou exécutez dans un terminal :
-```cmd
-setup-docker.bat
-```
-
-Ces scripts vérifient automatiquement les prérequis, génèrent les clés JWT, buildent l'application et démarrent Docker Compose.
-
-### Installation manuelle (étape par étape)
-
-Si vous préférez contrôler chaque étape ou si le script automatique échoue :
-
-#### 1. Cloner le repository
-```bash
-git clone https://github.com/sclaudel/santalina.git
-cd santalina
-```
-
-#### 2. Générer les clés JWT
-```bash
-python3 generate_keys.py
-```
-> Cela crée les fichiers `keys/privateKey.pem` et `keys/publicKey.pem` nécessaires pour l'authentification.
-
-#### 3. Builder l'application
-```bash
-# Sur Linux/Mac
-./build.sh
-
-# Sur Windows
-build.bat
-```
-> Cette étape compile le frontend React et le backend Quarkus. Elle peut prendre quelques minutes.
-
-#### 4. Démarrer avec Docker Compose
-```bash
+# Build et démarrage complet (app + PostgreSQL + Mailhog)
 docker compose up --build
+
+# L'application est sur http://localhost:8085
+# Interface mail de test : http://localhost:8025
 ```
-
-L'application sera disponible sur **http://localhost:8085** et l'interface de test des emails sur **http://localhost:8025**.
-
-### Comptes par défaut
-- **Administrateur** : `admin@santalina.com` / `AdminSecure@2024!`
-- **Base de données** : PostgreSQL sur le port 5433 (accessible depuis l'extérieur si besoin)
-
-### Dépannage
-- Si le build échoue, vérifiez que Node.js et Java sont installés et à jour.
-- Les clés JWT sont générées une seule fois ; ne les régénérez pas si vous avez déjà des données.
-- Pour nettoyer et recommencer : `docker compose down -v` puis relancer les étapes.
 
 ### Variables d'environnement (docker-compose.yml)
 | Variable | Description | Défaut |
@@ -147,7 +88,7 @@ L'application sera disponible sur **http://localhost:8085** et l'interface de te
 | `DB_USER` | Utilisateur DB | `santalina` |
 | `DB_PASSWORD` | Mot de passe DB | `santalina_secret` |
 | `ADMIN_EMAIL` | Email admin initial | `admin@santalina.com` |
-| `ADMIN_PASSWORD` | Mot de passe admin | `AdminSecure@2024!` |
+| `ADMIN_PASSWORD` | Mot de passe admin | `Admin1234` |
 | `APP_DIVING_MAX_DIVERS` | Capacité maximale | `25` |
 | `MAILER_HOST` | Serveur SMTP | `mailhog` |
 | `MAILER_PORT` | Port SMTP | `1025` |
