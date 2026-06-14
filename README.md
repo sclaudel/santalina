@@ -23,7 +23,7 @@ Application de réservation de créneaux de plongée en lac, développée avec *
 - **Capacité configurable** : max 25 plongeurs simultanés (modifiable par l'admin)
 - **Liste d'attente** : inscription libre, validation/refus par le DP responsable
 - **Inscriptions libres** : le DP assigné peut ouvrir les inscriptions avec date d'ouverture optionnelle
-- **Organisation des palanquées** : drag-and-drop, gestion des aptitudes, attribution de fonctions (Chef, Assistant, Photographe…), export Excel fiche de sécurité, export CSV
+- **Organisation des palanquées** : drag-and-drop, gestion des aptitudes, attribution de fonctions (E1, E2, E3…), export Excel fiche de sécurité, export CSV
 - **Plongées multiples par créneau** : découpage optionnel d'un créneau en plusieurs plongées distinctes (matin/après-midi…), filtrage du tableau des palanquées par plongée, horaires par plongée, aptitudes différentes par plongée, fiches de sécurité individuelles par plongée ; les palanquées existantes sont automatiquement assignées à la première plongée créée ; chaque onglet affiche le nombre de plongeurs assignés et un badge ⚠️ si des plongeurs ne sont pas encore répartis
 - **Organisations libres** *(bêta, DIVE_DIRECTOR)* : organisation de palanquées sans rattachement à un créneau calendaire ; jusqu'à 15 sessions par DP ; multi-plongées disponible ; copie d'organisation ; **partage entre DPs** (lecture ou écriture) — les sessions partagées ne comptent pas dans le quota du destinataire
 - **Mail d'organisation** (DIVE_DIRECTOR) : envoi groupé depuis la page Palanquées — plongeurs en BCC, DP en CC, Reply-To = DP ; éditeur WYSIWYG avec variables `{siteName}`, `{slotDate}`, `{dpName}`… ; modèle personnalisable par DP dans son profil
