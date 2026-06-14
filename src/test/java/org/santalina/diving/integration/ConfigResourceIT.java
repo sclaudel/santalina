@@ -399,7 +399,7 @@ class ConfigResourceIT {
     void updateFonctions_shouldReturn403_whenDiver() {
         given()
                 .contentType(ContentType.JSON)
-                .body("{\"items\":[\"Chef\"]}")
+                .body("{\"items\":[\"E1\"]}")
                 .when().put("/api/config/fonctions")
                 .then()
                 .statusCode(403);
@@ -409,7 +409,7 @@ class ConfigResourceIT {
     void updateFonctions_shouldReturn401_withoutAuthentication() {
         given()
                 .contentType(ContentType.JSON)
-                .body("{\"items\":[\"Chef\"]}")
+                .body("{\"items\":[\"E1\"]}")
                 .when().put("/api/config/fonctions")
                 .then()
                 .statusCode(401);
@@ -421,11 +421,11 @@ class ConfigResourceIT {
         // Mettre à jour les fonctions
         given()
                 .contentType(ContentType.JSON)
-                .body("{\"items\":[\"Chef de palanquée\",\"Assistant\",\"Observateur\"]}")
+                .body("{\"items\":[\"E1\",\"E2\",\"E3\"]}")
                 .when().put("/api/config/fonctions")
                 .then()
                 .statusCode(200)
-                .body("fonctions", hasItems("Chef de palanquée", "Assistant", "Observateur"))
+                .body("fonctions", hasItems("E1", "E2", "E3"))
                 .body("fonctions", hasSize(3));
 
         // Récupérer la configuration et vérifier que les fonctions sont persistées
@@ -433,7 +433,7 @@ class ConfigResourceIT {
                 .when().get("/api/config")
                 .then()
                 .statusCode(200)
-                .body("fonctions", hasItems("Chef de palanquée", "Assistant", "Observateur"))
+                .body("fonctions", hasItems("E1", "E2", "E3"))
                 .body("fonctions", hasSize(3));
     }
 
