@@ -43,7 +43,7 @@ const MAX_GROUPS_PER_PAGE = GROUPS.length; // 5
 const MAX_DIVERS_PER_GROUP = 4;
 
 // Colonnes effacées/réécrites dans la zone plongeurs (valeur + style réinitialisés)
-const DIVER_COLS = [2, 3, 4, 6, 7]; // B C D F G
+const DIVER_COLS = [2, 3, 4, 5, 6, 7]; // B C D E F G
 // Colonnes dont le style est restauré depuis le template (valeur non touchée)
 const STYLE_RESTORE_COLS = [8, 9, 10, 11, 12]; // H I J K L
 // Colonne A uniquement sur la première ligne de chaque groupe (numéro palanquée)
@@ -163,6 +163,7 @@ function fillSheetGroups(
         ws.getCell(r, 2).value = diver.lastName.toUpperCase();
         ws.getCell(r, 3).value = cap(diver.firstName);
         if (diver.aptitudes) ws.getCell(r, 4).value = diver.aptitudes;
+        if (diver.fonction) ws.getCell(r, 5).value = diver.fonction;
       }
     }
   }

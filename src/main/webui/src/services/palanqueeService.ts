@@ -23,4 +23,8 @@ export const palanqueeService = {
   /** Met à jour les aptitudes spécifiques à une plongée pour un membre d'une palanquée. */
   updateMemberAptitudes: (slotId: number, palanqueeId: number, diverId: number, aptitudes?: string): Promise<void> =>
     api.patch(`/slots/${slotId}/palanquees/${palanqueeId}/members/${diverId}/aptitudes`, { aptitudes: aptitudes ?? null }).then(() => undefined),
+
+  /** Met à jour la fonction d'un membre dans une palanquée. */
+  updateMemberFonction: (slotId: number, palanqueeId: number, diverId: number, fonction?: string): Promise<void> =>
+    api.patch(`/slots/${slotId}/palanquees/${palanqueeId}/members/${diverId}/fonction`, { fonction: fonction ?? null }).then(() => undefined),
 };

@@ -242,6 +242,7 @@ export function HelpPage() {
             <li><strong>Cellule B4</strong> — Date, club et informations du directeur sur une seule ligne : <code>NOM Prénom - Niveau - N°Licence</code> (la licence n'apparaît que si elle est renseignée).</li>
             <li><strong>Colonnes A–C</strong> — Nom, prénom et niveau de certification de chaque plongeur.</li>
             <li><strong>Colonne D</strong> — Aptitudes du plongeur si elles ont été renseignées dans l'organisation des palanquées (ex : PE20, PA40, GP…).</li>
+            <li><strong>Colonne E</strong> — Fonction du plongeur dans la palanquée si elle a été attribuée (ex : Chef, Assistant, Photographe…).</li>
             <li>Si des palanquées sont organisées, chaque palanquée est présentée dans un tableau séparé, sinon tous les plongeurs apparaissent dans un tableau unique.</li>
           </ul>
           <div className="help-tip">💡 Pour que la licence du DP apparaisse dans l'export, elle doit être saisie dans son profil utilisateur ou directement dans le formulaire DP sur le créneau.</div>
@@ -304,6 +305,15 @@ export function HelpPage() {
             <li>Choisissez <strong>— aucune —</strong> pour effacer l'aptitude.</li>
             <li>Les aptitudes saisies ici apparaissent dans la <strong>colonne D</strong> de la fiche de sécurité Excel exportée.</li>
             <li>En mode <strong>plongées multiples</strong>, les aptitudes modifiées depuis l'onglet d'une plongée spécifique sont <strong>propres à cette plongée</strong> et apparaissent dans sa fiche de sécurité. Les aptitudes modifiées depuis le pool (plongeurs non assignés) mettent à jour les aptitudes globales du plongeur.</li>
+          </ul>
+          <h4>Attribuer une fonction à un plongeur</h4>
+          <ul>
+            <li>Chaque plongeur dans une palanquée peut se voir attribuer une fonction (ex : Chef de palanquée, Assistant, Photographe…).</li>
+            <li>Pour modifier la fonction, <strong>cliquez sur l'icône crayon</strong> à côté du plongeur.</li>
+            <li>Sélectionnez la fonction appropriée dans le menu déroulant, ou laissez vide si aucune fonction.</li>
+            <li>La fonction s'affiche sous le nom du plongeur dans la vignette (carte) du plongeur.</li>
+            <li>La fonction saisie ici apparaît dans la <strong>colonne E</strong> de la fiche de sécurité Excel exportée.</li>
+            <li>Les fonctions disponibles sont gérées dans la <strong>console d'administration</strong> (onglet Catalogue → Fonctions dans les palanquées).</li>
           </ul>
           <h4>Définir la profondeur et le temps d'une palanquée</h4>
           <ul>

@@ -339,7 +339,8 @@ class ConfigResourceIT {
                 .body("diverLevels", not(empty()))
                 .body("dpLevels", not(empty()))
                 .body("preparedLevels", not(empty()))
-                .body("aptitudes", not(empty()));
+                .body("aptitudes", not(empty()))
+                .body("fonctions", not(empty()));
     }
 
     /* ── Aptitudes ── */
@@ -376,6 +377,64 @@ class ConfigResourceIT {
                 .when().put("/api/config/aptitudes")
                 .then()
                 .statusCode(401);
+    }
+
+    /* ── Fonctions dans les palanquées ── */
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void updateFonctions_shouldReturn200_whenAdmin() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"items\":[\"Chef\",\"Assistant\",\"Photographe\",\"Scribe\",\"Largeur\"]}")
+                .when().put("/api/config/fonctions")
+                .then()
+                .statusCode(200)
+                .body("fonctions", hasItems("Chef", "Assistant", "Photographe", "Scribe", "Largeur"))
+                .body("fonctions", hasSize(5));
+    }
+
+    @Test
+    @TestSecurity(user = "diver@test.com", roles = {"DIVER"})
+    void updateFonctions_shouldReturn403_whenDiver() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"items\":[\"Chef\"]}")
+                .when().put("/api/config/fonctions")
+                .then()
+                .statusCode(403);
+    }
+
+    @Test
+    void updateFonctions_shouldReturn401_withoutAuthentication() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"items\":[\"Chef\"]}")
+                .when().put("/api/config/fonctions")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void updateFonctions_shouldPersist_andBeRetrievable() {
+        // Mettre à jour les fonctions
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"items\":[\"Chef de palanquée\",\"Assistant\",\"Observateur\"]}")
+                .when().put("/api/config/fonctions")
+                .then()
+                .statusCode(200)
+                .body("fonctions", hasItems("Chef de palanquée", "Assistant", "Observateur"))
+                .body("fonctions", hasSize(3));
+
+        // Récupérer la configuration et vérifier que les fonctions sont persistées
+        given()
+                .when().get("/api/config")
+                .then()
+                .statusCode(200)
+                .body("fonctions", hasItems("Chef de palanquée", "Assistant", "Observateur"))
+                .body("fonctions", hasSize(3));
     }
 
     /* ── Rapport périodique d'inscriptions ── */

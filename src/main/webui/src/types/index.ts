@@ -75,6 +75,7 @@ export interface SlotDiver {
   phone?: string;
   isDirector: boolean;
   aptitudes?: string;
+  fonction?: string;
   licenseNumber?: string;
   userId?: number;
   medicalCertDate?: string;
@@ -150,6 +151,7 @@ export interface AppConfig {
   dpLevels: string[];
   preparedLevels: string[];
   aptitudes: string[];
+  fonctions?: string[];
   publicAccess: boolean;
   selfRegistration: boolean;
   bookingOpenHour: number;

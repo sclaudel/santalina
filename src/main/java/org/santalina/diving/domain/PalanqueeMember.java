@@ -34,6 +34,10 @@ public class PalanqueeMember extends PanacheEntityBase {
     @Column
     public String aptitudes;
 
+    /** Fonction du plongeur dans la palanquée (ex: "chef", "assistant", "photographe", etc.). */
+    @Column
+    public String fonction;
+
     /** Membres d'une palanquée, ordonnés par position puis id. */
     public static List<PalanqueeMember> findByPalanquee(Long palanqueeId) {
         return list("palanquee.id = ?1 ORDER BY position, id", palanqueeId);

@@ -28,6 +28,7 @@ public class ConfigService {
     private static final String KEY_DP_LEVELS          = "diver.levels.dp";
     private static final String KEY_PREPARED_LEVELS    = "diver.levels.prepared";
     private static final String KEY_APTITUDES          = "diver.aptitudes";
+    private static final String KEY_FONCTIONS          = "palanquee.member.fonctions";
     private static final String KEY_PUBLIC_ACCESS     = "public.access";
     private static final String KEY_SELF_REGISTRATION = "self.registration";
     private static final String KEY_BOOKING_OPEN_HOUR    = "booking.open.hour";
@@ -88,6 +89,8 @@ public class ConfigService {
         "|PA20|PA40|PA60|PN|PNC|PB1|PB2|PV1|PV2";
     private static final String DEFAULT_APTITUDES =
         "PE12|PE20|PE40|PE60|PA12|PA20|PA40|PA60|E1|E2|E3|E4|GP";
+    private static final String DEFAULT_FONCTIONS =
+        "E1|E2|E3|E4|Serre-file|PN1|PN2|PN3|PN4|PN5|SPMF1|SPMF2";
 
     @Inject
     DivingConfig divingConfig;
@@ -131,6 +134,9 @@ public class ConfigService {
     }
     public List<String> getAptitudes() {
         return parseList(getStringValue(KEY_APTITUDES, DEFAULT_APTITUDES));
+    }
+    public List<String> getFonctions() {
+        return parseList(getStringValue(KEY_FONCTIONS, DEFAULT_FONCTIONS));
     }
     public boolean isPublicAccess() {
         return Boolean.parseBoolean(getStringValue(KEY_PUBLIC_ACCESS, "true"));
@@ -247,6 +253,7 @@ public class ConfigService {
                 getSlotTypes(), getClubs(), getLevels(),
                 getDiverLevels(), getDpLevels(), getPreparedLevels(),
                 getAptitudes(),
+                getFonctions(),
                 isPublicAccess(), isSelfRegistration(),
                 getBookingOpenHour(), getBookingCloseHour(),
                 getExclusiveSlotTypes(), getDefaultSlotHours(),
@@ -320,6 +327,11 @@ public class ConfigService {
     @Transactional
     public ConfigResponse updateAptitudes(List<String> aptitudes) {
         forceUpsert(KEY_APTITUDES, serializeList(aptitudes));
+        return getConfig();
+    }
+    @Transactional
+    public ConfigResponse updateFonctions(List<String> fonctions) {
+        forceUpsert(KEY_FONCTIONS, serializeList(fonctions));
         return getConfig();
     }
     @Transactional
