@@ -57,7 +57,7 @@ interface DiverCardProps {
 
 const APTITUDES_OPTIONS = ['PE12','PE20','PE40','PE60','PA12','PA20','PA40','PA60','E1','E2','E3','E4','GP'];
 // ↑ liste de repli — remplacée par la config au chargement
-const FONCTION_OPTIONS = ['Chef', 'Assistant', 'Photographe', 'Scribe', 'Largeur'];
+const FONCTION_OPTIONS = ['E1', 'E2', 'E3', 'E4', 'Serre-file'];
 const DEPTH_OPTIONS = ['6m', '12m', '20m', '30m', '40m', '50m', '60m'];
 const DURATION_OPTIONS = Array.from({ length: 24 }, (_, i) => `${(i + 1) * 10}'`);
 
