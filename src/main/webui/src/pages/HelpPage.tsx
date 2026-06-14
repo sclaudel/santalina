@@ -242,7 +242,7 @@ export function HelpPage() {
             <li><strong>Cellule B4</strong> — Date, club et informations du directeur sur une seule ligne : <code>NOM Prénom - Niveau - N°Licence</code> (la licence n'apparaît que si elle est renseignée).</li>
             <li><strong>Colonnes A–C</strong> — Nom, prénom et niveau de certification de chaque plongeur.</li>
             <li><strong>Colonne D</strong> — Aptitudes du plongeur si elles ont été renseignées dans l'organisation des palanquées (ex : PE20, PA40, GP…).</li>
-            <li><strong>Colonne E</strong> — Fonction du plongeur dans la palanquée si elle a été attribuée (ex : Chef, Assistant, Photographe…).</li>
+            <li><strong>Colonne E</strong> — Fonction du plongeur dans la palanquée si elle a été attribuée (ex : E1, E2, E3…).</li>
             <li>Si des palanquées sont organisées, chaque palanquée est présentée dans un tableau séparé, sinon tous les plongeurs apparaissent dans un tableau unique.</li>
           </ul>
           <div className="help-tip">💡 Pour que la licence du DP apparaisse dans l'export, elle doit être saisie dans son profil utilisateur ou directement dans le formulaire DP sur le créneau.</div>
