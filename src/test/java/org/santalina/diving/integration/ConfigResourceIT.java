@@ -390,7 +390,7 @@ class ConfigResourceIT {
                 .when().put("/api/config/fonctions")
                 .then()
                 .statusCode(200)
-                .body("fonctions", hasItems("Chef", "Assistant", "Photographe", "Scribe", "Largeur"))
+                .body("fonctions", hasItems("E1", "E2", "E3", "E4", "Serre-file"))
                 .body("fonctions", hasSize(5));
     }
 
