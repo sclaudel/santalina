@@ -1545,10 +1545,10 @@ export function AdminPage() {
           <form onSubmit={handleUpdateFonctions} style={{ flex: 1, minWidth: 280 }}>
             <div className="form-group">
               <label style={{ fontWeight: 700 }}>Fonctions dans les palanquées</label>
-              <p style={{ color: '#6b7280', fontSize: 11, margin: '2px 0 6px' }}>Liste des fonctions disponibles pour chaque plongeur dans une palanquée (ex. Chef, Assistant, Photographe…).</p>
+              <p style={{ color: '#6b7280', fontSize: 11, margin: '2px 0 6px' }}>Liste des fonctions disponibles pour chaque plongeur dans une palanquée (ex. E1, E2, E3…).</p>
               <textarea rows={8} value={fonctionsText}
                 onChange={e => setFonctionsText(e.target.value)}
-                placeholder={"Chef\nAssistant\nPhotographe\nScribe\nLargeur\n..."}
+                placeholder={"E1\nE2\nE3\nE4\nSerre-file\n..."}
                 style={{ fontFamily: 'monospace', fontSize: 13 }} />
             </div>
             <button type="submit" className="btn btn-primary" disabled={listLoading}>
