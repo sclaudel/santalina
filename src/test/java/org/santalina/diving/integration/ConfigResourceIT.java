@@ -386,7 +386,7 @@ class ConfigResourceIT {
     void updateFonctions_shouldReturn200_whenAdmin() {
         given()
                 .contentType(ContentType.JSON)
-                .body("{\"items\":[\"Chef\",\"Assistant\",\"Photographe\",\"Scribe\",\"Largeur\"]}")
+                .body("{\"items\":[\"E1\",\"E2\",\"E3\",\"E4\",\"Serre-file\"]}")
                 .when().put("/api/config/fonctions")
                 .then()
                 .statusCode(200)
