@@ -308,7 +308,7 @@ export function HelpPage() {
           </ul>
           <h4>Attribuer une fonction à un plongeur</h4>
           <ul>
-            <li>Chaque plongeur dans une palanquée peut se voir attribuer une fonction (ex : Chef de palanquée, Assistant, Photographe…).</li>
+            <li>Chaque plongeur dans une palanquée peut se voir attribuer une fonction (ex : E1, E2, E3…).</li>
             <li>Pour modifier la fonction, <strong>cliquez sur l'icône crayon</strong> à côté du plongeur.</li>
             <li>Sélectionnez la fonction appropriée dans le menu déroulant, ou laissez vide si aucune fonction.</li>
             <li>La fonction s'affiche sous le nom du plongeur dans la vignette (carte) du plongeur.</li>
