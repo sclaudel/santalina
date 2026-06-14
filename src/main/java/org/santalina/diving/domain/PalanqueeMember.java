@@ -34,7 +34,7 @@ public class PalanqueeMember extends PanacheEntityBase {
     @Column
     public String aptitudes;
 
-    /** Fonction du plongeur dans la palanquée (ex: "chef", "assistant", "photographe", etc.). */
+    /** Fonction du plongeur dans la palanquée (ex: "E1", "E2", "E3", etc.). */
     @Column
     public String fonction;
 
