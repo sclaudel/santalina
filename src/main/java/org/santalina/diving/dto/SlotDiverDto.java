@@ -16,6 +16,7 @@ public class SlotDiverDto {
             String phone,
             boolean isDirector,
             String aptitudes,
+            String fonction,
             String licenseNumber,
             String club
     ) {}
@@ -29,6 +30,7 @@ public class SlotDiverDto {
             String phone,
             boolean isDirector,
             String aptitudes,
+            String fonction,
             String licenseNumber,
             Long userId,
             LocalDate medicalCertDate,
@@ -46,12 +48,12 @@ public class SlotDiverDto {
                 }
             }
             return new SlotDiverResponse(d.id, d.firstName, d.lastName, d.level,
-                    d.email, d.phone, d.isDirector, d.aptitudes, licenseNumber, userId,
+                    d.email, d.phone, d.isDirector, d.aptitudes, d.fonction, licenseNumber, userId,
                     d.medicalCertDate, d.comment, d.club);
         }
 
-        /** Même chose mais avec les aptitudes surchargées (aptitudes spécifiques à une plongée). */
-        public static SlotDiverResponse fromWithAptitudes(SlotDiver d, String aptitudesOverride) {
+        /** Même chose mais avec les aptitudes et fonction surchargées (spécifiques à une plongée). */
+        public static SlotDiverResponse fromWithOverrides(SlotDiver d, String aptitudesOverride, String fonctionOverride) {
             String licenseNumber = d.licenseNumber;
             Long userId = null;
             if (d.email != null) {
@@ -62,8 +64,9 @@ public class SlotDiverDto {
                 }
             }
             String apt = aptitudesOverride != null ? aptitudesOverride : d.aptitudes;
+            String fct = fonctionOverride != null ? fonctionOverride : d.fonction;
             return new SlotDiverResponse(d.id, d.firstName, d.lastName, d.level,
-                    d.email, d.phone, d.isDirector, apt, licenseNumber, userId,
+                    d.email, d.phone, d.isDirector, apt, fct, licenseNumber, userId,
                     d.medicalCertDate, d.comment, d.club);
         }
     }

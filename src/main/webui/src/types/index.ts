@@ -91,6 +91,7 @@ export interface SlotDiverRequest {
   phone?: string;
   isDirector: boolean;
   aptitudes?: string;
+  fonction?: string;
   licenseNumber?: string;
   club?: string;
 }
@@ -344,6 +345,7 @@ export interface FreeSessionDiver {
   phone?: string;
   isDirector: boolean;
   aptitudes?: string;
+  fonction?: string;
   licenseNumber?: string;
   medicalCertDate?: string;
   comment?: string;

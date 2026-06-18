@@ -69,8 +69,9 @@ public class PalanqueeDto {
                 }
             }
             String apt = m.aptitudes != null ? m.aptitudes : d.aptitudes;
+            String fct = m.fonction != null ? m.fonction : d.fonction;
             return new PalanqueeMemberResponse(d.id, d.firstName, d.lastName, d.level,
-                    d.email, d.phone, d.isDirector, apt, m.fonction, licenseNumber, userId,
+                    d.email, d.phone, d.isDirector, apt, fct, licenseNumber, userId,
                     d.medicalCertDate, d.comment, d.club);
         }
     }

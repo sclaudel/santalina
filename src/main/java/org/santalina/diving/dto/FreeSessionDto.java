@@ -87,6 +87,7 @@ public class FreeSessionDto {
             String phone,
             boolean isDirector,
             String aptitudes,
+            String fonction,
             String licenseNumber,
             String club
     ) {}
@@ -100,6 +101,7 @@ public class FreeSessionDto {
             String phone,
             boolean isDirector,
             String aptitudes,
+            String fonction,
             String licenseNumber,
             LocalDate medicalCertDate,
             String comment,
@@ -107,14 +109,15 @@ public class FreeSessionDto {
     ) {
         public static DiverResponse from(FreeSessionDiver d) {
             return new DiverResponse(d.id, d.firstName, d.lastName, d.level,
-                    d.email, d.phone, d.isDirector, d.aptitudes, d.licenseNumber,
+                    d.email, d.phone, d.isDirector, d.aptitudes, d.fonction, d.licenseNumber,
                     d.medicalCertDate, d.comment, d.club);
         }
 
-        public static DiverResponse fromWithAptitudes(FreeSessionDiver d, String aptitudesOverride) {
+        public static DiverResponse fromWithOverrides(FreeSessionDiver d, String aptitudesOverride, String fonctionOverride) {
             String apt = aptitudesOverride != null ? aptitudesOverride : d.aptitudes;
+            String fct = fonctionOverride != null ? fonctionOverride : d.fonction;
             return new DiverResponse(d.id, d.firstName, d.lastName, d.level,
-                    d.email, d.phone, d.isDirector, apt, d.licenseNumber,
+                    d.email, d.phone, d.isDirector, apt, fct, d.licenseNumber,
                     d.medicalCertDate, d.comment, d.club);
         }
     }
@@ -183,6 +186,9 @@ public class FreeSessionDto {
 
     public record UpdateMemberAptitudesRequest(String aptitudes) {}
 
+    /** Met à jour la fonction d'un membre dans une palanquée libre. */
+    public record UpdateMemberFonctionRequest(String fonction) {}
+
     // ── Partage ───────────────────────────────────────────────────────────────
 
     /** Requête de partage : destinataire + niveau d'accès. */
@@ -238,7 +244,7 @@ public class FreeSessionDto {
         public static PalanqueeResponse from(FreePalanquee p) {
             List<DiverResponse> divers = FreePalanqueeMember.findByPalanquee(p.id)
                     .stream()
-                    .map(m -> DiverResponse.fromWithAptitudes(m.diver, m.aptitudes))
+                    .map(m -> DiverResponse.fromWithOverrides(m.diver, m.aptitudes, m.fonction))
                     .toList();
             Long diveId = p.dive != null ? p.dive.id : null;
             return new PalanqueeResponse(p.id, p.name, p.position, p.depth, p.duration, diveId, divers);

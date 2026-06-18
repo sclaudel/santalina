@@ -729,6 +729,69 @@ class FreeSessionResourceIT {
         }
     }
 
+    // ── FONCTION SPÉCIFIQUE ──────────────────────────────────────────────────
+
+    @Test
+    @TestSecurity(user = "fs_fonc@test.com", roles = {"DIVE_DIRECTOR"})
+    void updateMemberFonction_shouldSetForThatPalanquee() {
+        createDp("fs_fonc@test.com");
+        FreeDiveSession s = createSession("fs_fonc@test.com");
+        FreeSessionDiver d = addDiver(s.id, "DUPONT", "N3");
+        FreePalanquee pal = addPalanquee(s.id, "PF");
+        assignDiverToPalanquee(d.id, pal.id);
+        try {
+            given()
+                .contentType(ContentType.JSON)
+                .body("{\"fonction\":\"E2\"}")
+                .when().patch(BASE + "/" + s.id + "/palanquees/" + pal.id + "/members/" + d.id + "/fonction")
+                .then()
+                .statusCode(204);
+
+            given()
+                .when().get(BASE + "/" + s.id + "/palanquees")
+                .then()
+                .statusCode(200)
+                .body("find { it.id == " + pal.id + " }.divers.find { it.id == " + d.id + " }.fonction", equalTo("E2"));
+        } finally {
+            cleanup(s.id);
+        }
+    }
+
+    @Test
+    @TestSecurity(user = "fs_fonc_clear@test.com", roles = {"DIVE_DIRECTOR"})
+    void updateMemberFonction_withEmptyString_shouldClearFonction() {
+        createDp("fs_fonc_clear@test.com");
+        FreeDiveSession s = createSession("fs_fonc_clear@test.com");
+        FreeSessionDiver d = addDiver(s.id, "MARTIN", "N2");
+        FreePalanquee pal = addPalanquee(s.id, "PC");
+        assignDiverToPalanquee(d.id, pal.id);
+        try {
+            // Set fonction
+            given()
+                .contentType(ContentType.JSON)
+                .body("{\"fonction\":\"Serre-file\"}")
+                .when().patch(BASE + "/" + s.id + "/palanquees/" + pal.id + "/members/" + d.id + "/fonction")
+                .then()
+                .statusCode(204);
+
+            // Clear it
+            given()
+                .contentType(ContentType.JSON)
+                .body("{\"fonction\":\"\"}")
+                .when().patch(BASE + "/" + s.id + "/palanquees/" + pal.id + "/members/" + d.id + "/fonction")
+                .then()
+                .statusCode(204);
+
+            given()
+                .when().get(BASE + "/" + s.id + "/palanquees")
+                .then()
+                .statusCode(200)
+                .body("find { it.id == " + pal.id + " }.divers.find { it.id == " + d.id + " }.fonction", nullValue());
+        } finally {
+            cleanup(s.id);
+        }
+    }
+
     // ── ACCÈS REFUSÉ — MAUVAIS PROPRIÉTAIRE ──────────────────────────────────
 
     @Test

@@ -178,6 +178,7 @@ public class SlotDiverResource {
         diver.phone         = request.phone();
         diver.isDirector    = request.isDirector();
         diver.aptitudes     = request.aptitudes();
+        diver.fonction      = request.fonction();
         diver.licenseNumber = request.licenseNumber();
         diver.club          = request.club();
         diver.persist();

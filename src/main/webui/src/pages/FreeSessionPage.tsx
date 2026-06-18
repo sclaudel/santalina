@@ -23,6 +23,7 @@ function getLevelColor(level: string) { return LEVEL_COLORS[level] ?? '#6b7280';
 function fmtDate(d: string) { const [y, m, day] = d.split('-'); return `${day}/${m}/${y}`; }
 
 const APTITUDES_OPTIONS = ['PE12','PE20','PE40','PE60','PA12','PA20','PA40','PA60','E1','E2','E3','E4','GP'];
+const FONCTION_OPTIONS = ['E1', 'E2', 'E3', 'E4', 'Serre-file'];
 const DEPTH_OPTIONS = ['6m', '12m', '20m', '30m', '40m', '50m', '60m'];
 const DURATION_OPTIONS = Array.from({ length: 24 }, (_, i) => `${(i + 1) * 10}'`);
 const LEVEL_OPTIONS = Object.keys(LEVEL_COLORS);
@@ -40,19 +41,22 @@ interface DiverCardProps {
   isDragging: boolean;
   onLevelChange: (id: number, level: string) => void;
   onAptitudesChange: (id: number, aptitudes: string) => void;
+  onFonctionChange?: (id: number, fonction: string) => void;
   onTap?: (id: number) => void;
   isPicked?: boolean;
   aptitudesOptions?: string[];
+  fonctionsOptions?: string[];
   isReadOnly?: boolean;
 }
 
-function DiverCard({ diver, onDragStart, onDragEnter, isDragging, onLevelChange, onAptitudesChange, onTap, isPicked, aptitudesOptions, isReadOnly }: DiverCardProps) {
+function DiverCard({ diver, onDragStart, onDragEnter, isDragging, onLevelChange, onAptitudesChange, onFonctionChange, onTap, isPicked, aptitudesOptions, fonctionsOptions, isReadOnly }: DiverCardProps) {
   const [editingLevel, setEditingLevel] = useState(false);
   const [editingAptitudes, setEditingAptitudes] = useState(false);
+  const [editingFonction, setEditingFonction] = useState(false);
   const color = getLevelColor(diver.level);
   const levelOptions = [...LEVEL_OPTIONS];
   if (diver.level && !levelOptions.includes(diver.level)) levelOptions.unshift(diver.level);
-  const isEditing = editingLevel || editingAptitudes;
+  const isEditing = editingLevel || editingAptitudes || editingFonction;
   const aptOpts = aptitudesOptions ?? APTITUDES_OPTIONS;
 
   return (
@@ -111,6 +115,34 @@ function DiverCard({ diver, onDragStart, onDragEnter, isDragging, onLevelChange,
           </div>
         )}
       </div>
+      <div className="palanquee-postit-fonction-wrapper">
+        {editingFonction ? (
+          <select
+            autoFocus
+            className="palanquee-postit-level-select"
+            value={diver.fonction ?? ''}
+            onBlur={() => setEditingFonction(false)}
+            onChange={e => { onFonctionChange?.(diver.id, e.target.value); setEditingFonction(false); }}
+            onMouseDown={e => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
+          >
+            <option value="">— aucune —</option>
+            {(fonctionsOptions ?? FONCTION_OPTIONS).map(f => <option key={f} value={f}>{f}</option>)}
+          </select>
+        ) : (
+          <div className="palanquee-postit-fonction">
+            {diver.fonction
+              ? diver.fonction
+              : <span className="palanquee-postit-fonction--empty">fonction</span>}
+            <button
+              className="palanquee-postit-fonction-edit-icon"
+              title="Modifier la fonction"
+              onClick={e => { if (isReadOnly) return; e.stopPropagation(); setEditingFonction(true); }}
+              onMouseDown={e => e.stopPropagation()}
+            >✎</button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -128,6 +160,7 @@ interface DropZoneProps {
   onDrop: (palId: number | null) => void;
   onLevelChange: (id: number, level: string) => void;
   onAptitudesChange: (id: number, aptitudes: string) => void;
+  onFonctionChange?: (id: number, fonction: string) => void;
   onTapDiver?: (id: number) => void;
   mobilePickedId?: number | null;
   insertBeforeId?: number | null;
@@ -135,10 +168,11 @@ interface DropZoneProps {
   isPool?: boolean;
   palanqueeIndex?: number;
   aptitudesOptions?: string[];
+  fonctionsOptions?: string[];
   isReadOnly?: boolean;
 }
 
-function DropZone({ palanqueeId, label, labelIcon, divers, draggedId, onDragStart, onDragEnterCard, onDragEnterEnd, onDrop, onLevelChange, onAptitudesChange, onTapDiver, mobilePickedId, insertBeforeId, isUnassigned, isPool, palanqueeIndex, aptitudesOptions, isReadOnly }: DropZoneProps) {
+function DropZone({ palanqueeId, label, labelIcon, divers, draggedId, onDragStart, onDragEnterCard, onDragEnterEnd, onDrop, onLevelChange, onAptitudesChange, onFonctionChange, onTapDiver, mobilePickedId, insertBeforeId, isUnassigned, isPool, palanqueeIndex, aptitudesOptions, fonctionsOptions, isReadOnly }: DropZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragOver(true); };
   const handleDragLeave = () => setIsDragOver(false);
@@ -167,9 +201,11 @@ function DropZone({ palanqueeId, label, labelIcon, divers, draggedId, onDragStar
               isDragging={d.id === draggedId}
               onLevelChange={onLevelChange}
               onAptitudesChange={onAptitudesChange}
+              onFonctionChange={onFonctionChange}
               onTap={onTapDiver}
               isPicked={mobilePickedId === d.id}
               aptitudesOptions={aptitudesOptions}
+              fonctionsOptions={fonctionsOptions}
               isReadOnly={isReadOnly}
             />
           </Fragment>
@@ -412,6 +448,7 @@ export function FreeSessionPage({ sessionId, onBack }: Props) {
 
   // aptitudes
   const [aptitudesOptions, setAptitudesOptions] = useState<string[]>(APTITUDES_OPTIONS);
+  const [fonctionsOptions, setFonctionsOptions] = useState<string[]>(FONCTION_OPTIONS);
   const [allLevels, setAllLevels] = useState<string[]>(LEVEL_OPTIONS);
 
   const boardRef = useRef<HTMLDivElement>(null);
@@ -447,6 +484,7 @@ export function FreeSessionPage({ sessionId, onBack }: Props) {
   useEffect(() => {
     adminService.getConfig().then(cfg => {
       if (cfg.aptitudes?.length) setAptitudesOptions(cfg.aptitudes);
+      if (cfg.fonctions?.length) setFonctionsOptions(cfg.fonctions);
       const lvls = [...(cfg.levels ?? []), ...(cfg.dpLevels ?? [])];
       if (lvls.length) setAllLevels([...new Set(lvls)]);
     }).catch(() => {});
@@ -590,6 +628,22 @@ export function FreeSessionPage({ sessionId, onBack }: Props) {
       setAllDivers(prev => prev.map(upd));
       setPalanquees(prev => prev.map(p => ({ ...p, divers: p.divers.map(upd) })));
       try { await freeSessionService.updateDiver(sessionId, diverId, { ...d, aptitudes: newApt || undefined }); } catch { await loadAll(); }
+    }
+  }, [allDivers, palanquees, activeDiveId, sessionId, loadAll]);
+
+  // ── changement de fonction inline sur le post-it ───────────────────────────
+  const handleFonctionChange = useCallback(async (diverId: number, newFonction: string) => {
+    const palInDive = activeDiveId !== null ? palanquees.find(p => p.diveId === activeDiveId && p.divers.some(d => d.id === diverId)) : null;
+    if (palInDive) {
+      setPalanquees(prev => prev.map(p => p.id === palInDive.id ? { ...p, divers: p.divers.map(d => d.id === diverId ? { ...d, fonction: newFonction || undefined } : d) } : p));
+      try { await freeSessionService.updateMemberFonction(sessionId, palInDive.id, diverId, newFonction || undefined); } catch { await loadAll(); }
+    } else {
+      const d = allDivers.find(x => x.id === diverId);
+      if (!d) return;
+      const upd = (x: FreeSessionDiver) => x.id === diverId ? { ...x, fonction: newFonction || undefined } : x;
+      setAllDivers(prev => prev.map(upd));
+      setPalanquees(prev => prev.map(p => ({ ...p, divers: p.divers.map(upd) })));
+      try { await freeSessionService.updateDiver(sessionId, diverId, { ...d, fonction: newFonction || undefined }); } catch { await loadAll(); }
     }
   }, [allDivers, palanquees, activeDiveId, sessionId, loadAll]);
 
@@ -994,8 +1048,9 @@ export function FreeSessionPage({ sessionId, onBack }: Props) {
                 {unassigned.map(d => (
                   <DiverCard key={d.id} diver={d} onDragStart={() => {}} onDragEnter={() => {}} isDragging={false}
                     onLevelChange={handleLevelChange} onAptitudesChange={handleAptitudesChange}
+                    onFonctionChange={handleFonctionChange}
                     onTap={id => handleMobilePick(id, null)} isPicked={mobilePickedId === d.id}
-                    aptitudesOptions={aptitudesOptions} isReadOnly={isOverviewReadOnly} />
+                    aptitudesOptions={aptitudesOptions} fonctionsOptions={fonctionsOptions} isReadOnly={isOverviewReadOnly} />
                 ))}
                 {unassigned.length === 0 && <div className="palanquee-empty-hint">Tous les plongeurs sont assignés</div>}
               </div>
@@ -1005,8 +1060,9 @@ export function FreeSessionPage({ sessionId, onBack }: Props) {
               draggedId={draggedId} onDragStart={handleDragStart} onDragEnterCard={handleDragEnterCard}
               onDragEnterEnd={handleDragEnterEnd} onDrop={handleDrop}
               onLevelChange={handleLevelChange} onAptitudesChange={handleAptitudesChange}
+              onFonctionChange={handleFonctionChange}
               insertBeforeId={insertTarget?.palId === null ? insertTarget.beforeId : undefined}
-              isUnassigned isPool aptitudesOptions={aptitudesOptions} isReadOnly={isOverviewReadOnly} />
+              isUnassigned isPool aptitudesOptions={aptitudesOptions} fonctionsOptions={fonctionsOptions} isReadOnly={isOverviewReadOnly} />
           )}
         </div>
 
@@ -1078,8 +1134,9 @@ export function FreeSessionPage({ sessionId, onBack }: Props) {
                           {pal.divers.map(d => (
                             <DiverCard key={d.id} diver={d} onDragStart={() => {}} onDragEnter={() => {}} isDragging={false}
                               onLevelChange={handleLevelChange} onAptitudesChange={handleAptitudesChange}
+                              onFonctionChange={handleFonctionChange}
                               onTap={isOverviewReadOnly ? undefined : id => handleMobilePick(id, pal.id)} isPicked={mobilePickedId === d.id}
-                              aptitudesOptions={aptitudesOptions} isReadOnly={isOverviewReadOnly} />
+                              aptitudesOptions={aptitudesOptions} fonctionsOptions={fonctionsOptions} isReadOnly={isOverviewReadOnly} />
                           ))}
                           {pal.divers.length === 0 && <div className="palanquee-empty-hint">Appuyez sur un plongeur du pool pour l'assigner ici</div>}
                         </div>
@@ -1148,9 +1205,10 @@ export function FreeSessionPage({ sessionId, onBack }: Props) {
                     draggedId={draggedId} onDragStart={handleDragStart} onDragEnterCard={handleDragEnterCard}
                     onDragEnterEnd={handleDragEnterEnd} onDrop={handleDrop}
                     onLevelChange={handleLevelChange} onAptitudesChange={handleAptitudesChange}
+                    onFonctionChange={handleFonctionChange}
                     insertBeforeId={insertTarget?.palId === pal.id ? insertTarget.beforeId : undefined}
                     palanqueeIndex={palGlobal + 1}
-                    aptitudesOptions={aptitudesOptions} isReadOnly={isOverviewReadOnly} />
+                    aptitudesOptions={aptitudesOptions} fonctionsOptions={fonctionsOptions} isReadOnly={isOverviewReadOnly} />
                 </div>
               ))
             )}

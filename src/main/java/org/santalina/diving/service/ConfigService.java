@@ -90,7 +90,7 @@ public class ConfigService {
     private static final String DEFAULT_APTITUDES =
         "PE12|PE20|PE40|PE60|PA12|PA20|PA40|PA60|E1|E2|E3|E4|GP";
     private static final String DEFAULT_FONCTIONS =
-        "E1|E2|E3|E4|Serre-file|PN1|PN2|PN3|PN4|PN5|SPMF1|SPMF2";
+        "E1|E2|E3|E4|Serre-file";
 
     @Inject
     DivingConfig divingConfig;

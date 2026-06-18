@@ -466,25 +466,42 @@ export function PalanqueePage({ slotId, onBack }: Props) {
 
   // ── changement de fonction inline sur le post-it ───────────────────────────
   const handleFonctionChange = useCallback(async (diverId: number, newFonction: string) => {
-    // La fonction ne peut être modifiée que dans le contexte d'une palanquée
-    // (elle n'existe que sur PalanqueeMember, pas sur SlotDiver)
-    const palanqueeWithDiver = palanquees.find(p => p.divers.some(d => d.id === diverId));
-    if (!palanqueeWithDiver) return;
+    const palanqueeInCurrentDive = activeDiveId !== null
+      ? palanquees.find(p => p.slotDiveId === activeDiveId && p.divers.some(d => d.id === diverId))
+      : null;
 
-    const member = palanqueeWithDiver.divers.find(d => d.id === diverId);
-    if (member?.fonction === (newFonction || undefined)) return;
-
-    // Mise à jour optimiste
-    setPalanquees(prev => prev.map(p =>
-      p.id === palanqueeWithDiver.id
-        ? { ...p, divers: p.divers.map(d => d.id === diverId ? { ...d, fonction: newFonction || undefined } : d) }
-        : p
-    ));
-
-    try {
-      await palanqueeService.updateMemberFonction(slotId, palanqueeWithDiver.id, diverId, newFonction || undefined);
-    } catch { await loadAll(); }
-  }, [palanquees, slotId, loadAll]);
+    if (palanqueeInCurrentDive) {
+      setPalanquees(prev => prev.map(p =>
+        p.id === palanqueeInCurrentDive.id
+          ? { ...p, divers: p.divers.map(d => d.id === diverId ? { ...d, fonction: newFonction || undefined } : d) }
+          : p
+      ));
+      try {
+        await palanqueeService.updateMemberFonction(slotId, palanqueeInCurrentDive.id, diverId, newFonction || undefined);
+      } catch { await loadAll(); }
+    } else {
+      const diver = allDivers.find(d => d.id === diverId);
+      if (!diver) return;
+      const updater = (d: SlotDiver) => d.id === diverId ? { ...d, fonction: newFonction || undefined } : d;
+      setAllDivers(prev => prev.map(updater));
+      setPalanquees(prev => prev.map(p => ({ ...p, divers: p.divers.map(updater) })));
+      try {
+        await slotDiverService.update(slotId, diverId, {
+          firstName:  diver.firstName,
+          lastName:   diver.lastName,
+          level:      diver.level,
+          email:      diver.email,
+          phone:      diver.phone,
+          isDirector: diver.isDirector,
+          aptitudes:  diver.aptitudes,
+          fonction:   newFonction || undefined,
+          licenseNumber: diver.licenseNumber,
+        });
+      } catch {
+        await loadAll();
+      }
+    }
+  }, [allDivers, palanquees, activeDiveId, slotId, loadAll]);
 
   // ── changement d'aptitudes inline sur le post-it ───────────────────────────
   const handleAptitudesChange = useCallback(async (diverId: number, newAptitudes: string) => {

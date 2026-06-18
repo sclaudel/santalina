@@ -23,9 +23,9 @@ Application de réservation de créneaux de plongée en lac, développée avec *
 - **Capacité configurable** : max 25 plongeurs simultanés (modifiable par l'admin)
 - **Liste d'attente** : inscription libre, validation/refus par le DP responsable
 - **Inscriptions libres** : le DP assigné peut ouvrir les inscriptions avec date d'ouverture optionnelle
-- **Organisation des palanquées** : drag-and-drop, gestion des aptitudes, attribution de fonctions (E1, E2, E3…), export Excel fiche de sécurité, export CSV
+- **Organisation des palanquées** : drag-and-drop, gestion des aptitudes, attribution de fonctions (E1, E2, E3, E4, Serre-file), export Excel fiche de sécurité, export CSV
 - **Plongées multiples par créneau** : découpage optionnel d'un créneau en plusieurs plongées distinctes (matin/après-midi…), filtrage du tableau des palanquées par plongée, horaires par plongée, aptitudes différentes par plongée, fiches de sécurité individuelles par plongée ; les palanquées existantes sont automatiquement assignées à la première plongée créée ; chaque onglet affiche le nombre de plongeurs assignés et un badge ⚠️ si des plongeurs ne sont pas encore répartis
-- **Organisations libres** *(bêta, DIVE_DIRECTOR)* : organisation de palanquées sans rattachement à un créneau calendaire ; jusqu'à 15 sessions par DP ; multi-plongées disponible ; copie d'organisation ; **partage entre DPs** (lecture ou écriture) — les sessions partagées ne comptent pas dans le quota du destinataire
+- **Organisations libres** *(bêta, DIVE_DIRECTOR)* : organisation de palanquées sans rattachement à un créneau calendaire ; jusqu'à 15 sessions par DP ; multi-plongées disponible ; copie d'organisation ; **partage entre DPs** (lecture ou écriture) ; gestion des aptitudes et fonctions (E1, E2, E3, E4, Serre-file) par membre — les sessions partagées ne comptent pas dans le quota du destinataire
 - **Mail d'organisation** (DIVE_DIRECTOR) : envoi groupé depuis la page Palanquées — plongeurs en BCC, DP en CC, Reply-To = DP ; éditeur WYSIWYG avec variables `{siteName}`, `{slotDate}`, `{dpName}`… ; modèle personnalisable par DP dans son profil
 - **Normalisation des données** : prénoms capitalisés, emails en minuscules
 - **Docker-ready** : Dockerfile multi-stage + docker-compose
@@ -162,10 +162,11 @@ Il est possible de découper un créneau en **plusieurs plongées distinctes** (
 5. L'onglet actif filtre le tableau de bord — seules les palanquées de la plongée sélectionnée sont affichées.
 6. **Horaire par plongée** : lorsqu'un onglet de plongée est actif, une barre 🕐 Horaire s'affiche sous les onglets. Saisir l'heure de début et de fin de la plongée ; ces horaires sont repris dans la fiche de sécurité exportée pour cette plongée.
 7. **Aptitudes par plongée** : depuis un onglet de plongée, les aptitudes modifiées (double-clic) sont enregistrées spécifiquement pour cette plongée. Un même plongeur peut avoir des aptitudes différentes selon la plongée (ex. PE20 le matin, PA40 l'après-midi).
-8. **Export Excel** :
+8. **Fonctions par palanquée** : chaque membre d'une palanquée peut se voir attribuer une fonction (E1, E2, E3, E4, Serre-file). La liste des fonctions est configurable dans l'administration. Les fonctions sont modifiables via le bouton ✎ sur le post-it du plongeur, au même niveau que les aptitudes. Cette fonctionnalité est disponible aussi bien dans les créneaux que dans les organisations libres.
+9. **Export Excel** :
    - Bouton 📥 sur l'onglet d'une plongée → exporte la **fiche de sécurité de cette plongée** (palanquées + horaires + aptitudes spécifiques).
    - Bouton 📥 **Liste globale** sur l'onglet Toutes → exporte la **liste complète des inscrits** sans organisation en palanquées.
-9. Pour supprimer une plongée, cliquer sur **✕** dans son onglet (les palanquées sont détachées mais pas supprimées).
+10. Pour supprimer une plongée, cliquer sur **✕** dans son onglet (les palanquées sont détachées mais pas supprimées).
 
 ### Vue d'ensemble (onglet « Toutes »)
 L'onglet **Toutes** est en **lecture seule** dès qu'au moins une plongée est définie. Il affiche toutes les palanquées regroupées par plongée avec une séparation visuelle. Pour modifier les affectations, sélectionner l'onglet de la plongée concernée.
@@ -182,7 +183,7 @@ Si un créneau multi-plongées est simplifié en supprimant toutes ses plongées
 ### Sauvegarde / restauration
 Les plongées sont incluses dans l'export JSON complet et restaurées automatiquement lors de l'import.
 
-Les **aptitudes spécifiques par plongée** (`PalanqueeMember.aptitudes`) sont également incluses dans l'export JSON (champ `members` de chaque palanquée) et restaurées fidèlement lors de l'import. Les anciens exports (champ `memberDiverIds` uniquement) restent compatibles à l'import (aptitudes nulles dans ce cas).
+Les **aptitudes spécifiques par plongée** (`PalanqueeMember.aptitudes`) et les **fonctions** (`PalanqueeMember.fonction`, ex. E1, E2, Serre-file) sont également incluses dans l'export JSON (champ `members` de chaque palanquée) et restaurées fidèlement lors de l'import. Les anciens exports (champ `memberDiverIds` uniquement) restent compatibles à l'import (aptitudes et fonctions nulles dans ce cas). Les fonctions sont également sauvegardées et restaurées pour les organisations libres.
 
 ---
 

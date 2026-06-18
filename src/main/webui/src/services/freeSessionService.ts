@@ -106,4 +106,7 @@ export const freeSessionService = {
 
   updateMemberAptitudes: (id: number, pid: number, did: number, aptitudes?: string): Promise<void> =>
     api.patch(`${BASE}/${id}/palanquees/${pid}/members/${did}/aptitudes`, { aptitudes: aptitudes ?? null }).then(() => undefined),
+
+  updateMemberFonction: (id: number, pid: number, did: number, fonction?: string): Promise<void> =>
+    api.patch(`${BASE}/${id}/palanquees/${pid}/members/${did}/fonction`, { fonction: fonction ?? null }).then(() => undefined),
 };
