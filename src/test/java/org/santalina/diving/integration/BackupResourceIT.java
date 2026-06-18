@@ -599,11 +599,110 @@ class BackupResourceIT {
     }
 
     /**
+     * Vérifie que l'import d'un backup au format actuel (champ {@code members} avec aptitudes + fonction)
+     * restaure correctement les fonctions des membres de palanquée.
+     */
+    @Test
+    @Order(18)
+    @TestSecurity(user = "admin@test.com", roles = {"ADMIN"})
+    void importBackup_withPalanqueeMemberFonction_shouldRestoreFonction() {
+        String payload = """
+                {
+                    "version": "1.0",
+                    "type": "full",
+                    "exportedAt": "2099-01-01T00:00:00",
+                    "config": [],
+                    "users": [],
+                    "slots": [
+                        {
+                            "id": 9020,
+                            "slotDate": "2099-11-21",
+                            "startTime": "08:00:00",
+                            "endTime": "17:00:00",
+                            "diverCount": 8,
+                            "title": "Créneau fonctions",
+                            "notes": null,
+                            "slotType": null,
+                            "club": null,
+                            "createdById": null,
+                            "createdAt": "2099-01-01T00:00:00",
+                            "registrationOpen": false,
+                            "registrationOpensAt": null,
+                            "requiresAttachments": false
+                        }
+                    ],
+                    "divers": [
+                        {
+                            "id": 9020,
+                            "slotId": 9020,
+                            "firstName": "Test",
+                            "lastName": "FONCT",
+                            "level": "N3",
+                            "email": null,
+                            "phone": null,
+                            "isDirector": false,
+                            "aptitudes": "PE40",
+                            "licenseNumber": null,
+                            "palanqueeId": null,
+                            "palanqueePosition": 0,
+                            "medicalCertDate": null,
+                            "comment": null,
+                            "club": null
+                        }
+                    ],
+                    "palanquees": [
+                        {
+                            "id": 9020,
+                            "slotId": 9020,
+                            "name": "Palanquée Fonction",
+                            "position": 0,
+                            "depth": "20m",
+                            "duration": "40'",
+                            "slotDiveId": null,
+                            "memberDiverIds": [],
+                            "members": [
+                                { "diverId": 9020, "aptitudes": "PE40", "fonction": "E2" }
+                            ]
+                        }
+                    ],
+                    "slotDives": [],
+                    "waitingListEntries": []
+                }
+                """;
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(payload)
+                .when().post("/api/admin/backup/import")
+                .then()
+                .statusCode(200)
+                .body("success", equalTo(true))
+                .body("slotsRestored", equalTo(1))
+                .body("diversRestored", equalTo(1))
+                .body("palanqueesRestored", equalTo(1));
+
+        int slotId = given()
+                .when().get("/api/slots?date=2099-11-21")
+                .then()
+                .statusCode(200)
+                .body("", hasSize(1))
+                .extract().path("[0].id");
+
+        given()
+                .when().get("/api/slots/" + slotId + "/palanquees")
+                .then()
+                .statusCode(200)
+                .body("[0].divers", hasSize(1))
+                .body("[0].divers[0].aptitudes", equalTo("PE40"))
+                .body("[0].divers[0].fonction", equalTo("E2"));
+    }
+
+    /**
      * Vérifie le round-trip attachments avec le format de nommage courant :
      * YYYY-MM-DD_Fiche-Securite-Saint-Lin-Nomdp-InitialPrenom-ID_XXX.ext
      */
     @Test
-    @Order(18)
+    @Order(19)
     @TestSecurity(user = "admin@test.com", roles = {"ADMIN"})
     void importAttachments_withNewNamingFormat_shouldRestoreSheet() throws Exception {
         DiveSlot slot = createSlotForAttachmentRoundTrip();
@@ -690,7 +789,7 @@ class BackupResourceIT {
      * ⚠️ Test destructif (vide la base) — placé en dernier.
      */
     @Test
-    @Order(19)
+    @Order(20)
     @TestSecurity(user = "admin@test.com", roles = {"ADMIN"})
     void importBackup_withFreeSessions_shouldRestoreFreeSessions() {
         String payload = """

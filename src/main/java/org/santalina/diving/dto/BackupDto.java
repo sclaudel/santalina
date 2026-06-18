@@ -104,10 +104,11 @@ public class BackupDto {
             List<PalanqueeMemberEntry> members  // format actuel : ordonné par position, inclut aptitudes
     ) {}
 
-    /** Membre d'une palanquée avec ses aptitudes spécifiques à cette plongée. */
+    /** Membre d'une palanquée avec ses aptitudes et fonction spécifiques à cette plongée. */
     public record PalanqueeMemberEntry(
             Long diverId,   // ID original dans le backup
-            String aptitudes  // null = utiliser aptitudes globales du plongeur
+            String aptitudes,  // null = utiliser aptitudes globales du plongeur
+            String fonction    // null = aucune fonction assignée
     ) {}
 
     public record SlotDiveEntry(
@@ -193,7 +194,8 @@ public class BackupDto {
 
     public record FreePalanqueeMemberEntry(
             Long diverId,
-            String aptitudes
+            String aptitudes,
+            String fonction
     ) {}
 
     public record FreeSessionShareEntry(

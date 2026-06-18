@@ -158,6 +158,21 @@ public class PalanqueeResource {
         return Response.noContent().build();
     }
 
+    /** PATCH /api/slots/{slotId}/palanquees/{palanqueeId}/members/{diverId}/fonction — fonction du plongeur dans la palanquée */
+    @PATCH
+    @Path("/{palanqueeId}/members/{diverId}/fonction")
+    @Transactional
+    public Response updateMemberFonction(@PathParam("slotId") Long slotId,
+                                         @PathParam("palanqueeId") Long palanqueeId,
+                                         @PathParam("diverId") Long diverId,
+                                         UpdateMemberFonctionRequest req) {
+        checkSlotAccess(slotId);
+        PalanqueeMember member = PalanqueeMember.findByDiverAndPalanquee(diverId, palanqueeId);
+        if (member == null) throw new NotFoundException("Membre non trouvé dans cette palanquée");
+        member.fonction = (req != null && req.fonction() != null && !req.fonction().isBlank()) ? req.fonction() : null;
+        return Response.noContent().build();
+    }
+
     // ---- helpers ----
 
     private DiveSlot checkSlotAccess(Long slotId) {

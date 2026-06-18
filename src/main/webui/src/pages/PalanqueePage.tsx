@@ -45,28 +45,32 @@ interface DiverCardProps {
   isDragging: boolean;
   onLevelChange: (diverId: number, newLevel: string) => void;
   onAptitudesChange: (diverId: number, newAptitudes: string) => void;
+  onFonctionChange?: (diverId: number, newFonction: string) => void;
   onTap?: (id: number) => void;
   isPicked?: boolean;
   onMoveToWaitingList?: (diverId: number) => void;
   movingToWlId?: number | null;
   aptitudesOptions?: string[];
+  fonctionsOptions?: string[];
   isReadOnly?: boolean;
 }
 
 const APTITUDES_OPTIONS = ['PE12','PE20','PE40','PE60','PA12','PA20','PA40','PA60','E1','E2','E3','E4','GP'];
 // ↑ liste de repli — remplacée par la config au chargement
+const FONCTION_OPTIONS = ['E1', 'E2', 'E3', 'E4', 'Serre-file'];
 const DEPTH_OPTIONS = ['6m', '12m', '20m', '30m', '40m', '50m', '60m'];
 const DURATION_OPTIONS = Array.from({ length: 24 }, (_, i) => `${(i + 1) * 10}'`);
 
-function DiverCard({ diver, onDragStart, onDragEnter, isDragging, onLevelChange, onAptitudesChange, onTap, isPicked, onMoveToWaitingList, movingToWlId, aptitudesOptions, isReadOnly }: DiverCardProps) {
+function DiverCard({ diver, onDragStart, onDragEnter, isDragging, onLevelChange, onAptitudesChange, onFonctionChange, onTap, isPicked, onMoveToWaitingList, movingToWlId, aptitudesOptions, fonctionsOptions, isReadOnly }: DiverCardProps) {
   const [editingLevel, setEditingLevel] = useState(false);
   const [editingAptitudes, setEditingAptitudes] = useState(false);
+  const [editingFonction, setEditingFonction] = useState(false);
   const color = getLevelColor(diver.level);
 
   const levelOptions = Object.keys(LEVEL_COLORS);
   if (diver.level && !levelOptions.includes(diver.level)) levelOptions.unshift(diver.level);
 
-  const isEditing = editingLevel || editingAptitudes;
+  const isEditing = editingLevel || editingAptitudes || editingFonction;
 
   return (
     <div
@@ -136,6 +140,34 @@ function DiverCard({ diver, onDragStart, onDragEnter, isDragging, onLevelChange,
           </div>
         )}
       </div>
+      <div className="palanquee-postit-fonction-wrapper">
+        {editingFonction ? (
+          <select
+            autoFocus
+            className="palanquee-postit-level-select"
+            value={diver.fonction ?? ''}
+            onBlur={() => setEditingFonction(false)}
+            onChange={e => { onFonctionChange?.(diver.id, e.target.value); setEditingFonction(false); }}
+            onMouseDown={e => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
+          >
+            <option value="">— aucune —</option>
+            {(fonctionsOptions ?? FONCTION_OPTIONS).map(f => <option key={f} value={f}>{f}</option>)}
+          </select>
+        ) : (
+          <div className="palanquee-postit-fonction">
+            {diver.fonction
+              ? diver.fonction
+              : <span className="palanquee-postit-fonction--empty">fonction</span>}
+            <button
+              className="palanquee-postit-fonction-edit-icon"
+              title="Modifier la fonction"
+              onClick={e => { if (isReadOnly) return; e.stopPropagation(); setEditingFonction(true); }}
+              onMouseDown={e => e.stopPropagation()}
+            >✎</button>
+          </div>
+        )}
+      </div>
       {onMoveToWaitingList && !diver.isDirector && (
         <button
           className="palanquee-postit-wl-btn"
@@ -172,11 +204,13 @@ interface DropZoneProps {
   palanqueeIndex?: number;  // 1-based number for display
   onLevelChange: (diverId: number, newLevel: string) => void;
   onAptitudesChange: (diverId: number, newAptitudes: string) => void;
+  onFonctionChange?: (diverId: number, newFonction: string) => void;
   onTapDiver?: (id: number) => void;   // mobile: tap to pick
   mobilePickedId?: number | null;      // mobile: highlight picked diver
   onMoveToWaitingList?: (diverId: number) => void;
   movingToWlId?: number | null;
   aptitudesOptions?: string[];
+  fonctionsOptions?: string[];
   isReadOnly?: boolean;
 }
 
@@ -184,8 +218,8 @@ function DropZone({
   palanqueeId, divers, draggedId, onDrop, onDragStart,
   onDragEnterCard, onDragEnterEnd, insertBeforeId,
   label, labelIcon, isUnassigned = false, isPool = false, palanqueeIndex,
-  onLevelChange, onAptitudesChange, onTapDiver, mobilePickedId,
-  onMoveToWaitingList, movingToWlId, aptitudesOptions, isReadOnly,
+  onLevelChange, onAptitudesChange, onFonctionChange, onTapDiver, mobilePickedId,
+  onMoveToWaitingList, movingToWlId, aptitudesOptions, fonctionsOptions, isReadOnly,
 }: DropZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -237,11 +271,13 @@ function DropZone({
               isDragging={d.id === draggedId}
               onLevelChange={onLevelChange}
               onAptitudesChange={onAptitudesChange}
+              onFonctionChange={onFonctionChange}
               onTap={onTapDiver}
               isPicked={mobilePickedId === d.id}
               onMoveToWaitingList={onMoveToWaitingList}
               movingToWlId={movingToWlId}
               aptitudesOptions={aptitudesOptions}
+              fonctionsOptions={fonctionsOptions}
               isReadOnly={isReadOnly}
             />
           </Fragment>
@@ -328,6 +364,9 @@ export function PalanqueePage({ slotId, onBack }: Props) {
   // aptitudes configurables
   const [aptitudesOptions, setAptitudesOptions] = useState<string[]>(APTITUDES_OPTIONS);
 
+  // fonctions configurables
+  const [fonctionsOptions, setFonctionsOptions] = useState<string[]>(FONCTION_OPTIONS);
+
   // insertTarget: quel plongeur on va insérer AVANT (null = fin de liste)
   const [insertTarget, setInsertTarget] = useState<{
     palanqueeId: number | null;
@@ -370,6 +409,7 @@ export function PalanqueePage({ slotId, onBack }: Props) {
   useEffect(() => {
     adminService.getConfig().then(cfg => {
       if (cfg.aptitudes?.length) setAptitudesOptions(cfg.aptitudes);
+      if (cfg.fonctions?.length) setFonctionsOptions(cfg.fonctions);
     }).catch(() => { /* utiliser la liste de repli */ });
   }, []);
 
@@ -422,7 +462,46 @@ export function PalanqueePage({ slotId, onBack }: Props) {
     } catch {
       await loadAll();
     }
-  }, [allDivers, slotId, loadAll]);
+  }, [allDivers, palanquees, activeDiveId, slotId, loadAll]);
+
+  // ── changement de fonction inline sur le post-it ───────────────────────────
+  const handleFonctionChange = useCallback(async (diverId: number, newFonction: string) => {
+    const palanqueeInCurrentDive = activeDiveId !== null
+      ? palanquees.find(p => p.slotDiveId === activeDiveId && p.divers.some(d => d.id === diverId))
+      : null;
+
+    if (palanqueeInCurrentDive) {
+      setPalanquees(prev => prev.map(p =>
+        p.id === palanqueeInCurrentDive.id
+          ? { ...p, divers: p.divers.map(d => d.id === diverId ? { ...d, fonction: newFonction || undefined } : d) }
+          : p
+      ));
+      try {
+        await palanqueeService.updateMemberFonction(slotId, palanqueeInCurrentDive.id, diverId, newFonction || undefined);
+      } catch { await loadAll(); }
+    } else {
+      const diver = allDivers.find(d => d.id === diverId);
+      if (!diver) return;
+      const updater = (d: SlotDiver) => d.id === diverId ? { ...d, fonction: newFonction || undefined } : d;
+      setAllDivers(prev => prev.map(updater));
+      setPalanquees(prev => prev.map(p => ({ ...p, divers: p.divers.map(updater) })));
+      try {
+        await slotDiverService.update(slotId, diverId, {
+          firstName:  diver.firstName,
+          lastName:   diver.lastName,
+          level:      diver.level,
+          email:      diver.email,
+          phone:      diver.phone,
+          isDirector: diver.isDirector,
+          aptitudes:  diver.aptitudes,
+          fonction:   newFonction || undefined,
+          licenseNumber: diver.licenseNumber,
+        });
+      } catch {
+        await loadAll();
+      }
+    }
+  }, [allDivers, palanquees, activeDiveId, slotId, loadAll]);
 
   // ── changement d'aptitudes inline sur le post-it ───────────────────────────
   const handleAptitudesChange = useCallback(async (diverId: number, newAptitudes: string) => {
@@ -1417,11 +1496,13 @@ export function PalanqueePage({ slotId, onBack }: Props) {
           isPool
           onLevelChange={handleLevelChange}
           onAptitudesChange={handleAptitudesChange}
+          onFonctionChange={handleFonctionChange}
           onTapDiver={isMobile ? (id) => handleMobilePick(id, null) : undefined}
           mobilePickedId={isMobile ? mobilePickedId : undefined}
           onMoveToWaitingList={isRegistrationCurrentlyActive(slot) ? handleMoveToWaitingList : undefined}
           movingToWlId={movingToWlId}
           aptitudesOptions={aptitudesOptions}
+          fonctionsOptions={fonctionsOptions}
         />
       </div>
       )}
@@ -1545,11 +1626,13 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                       palanqueeIndex={idx + 1}
                       onLevelChange={handleLevelChange}
                       onAptitudesChange={handleAptitudesChange}
+                      onFonctionChange={handleFonctionChange}
                       onTapDiver={isOverviewReadOnly ? undefined : (id) => handleMobilePick(id, p.id)}
                       mobilePickedId={mobilePickedId}
                       onMoveToWaitingList={isRegistrationCurrentlyActive(slot) ? handleMoveToWaitingList : undefined}
                       movingToWlId={movingToWlId}
                       aptitudesOptions={aptitudesOptions}
+                      fonctionsOptions={fonctionsOptions}
                       isReadOnly={isOverviewReadOnly}
                     />
                   </div>
@@ -1667,9 +1750,11 @@ export function PalanqueePage({ slotId, onBack }: Props) {
                   palanqueeIndex={idx + 1}
                   onLevelChange={handleLevelChange}
                   onAptitudesChange={handleAptitudesChange}
+                  onFonctionChange={handleFonctionChange}
                   onMoveToWaitingList={isRegistrationCurrentlyActive(slot) ? handleMoveToWaitingList : undefined}
                   movingToWlId={movingToWlId}
                   aptitudesOptions={aptitudesOptions}
+                  fonctionsOptions={fonctionsOptions}
                   isReadOnly={isOverviewReadOnly}
                 />
               </div>

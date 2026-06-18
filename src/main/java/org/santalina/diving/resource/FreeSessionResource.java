@@ -248,6 +248,7 @@ public class FreeSessionResource {
         d.phone        = req.phone();
         d.isDirector   = req.isDirector();
         d.aptitudes    = req.aptitudes();
+        d.fonction     = req.fonction();
         d.licenseNumber = req.licenseNumber();
         d.club         = req.club();
         return DiverResponse.from(d);
@@ -493,6 +494,21 @@ public class FreeSessionResource {
         if (member == null) throw new NotFoundException("Membre non trouvé dans cette palanquée");
         member.aptitudes = (req != null && req.aptitudes() != null && !req.aptitudes().isBlank())
                 ? req.aptitudes() : null;
+        return Response.noContent().build();
+    }
+
+    @PATCH
+    @Path("/{id}/palanquees/{pid}/members/{did}/fonction")
+    @Transactional
+    public Response updateMemberFonction(@PathParam("id") Long id,
+                                         @PathParam("pid") Long pid,
+                                         @PathParam("did") Long did,
+                                         UpdateMemberFonctionRequest req) {
+        requireWrite(id);
+        FreePalanqueeMember member = FreePalanqueeMember.findByDiverAndPalanquee(did, pid);
+        if (member == null) throw new NotFoundException("Membre non trouvé dans cette palanquée");
+        member.fonction = (req != null && req.fonction() != null && !req.fonction().isBlank())
+                ? req.fonction() : null;
         return Response.noContent().build();
     }
 

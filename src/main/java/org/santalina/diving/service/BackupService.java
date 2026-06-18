@@ -375,6 +375,7 @@ public class BackupService {
                             m.diver     = sd;
                             m.position  = pos;
                             m.aptitudes = mEntry.aptitudes();
+                            m.fonction  = mEntry.fonction();
                             m.persist();
                         }
                     }
@@ -558,6 +559,7 @@ public class BackupService {
                             fm.diver     = fd;
                             fm.position  = pos;
                             fm.aptitudes = mEntry.aptitudes();
+                            fm.fonction  = mEntry.fonction();
                             fm.persist();
                         }
                     }
@@ -651,7 +653,7 @@ public class BackupService {
         List<PalanqueeMember> members = PalanqueeMember.findByPalanquee(p.id);
         List<Long> memberDiverIds = members.stream().map(m -> m.diver.id).collect(Collectors.toList());
         List<PalanqueeMemberEntry> memberEntries = members.stream()
-                .map(m -> new PalanqueeMemberEntry(m.diver.id, m.aptitudes))
+                .map(m -> new PalanqueeMemberEntry(m.diver.id, m.aptitudes, m.fonction))
                 .collect(Collectors.toList());
         return new PalanqueeEntry(p.id, p.slot != null ? p.slot.id : null,
                 p.name, p.position, p.depth, p.duration,
@@ -682,7 +684,7 @@ public class BackupService {
     private FreePalanqueeEntry toFreePalanqueeEntry(FreePalanquee p) {
         List<FreePalanqueeMember> members = FreePalanqueeMember.findByPalanquee(p.id);
         List<FreePalanqueeMemberEntry> memberEntries = members.stream()
-                .map(m -> new FreePalanqueeMemberEntry(m.diver.id, m.aptitudes))
+                .map(m -> new FreePalanqueeMemberEntry(m.diver.id, m.aptitudes, m.fonction))
                 .collect(Collectors.toList());
         return new FreePalanqueeEntry(p.id, p.session != null ? p.session.id : null,
                 p.dive != null ? p.dive.id : null,

@@ -100,6 +100,13 @@ public class ConfigResource {
     }
 
     @PUT
+    @Path("/fonctions")
+    @RolesAllowed("ADMIN")
+    public ConfigResponse updateFonctions(@Valid UpdateListRequest request) {
+        return configService.updateFonctions(request.items());
+    }
+
+    @PUT
     @Path("/public-access")
     @RolesAllowed("ADMIN")
     public ConfigResponse updatePublicAccess(@Valid UpdateBooleanRequest request) {

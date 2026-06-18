@@ -1686,6 +1686,49 @@ body {
 .palanquee-postit--readonly:active { cursor: default; }
 .palanquee-postit--readonly .palanquee-postit-aptitudes { cursor: default; }
 .palanquee-postit--readonly .palanquee-postit-apt-edit-icon { display: none !important; }
+/* ── Fonction (même style que aptitudes, couleur distincte) ─── */
+.palanquee-postit-fonction-wrapper {
+  position: relative;
+}
+.palanquee-postit-fonction {
+  font-size: 10px;
+  margin-top: 2px;
+  color: #7c3aed;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.palanquee-postit-fonction--empty {
+  color: #9ca3af;
+  font-style: italic;
+  font-weight: 400;
+}
+.palanquee-postit-fonction-edit-icon {
+  font-size: 9px;
+  color: #9ca3af;
+  opacity: 0;
+  transition: opacity 0.15s;
+  line-height: 1;
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 0 1px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+.palanquee-postit:hover .palanquee-postit-fonction-edit-icon {
+  opacity: 1;
+}
+@media (pointer: coarse) {
+  .palanquee-postit-fonction-edit-icon {
+    opacity: 1;
+  }
+}
+.palanquee-postit--readonly .palanquee-postit-fonction { cursor: default; }
+.palanquee-postit--readonly .palanquee-postit-fonction-edit-icon { display: none !important; }
 .palanquee-postit-director { font-size: 12px; }
 
 .palanquee-postit-wl-btn {

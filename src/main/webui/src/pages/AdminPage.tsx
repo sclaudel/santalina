@@ -53,6 +53,7 @@ export function AdminPage() {
   const [dpLevelsText, setDpLevelsText]           = useState('');
   const [preparedLevelsText, setPreparedLevelsText] = useState('');
   const [aptitudesText, setAptitudesText]           = useState('');
+  const [fonctionsText, setFonctionsText]           = useState('');
   const [listLoading, setListLoading]       = useState(false);
   const [exclusiveLoading, setExclusiveLoading] = useState(false);
 
@@ -167,6 +168,7 @@ export function AdminPage() {
       setDpLevelsText((c.dpLevels ?? []).join('\n'));
       setPreparedLevelsText((c.preparedLevels ?? []).join('\n'));
       setAptitudesText((c.aptitudes ?? []).join('\n'));
+      setFonctionsText((c.fonctions ?? []).join('\n'));
       setBookingOpenHour(c.bookingOpenHour ?? -1);
       setBookingCloseHour(c.bookingCloseHour ?? -1);
       setNotificationEmail(c.notificationBookingEmail ?? '');
@@ -399,6 +401,18 @@ export function AdminPage() {
       setConfig(updated);
       setAptitudesText((updated.aptitudes ?? []).join('\n'));
       setMsg('Aptitudes mis à jour');
+    } catch (err: unknown) { setError(getErrorMessage(err)); }
+    finally { setListLoading(false); }
+  };
+
+  const handleUpdateFonctions = async (e: React.FormEvent) => {
+    e.preventDefault(); setMsg(''); setError(''); setListLoading(true);
+    const items = fonctionsText.split('\n').map(s => s.trim()).filter(Boolean);
+    try {
+      const updated = await adminService.updateFonctions(items);
+      setConfig(updated);
+      setFonctionsText((updated.fonctions ?? []).join('\n'));
+      setMsg('Fonctions mises à jour');
     } catch (err: unknown) { setError(getErrorMessage(err)); }
     finally { setListLoading(false); }
   };
@@ -1525,6 +1539,20 @@ export function AdminPage() {
             </div>
             <button type="submit" className="btn btn-primary" disabled={listLoading}>
               {listLoading ? '...' : '💾 Enregistrer les aptitudes'}
+            </button>
+          </form>
+
+          <form onSubmit={handleUpdateFonctions} style={{ flex: 1, minWidth: 280 }}>
+            <div className="form-group">
+              <label style={{ fontWeight: 700 }}>Fonctions dans les palanquées</label>
+              <p style={{ color: '#6b7280', fontSize: 11, margin: '2px 0 6px' }}>Liste des fonctions disponibles pour chaque plongeur dans une palanquée (ex. E1, E2, E3…).</p>
+              <textarea rows={8} value={fonctionsText}
+                onChange={e => setFonctionsText(e.target.value)}
+                placeholder={"E1\nE2\nE3\nE4\nSerre-file\n..."}
+                style={{ fontFamily: 'monospace', fontSize: 13 }} />
+            </div>
+            <button type="submit" className="btn btn-primary" disabled={listLoading}>
+              {listLoading ? '...' : '💾 Enregistrer les fonctions'}
             </button>
           </form>
         </div>
