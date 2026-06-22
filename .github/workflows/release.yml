@@ -13,7 +13,7 @@ jobs:
     steps:
       # ── Récupération du code ──────────────────────────────────────────────
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       # ── Setup Java 21 ─────────────────────────────────────────────────────
       - name: Setup Java 21
