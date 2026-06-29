@@ -106,9 +106,15 @@ public class PalanqueeResource {
             }
         } else {
             Palanquee target = findPalanquee(slotId, req.palanqueeId());
-            // Si une source est précisée, retirer d'abord l'appartenance source.
-            // Cela rend l'opération de déplacement atomique et évite les doublons visuels.
+            // Conserver les aptitudes et fonction de l'ancienne palanquée
+            String previousAptitudes = null;
+            String previousFonction = null;
             if (req.fromPalanqueeId() != null && !req.fromPalanqueeId().equals(req.palanqueeId())) {
+                PalanqueeMember existing = PalanqueeMember.findByDiverAndPalanquee(diver.id, req.fromPalanqueeId());
+                if (existing != null) {
+                    previousAptitudes = existing.aptitudes;
+                    previousFonction = existing.fonction;
+                }
                 PalanqueeMember.deleteByDiverAndPalanquee(diver.id, req.fromPalanqueeId());
             }
             // Upsert : ajouter seulement si pas déjà membre
@@ -117,6 +123,8 @@ public class PalanqueeResource {
                 m.palanquee = target;
                 m.diver     = diver;
                 m.position  = (int) PalanqueeMember.count("palanquee.id = ?1", req.palanqueeId());
+                m.aptitudes = previousAptitudes;
+                m.fonction  = previousFonction;
                 m.persist();
             }
         }
