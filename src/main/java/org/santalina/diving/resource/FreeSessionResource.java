@@ -452,7 +452,15 @@ public class FreeSessionResource {
             }
         } else {
             FreePalanquee target = findPalanquee(id, req.palanqueeId());
+            // Conserver les aptitudes et fonction de l'ancienne palanquée
+            String previousAptitudes = null;
+            String previousFonction = null;
             if (req.fromPalanqueeId() != null && !req.fromPalanqueeId().equals(req.palanqueeId())) {
+                FreePalanqueeMember existing = FreePalanqueeMember.findByDiverAndPalanquee(diver.id, req.fromPalanqueeId());
+                if (existing != null) {
+                    previousAptitudes = existing.aptitudes;
+                    previousFonction = existing.fonction;
+                }
                 FreePalanqueeMember.deleteByDiverAndPalanquee(diver.id, req.fromPalanqueeId());
             }
             if (FreePalanqueeMember.findByDiverAndPalanquee(diver.id, req.palanqueeId()) == null) {
@@ -460,6 +468,8 @@ public class FreeSessionResource {
                 m.palanquee = target;
                 m.diver     = diver;
                 m.position  = (int) FreePalanqueeMember.count("palanquee.id = ?1", req.palanqueeId());
+                m.aptitudes = previousAptitudes;
+                m.fonction  = previousFonction;
                 m.persist();
             }
         }

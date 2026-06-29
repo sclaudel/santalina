@@ -563,6 +563,54 @@ class PalanqueeResourceIT {
         }
     }
 
+    // ── PRÉSERVATION APTITUDES/FONCTION LORS D'UN DÉPLACEMENT ───────────────
+
+    @Test
+    @TestSecurity(user = "dp_move_keep_apt@test.com", roles = {"DIVE_DIRECTOR"})
+    void assign_withFromPalanquee_shouldPreserveAptitudesAndFonction() {
+        DiveSlot slot   = createSlotWithDp("dp_move_keep_apt@test.com");
+        SlotDiver diver = addDiver(slot.id, "LEROY", "N3");
+        Long pal1       = createPalanquee(slot.id, "P1");
+        Long pal2       = createPalanquee(slot.id, "P2");
+        assignDiverToPalanquee(slot.id, diver.id, pal1);
+        try {
+            // Définir aptitudes et fonction sur le membre dans P1
+            given()
+                .contentType(ContentType.JSON)
+                .body("{\"aptitudes\":\"PE40\"}")
+                .when().patch("/api/slots/" + slot.id + "/palanquees/" + pal1 + "/members/" + diver.id + "/aptitudes")
+                .then()
+                .statusCode(204);
+
+            given()
+                .contentType(ContentType.JSON)
+                .body("{\"fonction\":\"E3\"}")
+                .when().patch("/api/slots/" + slot.id + "/palanquees/" + pal1 + "/members/" + diver.id + "/fonction")
+                .then()
+                .statusCode(204);
+
+            // Déplacer de P1 vers P2
+            given()
+                .contentType(ContentType.JSON)
+                .body("{\"diverId\":" + diver.id + ",\"palanqueeId\":" + pal2 + ",\"fromPalanqueeId\":" + pal1 + "}")
+                .when().put("/api/slots/" + slot.id + "/palanquees/assign")
+                .then()
+                .statusCode(200);
+
+            // Vérifier que aptitudes et fonction sont préservées dans P2
+            given()
+                .when().get("/api/slots/" + slot.id + "/palanquees")
+                .then()
+                .statusCode(200)
+                .body("find { it.id == " + pal1 + " }.divers", hasSize(0))
+                .body("find { it.id == " + pal2 + " }.divers", hasSize(1))
+                .body("find { it.id == " + pal2 + " }.divers[0].aptitudes", equalTo("PE40"))
+                .body("find { it.id == " + pal2 + " }.divers[0].fonction", equalTo("E3"));
+        } finally {
+            cleanup(slot.id);
+        }
+    }
+
     @Test
     void createPalanquee_shouldReturn401_withoutAuthentication() {
         DiveSlot slot = createSlotWithDp("dp_pal_401_" + System.nanoTime() + "@test.com");

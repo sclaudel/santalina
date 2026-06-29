@@ -669,6 +669,55 @@ class FreeSessionResourceIT {
         }
     }
 
+    // ── PRÉSERVATION APTITUDES/FONCTION LORS D'UN DÉPLACEMENT ───────────────
+
+    @Test
+    @TestSecurity(user = "fs_move_keep_apt@test.com", roles = {"DIVE_DIRECTOR"})
+    void assignDiver_withFromPalanquee_shouldPreserveAptitudesAndFonction() {
+        createDp("fs_move_keep_apt@test.com");
+        FreeDiveSession s = createSession("fs_move_keep_apt@test.com");
+        FreeSessionDiver d = addDiver(s.id, "LEROY", "N3");
+        FreePalanquee pal1 = addPalanquee(s.id, "P1");
+        FreePalanquee pal2 = addPalanquee(s.id, "P2");
+        assignDiverToPalanquee(d.id, pal1.id);
+        try {
+            // Définir aptitudes et fonction sur le membre dans P1
+            given()
+                .contentType(ContentType.JSON)
+                .body("{\"aptitudes\":\"PA60\"}")
+                .when().patch(BASE + "/" + s.id + "/palanquees/" + pal1.id + "/members/" + d.id + "/aptitudes")
+                .then()
+                .statusCode(204);
+
+            given()
+                .contentType(ContentType.JSON)
+                .body("{\"fonction\":\"Serre-file\"}")
+                .when().patch(BASE + "/" + s.id + "/palanquees/" + pal1.id + "/members/" + d.id + "/fonction")
+                .then()
+                .statusCode(204);
+
+            // Déplacer de P1 vers P2
+            given()
+                .contentType(ContentType.JSON)
+                .body("{\"diverId\":" + d.id + ",\"palanqueeId\":" + pal2.id + ",\"fromPalanqueeId\":" + pal1.id + "}")
+                .when().put(BASE + "/" + s.id + "/palanquees/assign")
+                .then()
+                .statusCode(200);
+
+            // Vérifier que aptitudes et fonction sont préservées dans P2
+            given()
+                .when().get(BASE + "/" + s.id + "/palanquees")
+                .then()
+                .statusCode(200)
+                .body("find { it.id == " + pal1.id + " }.divers", hasSize(0))
+                .body("find { it.id == " + pal2.id + " }.divers", hasSize(1))
+                .body("find { it.id == " + pal2.id + " }.divers[0].aptitudes", equalTo("PA60"))
+                .body("find { it.id == " + pal2.id + " }.divers[0].fonction", equalTo("Serre-file"));
+        } finally {
+            cleanup(s.id);
+        }
+    }
+
     // ── RÉORDONNANCEMENT ──────────────────────────────────────────────────────
 
     @Test
