@@ -638,7 +638,10 @@ export function PalanqueePage({ slotId, onBack }: Props) {
     const currentPalanqueeId = explicitFromPalanqueeId !== undefined
       ? explicitFromPalanqueeId
       : (contextPals.find(p => p.divers.some(d => d.id === diverId))?.id ?? null);
-    const diver = allDivers.find(d => d.id === diverId);
+    // Prendre le plongeur depuis la palanquée source (aptitudes/fonction spécifiques)
+    // puis fallback sur allDivers (plongeur non assigné)
+    const sourcePal = currentPalanqueeId != null ? palanquees.find(p => p.id === currentPalanqueeId) : null;
+    const diver = sourcePal?.divers.find(d => d.id === diverId) ?? allDivers.find(d => d.id === diverId);
     if (!diver) return;
 
     if (currentPalanqueeId === targetPalanqueeId && targetPalanqueeId !== null) {

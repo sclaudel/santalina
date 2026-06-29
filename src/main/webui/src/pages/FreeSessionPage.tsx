@@ -554,7 +554,9 @@ export function FreeSessionPage({ sessionId, onBack }: Props) {
   ) => {
     const ctxPals = filteredPals;
     const currentPalId = fromPalId !== undefined ? fromPalId : (ctxPals.find(p => p.divers.some(d => d.id === diverId))?.id ?? null);
-    const diver = allDivers.find(d => d.id === diverId);
+    // Prendre le plongeur depuis la palanquée source (aptitudes/fonction spécifiques)
+    const sourcePal = currentPalId != null ? palanquees.find(p => p.id === currentPalId) : null;
+    const diver = sourcePal?.divers.find(d => d.id === diverId) ?? allDivers.find(d => d.id === diverId);
     if (!diver) return;
 
     if (currentPalId === targetPalId && targetPalId !== null) {
