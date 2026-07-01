@@ -95,4 +95,13 @@ public class SlotDiver extends PanacheEntityBase {
         if (email == null || email.isBlank()) return null;
         return find("slot.id = ?1 and lower(email) = lower(?2)", slotId, email).firstResult();
     }
+
+    /** Retourne les IDs des créneaux où cet email est directeur de plongée, dans une plage de dates. */
+    public static List<Long> findDirectedSlotIdsByEmail(String email, LocalDate from, LocalDate to) {
+        if (email == null || email.isBlank()) return List.of();
+        List<SlotDiver> directors = list(
+                "isDirector = true and lower(email) = lower(?1) and slot.slotDate >= ?2 and slot.slotDate <= ?3",
+                email, from, to);
+        return directors.stream().map(sd -> sd.slot.id).toList();
+    }
 }

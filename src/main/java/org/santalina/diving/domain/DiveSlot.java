@@ -98,6 +98,11 @@ public class DiveSlot extends PanacheEntityBase {
                 creatorId, from, to);
     }
 
+    public static List<DiveSlot> findByIdList(List<Long> ids) {
+        if (ids.isEmpty()) return List.of();
+        return list("id in ?1 ORDER BY slotDate, startTime", ids);
+    }
+
     @PreUpdate
     public void onUpdate() {
         updatedAt = LocalDateTime.now();

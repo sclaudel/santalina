@@ -7,7 +7,9 @@ import org.santalina.diving.dto.StatsDto.*;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
@@ -23,6 +25,9 @@ public class StatsResource {
 
     @Inject
     JsonWebToken jwt;
+
+    @Context
+    SecurityContext securityContext;
 
     private static final String[] DAYS_FR = {
         "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"
@@ -227,13 +232,32 @@ public class StatsResource {
             @QueryParam("from") String fromParam,
             @QueryParam("to")   String toParam) {
 
-        User currentUser = User.findByEmail(jwt.getName());
+        User currentUser;
+        try {
+            currentUser = User.findByEmail(jwt.getName());
+        } catch (Exception e) {
+            // En test (@TestSecurity), le principal n'est pas un JWT
+            currentUser = User.findByEmail(securityContext.getUserPrincipal().getName());
+        }
         if (currentUser == null) throw new NotAuthorizedException("Utilisateur non trouvé");
 
         LocalDate from = (fromParam != null) ? LocalDate.parse(fromParam) : LocalDate.of(2000, 1, 1);
         LocalDate to   = (toParam   != null) ? LocalDate.parse(toParam)   : LocalDate.of(2100, 12, 31);
 
-        List<DiveSlot> slots = DiveSlot.findByCreatorAndDateRange(currentUser.id, from, to);
+        // Créneaux créés par le DP + créneaux où il est inscrit comme directeur
+        List<DiveSlot> createdSlots = DiveSlot.findByCreatorAndDateRange(currentUser.id, from, to);
+        List<Long> directedSlotIds = SlotDiver.findDirectedSlotIdsByEmail(currentUser.email, from, to);
+
+        // Fusionner les deux ensembles (éviter les doublons)
+        Set<Long> allSlotIds = new LinkedHashSet<>(createdSlots.stream().map(s -> s.id).toList());
+        allSlotIds.addAll(directedSlotIds);
+
+        List<DiveSlot> slots;
+        if (allSlotIds.size() == createdSlots.size()) {
+            slots = createdSlots;
+        } else {
+            slots = DiveSlot.findByIdList(new ArrayList<>(allSlotIds));
+        }
 
         List<Long> slotIds = slots.stream().map(s -> s.id).toList();
         List<SlotDiver> allDivers = SlotDiver.findBySlotIds(slotIds);
