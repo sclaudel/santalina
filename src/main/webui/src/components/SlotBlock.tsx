@@ -202,7 +202,8 @@ export function SlotBlock({
   );
 
   // Un créneau est passé dès que sa date+heure de fin est atteinte.
-  const slotEndAt = new Date(`${slot.slotDate}T${slot.endTime}:00`);
+  // endTime peut être "HH:mm" ou "HH:mm:ss" — on normalise pour éviter un Invalid Date.
+  const slotEndAt = new Date(`${slot.slotDate}T${slot.endTime.substring(0, 5)}:00`);
   const isPastSlot = !Number.isNaN(slotEndAt.getTime()) && slotEndAt <= new Date();
 
   const usedDivers     = divers.length;
@@ -1007,7 +1008,7 @@ export function SlotBlock({
       {(currentUserRole === 'DIVER' || (currentUserRole === 'DIVE_DIRECTOR' && !canEditThisSlot)) && (() => {
         const myDiverEntry = divers.find(d => d.userId != null && d.userId === currentUserId) ?? null;
         const slotStart = slot.slotDate && slot.startTime
-          ? new Date(`${slot.slotDate}T${slot.startTime}:00`)
+          ? new Date(`${slot.slotDate}T${slot.startTime.substring(0, 5)}:00`)
           : null;
         const hoursUntil = slotStart ? (slotStart.getTime() - Date.now()) / 3_600_000 : Infinity;
         const isWithin48h = hoursUntil >= 0 && hoursUntil < 48;
