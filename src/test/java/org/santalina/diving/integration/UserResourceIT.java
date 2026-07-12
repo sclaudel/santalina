@@ -272,7 +272,7 @@ class UserResourceIT {
         given()
                 .contentType(ContentType.JSON)
                 .body("""
-                      {"csvContent":"club;nom;prenom;email;telephone;licence","password":"Pass123"}
+                    {"csvContent":"club;nom;prenom;email;telephone;licence","password":"Pass1234"}
                       """)
                 .when().post("/api/users/import/csv")
                 .then()
@@ -289,7 +289,7 @@ class UserResourceIT {
                     + "Club Test;DUPONT;Jean;" + testEmail + ";0600000001;LIC001\n";
             given()
                     .contentType(ContentType.JSON)
-                    .body("{\"csvContent\":" + jsonString(csv) + ",\"password\":\"Pass123\"}")
+                    .body("{\"csvContent\":" + jsonString(csv) + ",\"password\":\"Pass1234\"}")
                     .when().post("/api/users/import/csv")
                     .then()
                     .statusCode(200)

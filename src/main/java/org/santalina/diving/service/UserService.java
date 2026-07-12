@@ -194,6 +194,9 @@ public class UserService {
         user.phone     = normalizePhone(request.phone());
         user.licenseNumber = (request.licenseNumber() != null && !request.licenseNumber().isBlank()) ? request.licenseNumber().trim() : null;
         user.club          = request.club() != null && !request.club().isBlank() ? request.club().trim() : null;
+        if (request.password() != null && !request.password().isBlank()) {
+            user.passwordHash = PasswordUtil.hash(request.password());
+        }
         user.persist();
         return UserResponse.from(user);
     }

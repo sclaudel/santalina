@@ -925,7 +925,7 @@ export function HelpPage() {
             <li>Préparez un fichier CSV UTF-8 avec la ligne d'en-tête : <code>club;nom;prenom;email;telephone;licence</code> (la colonne <code>roles</code> est ignorée à l'import).</li>
             <li>Cliquez sur <strong>📤 Importer CSV</strong> pour afficher le panneau d'import.</li>
             <li>Sélectionnez le fichier CSV.</li>
-            <li>Saisissez un mot de passe provisoire qui sera assigné à tous les comptes importés (minimum 6 caractères).</li>
+            <li>Saisissez un mot de passe provisoire qui sera assigné à tous les comptes importés (minimum 8 caractères, 1 majuscule, 1 chiffre, 1 caractère spécial requis).</li>
             <li>Cliquez sur <strong>Importer</strong>.</li>
           </ol>
           <p>Les utilisateurs dont l'adresse e-mail est déjà présente dans la base sont automatiquement ignorés (aucune modification du compte existant). Le résultat affiche le nombre de comptes importés, ignorés et les éventuelles erreurs de format.</p>

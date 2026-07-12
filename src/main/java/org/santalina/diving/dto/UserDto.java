@@ -101,7 +101,10 @@ public class UserDto {
             String phone,
             @Pattern(regexp = "^([A-Z]-\\d{2}-\\d{6,10})?$", message = "Format invalide (ex: A-14-1223422222)")
             @Size(max = 20) String licenseNumber,
-            String club
+            String club,
+            @Pattern(regexp = "^(?=.*[A-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{8,100}$",
+                     message = "Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial")
+            String password
     ) {}
 
     public record UserSearchResult(
@@ -133,7 +136,7 @@ public class UserDto {
     public record CsvImportRequest(
             @jakarta.validation.constraints.NotBlank String csvContent,
             @jakarta.validation.constraints.NotBlank
-            @jakarta.validation.constraints.Size(min = 6, max = 100) String password
+            @jakarta.validation.constraints.Size(min = 8, max = 100) String password
     ) {}
 
     /** Mise à jour du modèle d'email d'organisation du directeur de plongée. */
