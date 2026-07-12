@@ -539,7 +539,7 @@ export function AdminPage() {
   const startEditUser = (user: User) => {
     setShowCreateForm(false);
     setEditingUserId(user.id);
-    setEditForm({ email: user.email, firstName: user.firstName, lastName: user.lastName, phone: user.phone ?? '', licenseNumber: user.licenseNumber ?? '', club: user.club ?? '' });
+    setEditForm({ email: user.email, firstName: user.firstName, lastName: user.lastName, phone: user.phone ?? '', licenseNumber: user.licenseNumber ?? '', club: user.club ?? '', password: '' });
     setEditError('');
   };
 
@@ -553,14 +553,18 @@ export function AdminPage() {
 
   const cancelEditUser = () => {
     setEditingUserId(null);
-    setEditForm({ email: '', firstName: '', lastName: '', phone: '', licenseNumber: '', club: '' });
+    setEditForm({ email: '', firstName: '', lastName: '', phone: '', licenseNumber: '', club: '', password: '' });
     setEditError('');
   };
 
   const handleUpdateUser = async (e: React.FormEvent) => {
     e.preventDefault(); setEditError(''); setEditLoading(true);
     try {
-      const updated = await adminService.updateUser(editingUserId!, editForm);
+      const request = { ...editForm } as typeof editForm;
+      if (!request.password) {
+        delete request.password;
+      }
+      const updated = await adminService.updateUser(editingUserId!, request);
       setUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
       setMsg(`Utilisateur "${updated.firstName} ${updated.lastName}" mis à jour`);
       cancelEditUser();
@@ -1742,9 +1746,9 @@ export function AdminPage() {
               </div>
               <div className="form-group">
                 <label>Mot de passe pour tous les comptes importés *</label>
-                <input type="password" value={csvPassword} minLength={6} required
+                <input type="password" value={csvPassword} minLength={8} required
                   onChange={e => setCsvPassword(e.target.value)}
-                  placeholder="Minimum 6 caractères" />
+                  placeholder="Minimum 8 caractères" />
               </div>
             </div>
             <button type="submit" className="btn btn-primary" disabled={csvImportLoading}>
@@ -1801,9 +1805,9 @@ export function AdminPage() {
               </div>
               <div className="form-group">
                 <label>Mot de passe *</label>
-                <input type="password" placeholder="Min. 6 caractères" value={createForm.password}
+                <input type="password" placeholder="Min. 8 caractères" value={createForm.password}
                   onChange={e => setCreateForm(f => ({ ...f, password: e.target.value }))}
-                  required minLength={6} />
+                  required minLength={8} />
               </div>
             </div>
             <div className="form-group">
@@ -1869,6 +1873,11 @@ export function AdminPage() {
               <label>N° de licence fédérale</label>
               <input type="text" placeholder="Ex : A-14-1223422222" value={editForm.licenseNumber ?? ''}
                 onChange={e => setEditForm(f => ({ ...f, licenseNumber: e.target.value }))} maxLength={20} />
+            </div>
+            <div className="form-group">
+              <label>Nouveau mot de passe</label>
+              <input type="password" placeholder="Laisser vide pour ne pas modifier" value={editForm.password ?? ''}
+                onChange={e => setEditForm(f => ({ ...f, password: e.target.value }))} minLength={8} />
             </div>
             <div className="form-group">
               <label>Club d'appartenance</label>

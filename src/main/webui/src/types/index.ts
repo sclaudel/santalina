@@ -54,6 +54,7 @@ export interface UpdateUserAdminRequest {
   phone?: string;
   licenseNumber?: string;
   club?: string;
+  password?: string;
 }
 
 export interface UserSearchResult {
