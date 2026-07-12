@@ -131,8 +131,8 @@ export function SlotBlock({
   const [infoClub, setInfoClub]         = useState(slot.club ?? '');
   const [infoCapacity, setInfoCapacity] = useState(String(slot.diverCount));
   const [infoSlotDate, setInfoSlotDate]   = useState(slot.slotDate);
-  const [infoStartTime, setInfoStartTime] = useState(slot.startTime);
-  const [infoEndTime, setInfoEndTime]     = useState(slot.endTime);
+  const [infoStartTime, setInfoStartTime] = useState(slot.startTime?.slice(0, 5) ?? '00:00');
+  const [infoEndTime, setInfoEndTime]     = useState(slot.endTime?.slice(0, 5) ?? '00:00');
   const [infoSaving, setInfoSaving]     = useState(false);
   const [infoError, setInfoError]       = useState('');
   // Valeurs courantes affichées (mises à jour après sauvegarde)
@@ -367,8 +367,8 @@ export function SlotBlock({
     setInfoClub(currentClub);
     setInfoCapacity(String(currentDiverCount));
     setInfoSlotDate(slot.slotDate);
-    setInfoStartTime(slot.startTime);
-    setInfoEndTime(slot.endTime);
+    setInfoStartTime(slot.startTime?.slice(0, 5) ?? '00:00');
+    setInfoEndTime(slot.endTime?.slice(0, 5) ?? '00:00');
     setInfoError('');
     setEditingInfo(true);
   };
