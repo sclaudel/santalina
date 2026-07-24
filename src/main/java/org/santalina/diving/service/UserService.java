@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.stream.Stream;
 
 @ApplicationScoped
 public class UserService {
@@ -93,23 +94,19 @@ public class UserService {
                 "LOWER(firstName) LIKE ?1 OR LOWER(lastName) LIKE ?1 OR LOWER(email) LIKE ?1 " +
                 "OR LOWER(CONCAT(firstName, ' ', lastName)) LIKE ?1", rawPattern);
 
-        List<UserSearchResult> results = candidates.stream()
+        List<User> matchingCandidates = candidates.stream()
                 .filter(u -> matchesQuery(u, normalized))
+                .toList();
+
+        List<User> allUsers = User.<User>listAll();
+        List<UserSearchResult> results = Stream.concat(matchingCandidates.stream(), allUsers.stream())
+                .filter(u -> matchesQuery(u, normalized))
+                .distinct()
                 .limit(10)
                 .map(UserSearchResult::from)
                 .toList();
 
-        if (!results.isEmpty()) {
-            return results;
-        }
-
-        // Fallback : si la recherche SQL brute ne trouve rien, on élargit au jeu entier
-        // avec une comparaison insensible aux accents et à la casse.
-        return User.<User>listAll().stream()
-                .filter(u -> matchesQuery(u, normalized))
-                .limit(10)
-                .map(UserSearchResult::from)
-                .toList();
+        return results;
     }
 
     private boolean matchesQuery(User user, String normalizedQuery) {
@@ -120,12 +117,23 @@ public class UserService {
         String normalizedLastName = stripAccents(user.lastName != null ? user.lastName.toLowerCase() : "");
         String normalizedEmail = stripAccents(user.email != null ? user.email.toLowerCase() : "");
 
-        return Arrays.stream(normalizedQuery.split("\\s+"))
+        String[] tokens = Arrays.stream(normalizedQuery.split("\\s+"))
                 .filter(token -> !token.isBlank())
-                .allMatch(token -> normalizedFullName.contains(token)
+                .toArray(String[]::new);
+
+        if (tokens.length == 0) {
+            return false;
+        }
+
+        return Arrays.stream(tokens).allMatch(token ->
+                normalizedFullName.contains(token)
                         || normalizedFirstName.contains(token)
                         || normalizedLastName.contains(token)
-                        || normalizedEmail.contains(token));
+                        || normalizedEmail.contains(token)
+                        || normalizedFullName.startsWith(token)
+                        || normalizedFirstName.startsWith(token)
+                        || normalizedLastName.startsWith(token)
+                        || normalizedEmail.startsWith(token));
     }
 
     @Transactional
