@@ -5,7 +5,7 @@
 [![Dependabot](https://img.shields.io/badge/Dependabot-activé-0075ca?logo=dependabot&logoColor=white)](/.github/dependabot.yml)
 [![Renovate](https://img.shields.io/badge/Renovate-activé-1a1f6c?logo=renovatebot&logoColor=white)](https://github.com/renovatebot/renovate)
 
-Application de réservation de créneaux de plongée en lac, développée avec **Quarkus 3.32.2** (Java 21) et **React 19** (TypeScript).
+Application de réservation de créneaux de plongée en lac, développée avec **Quarkus 3.37.3** (Java 21) et **React 19** (TypeScript).
 
 ## Fonctionnalités
 
@@ -308,7 +308,7 @@ src/main/
 
 | Couche | Technologie |
 |--------|-------------|
-| Backend | Quarkus 3.32.2, Java 21, JAX-RS, Panache ORM |
+| Backend | Quarkus 3.37.3, Java 21, JAX-RS, Panache ORM |
 | Sécurité | SmallRye JWT (RS256), BCrypt |
 | Email | Quarkus Mailer |
 | DB Dev | H2 (fichier) |
