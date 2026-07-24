@@ -3,6 +3,7 @@ package org.santalina.diving.unit;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,6 +12,8 @@ import org.santalina.diving.domain.User;
 import org.santalina.diving.domain.UserRole;
 import org.santalina.diving.dto.UserDto.UpdateProfileRequest;
 import org.santalina.diving.service.UserService;
+
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -49,6 +52,42 @@ class UserServiceTest {
         var result = userService.searchUsers(null);
         assertNotNull(result);
         assertTrue(result.isEmpty());
+    }
+
+    @Test
+    @Transactional
+    void searchUsers_shouldIgnoreAccents_whenQueryHasNoAccent() {
+        User user = new User();
+        user.email = "elodie.martin@example.com";
+        user.firstName = "Élodie";
+        user.lastName = "Martin";
+        user.passwordHash = "hash";
+        user.roles = Set.of(UserRole.DIVER);
+        user.role = UserRole.DIVER;
+        user.activated = true;
+        user.persist();
+
+        var result = userService.searchUsers("elodie");
+
+        assertTrue(result.stream().anyMatch(found -> "elodie.martin@example.com".equals(found.email())));
+    }
+
+    @Test
+    @Transactional
+    void searchUsers_shouldFindAdèle_whenQueryIsAdèle() {
+        User user = new User();
+        user.email = "adele.durand@example.com";
+        user.firstName = "Adèle";
+        user.lastName = "Durand";
+        user.passwordHash = "hash";
+        user.roles = Set.of(UserRole.DIVER);
+        user.role = UserRole.DIVER;
+        user.activated = true;
+        user.persist();
+
+        var result = userService.searchUsers("Adèle");
+
+        assertTrue(result.stream().anyMatch(found -> "adele.durand@example.com".equals(found.email())));
     }
 
     @Test
