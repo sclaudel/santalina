@@ -82,33 +82,38 @@ public class UserService {
     @Transactional
     public List<UserSearchResult> searchUsers(String query) {
         if (query == null || query.isBlank()) return List.of();
-        String normalized = stripAccents(query.trim().toLowerCase());
-        String rawPattern = "%" + query.trim().toLowerCase() + "%";
+
+        String trimmed = query.trim();
+        String normalized = stripAccents(trimmed.toLowerCase());
+        String rawPattern = "%" + trimmed.toLowerCase() + "%";
 
         // Pré-filtre SQL : réduit le nombre d'entités chargées en mémoire
         List<User> candidates = User.<User>list(
                 "LOWER(firstName) LIKE ?1 OR LOWER(lastName) LIKE ?1 OR LOWER(email) LIKE ?1 " +
                 "OR LOWER(CONCAT(firstName, ' ', lastName)) LIKE ?1", rawPattern);
 
-        // Post-filtre avec normalisation des accents sur le sous-ensemble
         List<UserSearchResult> results = candidates.stream()
-                .filter(u -> stripAccents(u.fullName().toLowerCase()).contains(normalized)
-                          || stripAccents(u.email.toLowerCase()).contains(normalized))
+                .filter(u -> matchesQuery(u, normalized))
                 .limit(10)
                 .map(UserSearchResult::from)
                 .toList();
 
-        // Fallback : si la requête contient des accents non couverts par le LIKE brut,
-        // on élargit la recherche sur la base entière
-        if (results.isEmpty() && !normalized.equals(query.trim().toLowerCase())) {
-            return User.<User>listAll().stream()
-                    .filter(u -> stripAccents(u.fullName().toLowerCase()).contains(normalized)
-                              || stripAccents(u.email.toLowerCase()).contains(normalized))
-                    .limit(10)
-                    .map(UserSearchResult::from)
-                    .toList();
+        if (!results.isEmpty()) {
+            return results;
         }
-        return results;
+
+        // Fallback : si la recherche SQL brute ne trouve rien, on élargit au jeu entier
+        // avec une comparaison insensible aux accents et à la casse.
+        return User.<User>listAll().stream()
+                .filter(u -> matchesQuery(u, normalized))
+                .limit(10)
+                .map(UserSearchResult::from)
+                .toList();
+    }
+
+    private boolean matchesQuery(User user, String normalizedQuery) {
+        return stripAccents(user.fullName().toLowerCase()).contains(normalizedQuery)
+                || stripAccents(user.email.toLowerCase()).contains(normalizedQuery);
     }
 
     @Transactional
