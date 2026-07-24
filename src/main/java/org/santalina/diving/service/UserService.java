@@ -17,6 +17,7 @@ import org.jboss.logging.Logger;
 import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -112,8 +113,19 @@ public class UserService {
     }
 
     private boolean matchesQuery(User user, String normalizedQuery) {
-        return stripAccents(user.fullName().toLowerCase()).contains(normalizedQuery)
-                || stripAccents(user.email.toLowerCase()).contains(normalizedQuery);
+        if (normalizedQuery == null || normalizedQuery.isBlank()) return false;
+
+        String normalizedFullName = stripAccents(user.fullName().toLowerCase());
+        String normalizedFirstName = stripAccents(user.firstName != null ? user.firstName.toLowerCase() : "");
+        String normalizedLastName = stripAccents(user.lastName != null ? user.lastName.toLowerCase() : "");
+        String normalizedEmail = stripAccents(user.email != null ? user.email.toLowerCase() : "");
+
+        return Arrays.stream(normalizedQuery.split("\\s+"))
+                .filter(token -> !token.isBlank())
+                .allMatch(token -> normalizedFullName.contains(token)
+                        || normalizedFirstName.contains(token)
+                        || normalizedLastName.contains(token)
+                        || normalizedEmail.contains(token));
     }
 
     @Transactional
