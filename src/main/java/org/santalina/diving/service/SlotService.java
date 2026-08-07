@@ -91,6 +91,10 @@ public class SlotService {
                 && request.recurringDays() != null && !request.recurringDays().isEmpty()
                 && request.recurringUntil() != null;
 
+        if (currentUser != null) {
+            configService.assertUserCanCreateRestrictedSlot(request.slotType(), request.club(), currentUser.email);
+        }
+
         if (!recurring) {
             // Création simple (comportement original)
             SlotResponse slot = createSlot(request, currentUser);
@@ -200,6 +204,9 @@ public class SlotService {
         if (overrideDate.isBefore(LocalDate.now())) {
             throw new BadRequestException("Impossible de créer un créneau dans le passé");
         }
+        if (currentUser != null) {
+            configService.assertUserCanCreateRestrictedSlot(request.slotType(), request.club(), currentUser.email);
+        }
         validateSlotTimes(request.startTime(), request.endTime());
         checkSlotTimeWindow(request.startTime(), request.endTime());
         validateDiverCount(request.diverCount());
@@ -256,6 +263,12 @@ public class SlotService {
             slot.slotDate  = newDate;
             slot.startTime = newStart;
             slot.endTime   = newEnd;
+        }
+
+        String newSlotType = request.slotType() != null ? request.slotType() : slot.slotType;
+        String newClub = request.club() != null ? request.club() : slot.club;
+        if (currentUser != null) {
+            configService.assertUserCanCreateRestrictedSlot(newSlotType, newClub, currentUser.email);
         }
 
         slot.title    = request.title();

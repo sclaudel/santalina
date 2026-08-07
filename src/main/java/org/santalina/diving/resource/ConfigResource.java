@@ -128,6 +128,27 @@ public class ConfigResource {
     }
 
     @PUT
+    @Path("/restricted-slot-types")
+    @RolesAllowed("ADMIN")
+    public ConfigResponse updateRestrictedSlotTypes(@Valid UpdateListRequest request) {
+        return configService.updateRestrictedSlotTypes(request.items());
+    }
+
+    @PUT
+    @Path("/restricted-clubs")
+    @RolesAllowed("ADMIN")
+    public ConfigResponse updateRestrictedClubs(@Valid UpdateListRequest request) {
+        return configService.updateRestrictedClubs(request.items());
+    }
+
+    @PUT
+    @Path("/restricted-allowed-emails")
+    @RolesAllowed("ADMIN")
+    public ConfigResponse updateRestrictedAllowedEmails(@Valid UpdateListRequest request) {
+        return configService.updateRestrictedAllowedEmails(request.items());
+    }
+
+    @PUT
     @Path("/exclusive-slot-types")
     @RolesAllowed("ADMIN")
     public ConfigResponse updateExclusiveSlotTypes(@Valid UpdateListRequest request) {

@@ -106,6 +106,21 @@ export const adminService = {
     return res.data;
   },
 
+  async updateRestrictedSlotTypes(items: string[]): Promise<AppConfig> {
+    const res = await api.put<AppConfig>('/config/restricted-slot-types', { items });
+    return res.data;
+  },
+
+  async updateRestrictedClubs(items: string[]): Promise<AppConfig> {
+    const res = await api.put<AppConfig>('/config/restricted-clubs', { items });
+    return res.data;
+  },
+
+  async updateRestrictedAllowedEmails(items: string[]): Promise<AppConfig> {
+    const res = await api.put<AppConfig>('/config/restricted-allowed-emails', { items });
+    return res.data;
+  },
+
   async updateExclusiveSlotTypes(items: string[]): Promise<AppConfig> {
     const res = await api.put<AppConfig>('/config/exclusive-slot-types', { items });
     return res.data;

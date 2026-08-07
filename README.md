@@ -22,6 +22,7 @@ Application de réservation de créneaux de plongée en lac, développée avec *
 - **Plongeurs** : ajout/modification/suppression sur chaque créneau
 - **Capacité configurable** : max 25 plongeurs simultanés (modifiable par l'admin)
 - **Liste d'attente** : inscription libre, validation/refus par le DP responsable
+- **Créneaux réservés** : certains types de créneaux et clubs peuvent être réservés et ne peuvent être créés que par des utilisateurs autorisés
 - **Inscriptions libres** : le DP assigné peut ouvrir les inscriptions avec date d'ouverture optionnelle
 - **Organisation des palanquées** : drag-and-drop, gestion des aptitudes, attribution de fonctions (E1, E2, E3, E4, Serre-file), export Excel fiche de sécurité, export CSV
 - **Plongées multiples par créneau** : découpage optionnel d'un créneau en plusieurs plongées distinctes (matin/après-midi…), filtrage du tableau des palanquées par plongée, horaires par plongée, aptitudes différentes par plongée, fiches de sécurité individuelles par plongée ; les palanquées existantes sont automatiquement assignées à la première plongée créée ; chaque onglet affiche le nombre de plongeurs assignés et un badge ⚠️ si des plongeurs ne sont pas encore répartis
@@ -138,6 +139,9 @@ docker compose up --build
 | `PUT` | `/api/users/{id}/roles` | ADMIN | Changer rôles |
 | `GET` | `/api/config` | Public | Config du site |
 | `PUT` | `/api/config/max-divers` | ADMIN | Max plongeurs |
+| `PUT` | `/api/config/restricted-slot-types` | ADMIN | Mettre à jour les types de créneaux réservés |
+| `PUT` | `/api/config/restricted-clubs` | ADMIN | Mettre à jour les clubs réservés |
+| `PUT` | `/api/config/restricted-allowed-emails` | ADMIN | Mettre à jour les e-mails autorisés pour les créneaux réservés |
 | `PUT` | `/api/config/site-name` | ADMIN | Nom du site |
 | `PUT` | `/api/config/maintenance-mode` | ADMIN | Activer/désactiver le mode maintenance |
 | `PUT` | `/api/config/report-email-settings` | ADMIN | Configurer le rapport périodique d'inscriptions |

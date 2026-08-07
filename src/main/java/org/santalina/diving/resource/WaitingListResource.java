@@ -6,14 +6,13 @@ import org.santalina.diving.domain.RegistrationStatus;
 import org.santalina.diving.domain.SlotDiver;
 import org.santalina.diving.domain.User;
 import org.santalina.diving.domain.WaitingListEntry;
-import org.santalina.diving.dto.SlotDiverDto.SlotDiverRequest;
 import org.santalina.diving.dto.WaitingListDto.StatusUpdateRequest;
 import org.santalina.diving.dto.WaitingListDto.WaitingListRequest;
 import org.santalina.diving.dto.WaitingListDto.WaitingListResponse;
 import org.santalina.diving.mail.WaitingListMailer;
+import org.santalina.diving.service.ConfigService;
 import org.santalina.diving.service.DelayedNotificationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -63,6 +62,7 @@ public class WaitingListResource {
     @Inject WaitingListMailer mailer;
     @Inject DelayedNotificationService delayedNotif;
     @Inject DivingConfig divingConfig;
+    @Inject ConfigService configService;
     @Inject ObjectMapper objectMapper;
 
     // -------------------------------------------------------------------------

@@ -3,8 +3,8 @@ package org.santalina.diving.integration;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.santalina.diving.domain.AppConfigEntry;
 import org.santalina.diving.domain.DiveSlot;
 import org.santalina.diving.domain.SlotDiver;
 import org.santalina.diving.domain.User;
@@ -55,6 +55,72 @@ class WaitingListResourceIT {
         dp.slot       = slot;
         dp.firstName  = "DP";
         dp.lastName   = "ASSIGNED";
+        dp.level      = "MF1";
+        dp.email      = creator.email;
+        dp.isDirector = true;
+        dp.persist();
+
+        return slot;
+    }
+
+    @Transactional
+    DiveSlot createSlotWithType(boolean registrationOpen, String slotType) {
+        User creator = new User();
+        creator.email        = "dp_wl_type_test_" + System.nanoTime() + "@test.com";
+        creator.firstName    = "DP";
+        creator.lastName     = "TYPE";
+        creator.passwordHash = "x";
+        creator.role         = UserRole.DIVE_DIRECTOR;
+        creator.roles        = java.util.Set.of(UserRole.DIVE_DIRECTOR);
+        creator.persist();
+
+        DiveSlot slot = new DiveSlot();
+        slot.slotDate         = LocalDate.of(2099, 8, 2);
+        slot.startTime        = LocalTime.of(10, 0);
+        slot.endTime          = LocalTime.of(13, 0);
+        slot.diverCount       = 8;
+        slot.createdBy        = creator;
+        slot.registrationOpen = registrationOpen;
+        slot.slotType         = slotType;
+        slot.persist();
+
+        SlotDiver dp = new SlotDiver();
+        dp.slot       = slot;
+        dp.firstName  = "DP";
+        dp.lastName   = "TYPE";
+        dp.level      = "MF1";
+        dp.email      = creator.email;
+        dp.isDirector = true;
+        dp.persist();
+
+        return slot;
+    }
+
+    @Transactional
+    DiveSlot createSlotWithClub(boolean registrationOpen, String club) {
+        User creator = new User();
+        creator.email        = "dp_wl_club_test_" + System.nanoTime() + "@test.com";
+        creator.firstName    = "DP";
+        creator.lastName     = "CLUB";
+        creator.passwordHash = "x";
+        creator.role         = UserRole.DIVE_DIRECTOR;
+        creator.roles        = java.util.Set.of(UserRole.DIVE_DIRECTOR);
+        creator.persist();
+
+        DiveSlot slot = new DiveSlot();
+        slot.slotDate         = LocalDate.of(2099, 8, 3);
+        slot.startTime        = LocalTime.of(11, 0);
+        slot.endTime          = LocalTime.of(14, 0);
+        slot.diverCount       = 8;
+        slot.createdBy        = creator;
+        slot.registrationOpen = registrationOpen;
+        slot.club             = club;
+        slot.persist();
+
+        SlotDiver dp = new SlotDiver();
+        dp.slot       = slot;
+        dp.firstName  = "DP";
+        dp.lastName   = "CLUB";
         dp.level      = "MF1";
         dp.email      = creator.email;
         dp.isDirector = true;
@@ -158,6 +224,7 @@ class WaitingListResourceIT {
             cleanup(slot.id);
         }
     }
+
 
     @Test
     @TestSecurity(user = "diver@test.com", roles = {"DIVER"})

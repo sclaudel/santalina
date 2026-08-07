@@ -158,6 +158,9 @@ export interface AppConfig {
   selfRegistration: boolean;
   bookingOpenHour: number;
   bookingCloseHour: number;
+  restrictedSlotTypes: string[];
+  restrictedClubs: string[];
+  restrictedAllowedEmails: string[];
   exclusiveSlotTypes: string[];
   defaultSlotHours: number;
   notificationBookingEmail: string;
