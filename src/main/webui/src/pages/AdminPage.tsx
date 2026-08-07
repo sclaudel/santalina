@@ -46,6 +46,9 @@ export function AdminPage() {
 
   // Listes configurables
   const [slotTypesText, setSlotTypesText]   = useState('');
+  const [restrictedSlotTypesText, setRestrictedSlotTypesText] = useState('');
+  const [restrictedClubsText, setRestrictedClubsText] = useState('');
+  const [restrictedAllowedEmailsText, setRestrictedAllowedEmailsText] = useState('');
   const [exclusiveSlotTypes, setExclusiveSlotTypes] = useState<string[]>([]);
   const [clubsText, setClubsText]           = useState('');
   const [levelsText, setLevelsText]         = useState('');
@@ -56,6 +59,7 @@ export function AdminPage() {
   const [fonctionsText, setFonctionsText]           = useState('');
   const [listLoading, setListLoading]       = useState(false);
   const [exclusiveLoading, setExclusiveLoading] = useState(false);
+  const [restrictedSettingsLoading, setRestrictedSettingsLoading] = useState(false);
 
   // Heures de réservation
   const [bookingOpenHour, setBookingOpenHour]   = useState<number>(-1);
@@ -161,6 +165,9 @@ export function AdminPage() {
       setNewSlotMaxHours(String(c.slotMaxHours ?? 10));
       setNewMaxRecurringMonths(String(c.maxRecurringMonths ?? 4));
       setSlotTypesText((c.slotTypes ?? []).join('\n'));
+      setRestrictedSlotTypesText((c.restrictedSlotTypes ?? []).join('\n'));
+      setRestrictedClubsText((c.restrictedClubs ?? []).join('\n'));
+      setRestrictedAllowedEmailsText((c.restrictedAllowedEmails ?? []).join('\n'));
       setExclusiveSlotTypes(c.exclusiveSlotTypes ?? []);
       setClubsText((c.clubs ?? []).join('\n'));
       setLevelsText((c.levels ?? []).join('\n'));
@@ -314,6 +321,42 @@ export function AdminPage() {
       setMsg('Types de créneaux mis à jour');
     } catch (err: unknown) { setError(getErrorMessage(err)); }
     finally { setListLoading(false); }
+  };
+
+  const handleUpdateRestrictedSlotTypes = async (e: React.FormEvent) => {
+    e.preventDefault(); setMsg(''); setError(''); setRestrictedSettingsLoading(true);
+    const items = restrictedSlotTypesText.split('\n').map(s => s.trim()).filter(Boolean);
+    try {
+      const updated = await adminService.updateRestrictedSlotTypes(items);
+      setConfig(updated);
+      setRestrictedSlotTypesText((updated.restrictedSlotTypes ?? []).join('\n'));
+      setMsg('Types de créneaux réservés mis à jour');
+    } catch (err: unknown) { setError(getErrorMessage(err)); }
+    finally { setRestrictedSettingsLoading(false); }
+  };
+
+  const handleUpdateRestrictedClubs = async (e: React.FormEvent) => {
+    e.preventDefault(); setMsg(''); setError(''); setRestrictedSettingsLoading(true);
+    const items = restrictedClubsText.split('\n').map(s => s.trim()).filter(Boolean);
+    try {
+      const updated = await adminService.updateRestrictedClubs(items);
+      setConfig(updated);
+      setRestrictedClubsText((updated.restrictedClubs ?? []).join('\n'));
+      setMsg('Clubs réservés mis à jour');
+    } catch (err: unknown) { setError(getErrorMessage(err)); }
+    finally { setRestrictedSettingsLoading(false); }
+  };
+
+  const handleUpdateRestrictedAllowedEmails = async (e: React.FormEvent) => {
+    e.preventDefault(); setMsg(''); setError(''); setRestrictedSettingsLoading(true);
+    const items = restrictedAllowedEmailsText.split('\n').map(s => s.trim()).filter(Boolean);
+    try {
+      const updated = await adminService.updateRestrictedAllowedEmails(items);
+      setConfig(updated);
+      setRestrictedAllowedEmailsText((updated.restrictedAllowedEmails ?? []).join('\n'));
+      setMsg('Liste des e-mails autorisés mise à jour');
+    } catch (err: unknown) { setError(getErrorMessage(err)); }
+    finally { setRestrictedSettingsLoading(false); }
   };
 
   const handleUpdateExclusiveSlotTypes = async () => {
@@ -1609,6 +1652,56 @@ export function AdminPage() {
             </div>
             <button type="submit" className="btn btn-primary" disabled={listLoading}>
               {listLoading ? '...' : '💾 Enregistrer'}
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {/* Créneaux réservés à une liste d'utilisateurs */}
+      <div className="admin-section">
+        <h2>🔒 Créneaux réservés à une liste d'utilisateurs</h2>
+        <p style={{ color: '#6b7280', fontSize: 13, marginBottom: 16 }}>
+          Les types de créneaux et les clubs listés ci-dessous sont réservés à certains directeurs de plongée et administrateurs autorisés. Seuls les utilisateurs autorisés peuvent créer des créneaux de ces types ou pour ces clubs.
+        </p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
+          <form onSubmit={handleUpdateRestrictedSlotTypes} style={{ flex: 1, minWidth: 280 }}>
+            <div className="form-group">
+              <label style={{ fontWeight: 700 }}>Types de créneaux réservés</label>
+              <textarea rows={8} value={restrictedSlotTypesText}
+                onChange={e => setRestrictedSlotTypesText(e.target.value)}
+                placeholder={"CODEP - Plongée\nCODEP - Apnée\n..."}
+                style={{ fontFamily: 'monospace', fontSize: 13 }} />
+            </div>
+            <button type="submit" className="btn btn-primary" disabled={restrictedSettingsLoading}>
+              {restrictedSettingsLoading ? '...' : '💾 Enregistrer les types réservés'}
+            </button>
+          </form>
+
+          <form onSubmit={handleUpdateRestrictedClubs} style={{ flex: 1, minWidth: 280 }}>
+            <div className="form-group">
+              <label style={{ fontWeight: 700 }}>Clubs réservés</label>
+              <p style={{ color: '#6b7280', fontSize: 11, margin: '2px 0 6px' }}>Liste des clubs pour lesquels l'accès est restreint aux e-mails autorisés.</p>
+              <textarea rows={8} value={restrictedClubsText}
+                onChange={e => setRestrictedClubsText(e.target.value)}
+                placeholder={"CODEP - Club A\nCODEP - Club B\n..."}
+                style={{ fontFamily: 'monospace', fontSize: 13 }} />
+            </div>
+            <button type="submit" className="btn btn-primary" disabled={restrictedSettingsLoading}>
+              {restrictedSettingsLoading ? '...' : '💾 Enregistrer les clubs réservés'}
+            </button>
+          </form>
+
+          <form onSubmit={handleUpdateRestrictedAllowedEmails} style={{ flex: 1, minWidth: 280 }}>
+            <div className="form-group">
+              <label style={{ fontWeight: 700 }}>E-mails autorisés</label>
+              <p style={{ color: '#6b7280', fontSize: 11, margin: '2px 0 6px' }}>Une adresse e-mail par ligne. Les utilisateurs dont l'adresse correspond seront autorisés à s'inscrire sur les créneaux ou clubs restreints.</p>
+              <textarea rows={8} value={restrictedAllowedEmailsText}
+                onChange={e => setRestrictedAllowedEmailsText(e.target.value)}
+                placeholder={"user1@example.com\nuser2@example.com\n..."}
+                style={{ fontFamily: 'monospace', fontSize: 13 }} />
+            </div>
+            <button type="submit" className="btn btn-primary" disabled={restrictedSettingsLoading}>
+              {restrictedSettingsLoading ? '...' : '💾 Enregistrer les e-mails autorisés'}
             </button>
           </form>
         </div>

@@ -11,6 +11,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
@@ -33,6 +34,9 @@ public class ConfigService {
     private static final String KEY_SELF_REGISTRATION = "self.registration";
     private static final String KEY_BOOKING_OPEN_HOUR    = "booking.open.hour";
     private static final String KEY_BOOKING_CLOSE_HOUR   = "booking.close.hour";
+    private static final String KEY_RESTRICTED_SLOT_TYPES = "slot.restricted.types";
+    private static final String KEY_RESTRICTED_CLUBS = "slot.restricted.clubs";
+    private static final String KEY_RESTRICTED_ALLOWED_EMAILS = "slot.restricted.allowed.emails";
     private static final String KEY_EXCLUSIVE_SLOT_TYPES = "slot.exclusive.types";
     private static final String KEY_DEFAULT_SLOT_HOURS   = "slot.default.hours";
     private static final String KEY_NOTIFICATION_BOOKING_EMAIL = "notification.booking.email";
@@ -147,6 +151,20 @@ public class ConfigService {
     public boolean isMaintenanceMode() {
         return Boolean.parseBoolean(getStringValue(KEY_MAINTENANCE_MODE, "false"));
     }
+    /** Types de créneaux soumis à une restriction d'accès à une liste d'utilisateurs */
+    public List<String> getRestrictedSlotTypes() {
+        return parseList(getStringValue(KEY_RESTRICTED_SLOT_TYPES, ""));
+    }
+
+    public List<String> getRestrictedClubs() {
+        return parseList(getStringValue(KEY_RESTRICTED_CLUBS, ""));
+    }
+
+    /** Emails autorisés à réserver les types de créneaux restreints ou les clubs restreints */
+    public List<String> getRestrictedAllowedEmails() {
+        return parseList(getStringValue(KEY_RESTRICTED_ALLOWED_EMAILS, ""));
+    }
+
     /** Types de créneaux qui bloquent tout chevauchement (liste vide = aucun type exclusif) */
     public List<String> getExclusiveSlotTypes() {
         return parseList(getStringValue(KEY_EXCLUSIVE_SLOT_TYPES, ""));
@@ -256,6 +274,7 @@ public class ConfigService {
                 getFonctions(),
                 isPublicAccess(), isSelfRegistration(),
                 getBookingOpenHour(), getBookingCloseHour(),
+                getRestrictedSlotTypes(), getRestrictedClubs(), getRestrictedAllowedEmails(),
                 getExclusiveSlotTypes(), getDefaultSlotHours(),
                 getNotificationBookingEmail(),
                 getMaxRecurringMonths(),
@@ -391,6 +410,24 @@ public class ConfigService {
     }
 
     @Transactional
+    public ConfigResponse updateRestrictedSlotTypes(List<String> types) {
+        forceUpsert(KEY_RESTRICTED_SLOT_TYPES, serializeList(types));
+        return getConfig();
+    }
+
+    @Transactional
+    public ConfigResponse updateRestrictedClubs(List<String> clubs) {
+        forceUpsert(KEY_RESTRICTED_CLUBS, serializeList(clubs));
+        return getConfig();
+    }
+
+    @Transactional
+    public ConfigResponse updateRestrictedAllowedEmails(List<String> emails) {
+        forceUpsert(KEY_RESTRICTED_ALLOWED_EMAILS, serializeList(emails));
+        return getConfig();
+    }
+
+    @Transactional
     public ConfigResponse updateExclusiveSlotTypes(List<String> types) {
         forceUpsert(KEY_EXCLUSIVE_SLOT_TYPES, serializeList(types));
         return getConfig();
@@ -481,6 +518,9 @@ public class ConfigService {
         upsertIfMissing(KEY_SELF_REGISTRATION, "true");
         upsertIfMissing(KEY_BOOKING_OPEN_HOUR,    "-1");
         upsertIfMissing(KEY_BOOKING_CLOSE_HOUR,   "-1");
+        upsertIfMissing(KEY_RESTRICTED_SLOT_TYPES, "");
+        upsertIfMissing(KEY_RESTRICTED_CLUBS, "");
+        upsertIfMissing(KEY_RESTRICTED_ALLOWED_EMAILS, "");
         upsertIfMissing(KEY_EXCLUSIVE_SLOT_TYPES, "");
         upsertIfMissing(KEY_DEFAULT_SLOT_HOURS,   "2");
         upsertIfMissing(KEY_NOTIFICATION_BOOKING_EMAIL, "");
@@ -521,6 +561,49 @@ public class ConfigService {
         if (items == null) return "";
         return items.stream().map(String::trim).filter(s -> !s.isBlank())
                 .collect(Collectors.joining("|"));
+    }
+
+    public void assertUserCanCreateRestrictedSlot(String slotType, String slotClub, String userEmail) {
+        List<String> restrictedTypes = getRestrictedSlotTypes();
+        List<String> restrictedClubs = getRestrictedClubs();
+        List<String> allowedEmails = getRestrictedAllowedEmails();
+        if (restrictedTypes.isEmpty() && restrictedClubs.isEmpty()) {
+            return;
+        }
+
+        boolean isRestrictedByType = slotType != null && !slotType.isBlank()
+                && restrictedTypes.stream().anyMatch(restricted -> matchesRestrictedType(slotType, restricted));
+        boolean isRestrictedByClub = slotClub != null && !slotClub.isBlank()
+                && restrictedClubs.stream().anyMatch(restricted -> matchesRestrictedType(slotClub, restricted));
+        if (!isRestrictedByType && !isRestrictedByClub) {
+            return;
+        }
+
+        if (allowedEmails.isEmpty()) {
+            throw new jakarta.ws.rs.ForbiddenException(
+                "Vous n'êtes pas autorisé à créer un créneau de ce type ou de ce club"
+            );
+        }
+
+        String normalizedEmail = userEmail == null ? "" : userEmail.trim().toLowerCase(Locale.ROOT);
+        boolean isAllowed = allowedEmails.stream().anyMatch(email -> email.trim().toLowerCase(Locale.ROOT).equals(normalizedEmail));
+        if (!isAllowed) {
+            throw new jakarta.ws.rs.ForbiddenException(
+                "Vous n'êtes pas autorisé à créer un créneau de ce type ou de ce club"
+            );
+        }
+    }
+
+    private boolean matchesRestrictedType(String slotType, String restrictedType) {
+        if (slotType == null || slotType.isBlank() || restrictedType == null || restrictedType.isBlank()) {
+            return false;
+        }
+        String normalizedSlot = slotType.trim().toLowerCase(Locale.ROOT);
+        String normalizedRestriction = restrictedType.trim().toLowerCase(Locale.ROOT);
+        return normalizedSlot.equals(normalizedRestriction)
+                || normalizedSlot.startsWith(normalizedRestriction + " ")
+                || normalizedSlot.startsWith(normalizedRestriction + "-")
+                || normalizedSlot.startsWith(normalizedRestriction);
     }
 
     private int getIntValue(String key, int defaultVal) {

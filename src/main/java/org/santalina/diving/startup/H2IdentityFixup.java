@@ -35,7 +35,7 @@ public class H2IdentityFixup {
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(
                      "SELECT TABLE_NAME, COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS " +
-                     "WHERE IS_IDENTITY = TRUE AND TABLE_SCHEMA = 'PUBLIC'")) {
+                     "WHERE LOWER(CAST(IS_IDENTITY AS VARCHAR)) = 'true' AND TABLE_SCHEMA = 'PUBLIC'")) {
             while (rs.next()) {
                 fixIdentity(conn, rs.getString("TABLE_NAME"), rs.getString("COLUMN_NAME"));
             }

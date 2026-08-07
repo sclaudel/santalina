@@ -49,7 +49,7 @@ export function HelpPage() {
       roles: ['ADMIN', 'DIVE_DIRECTOR'],
       content: (
         <>
-          <p>La création de créneaux est réservée aux <strong>administrateurs</strong> et aux <strong>directeurs de plongée</strong>.</p>
+          <p>La création de créneaux est réservée aux <strong>administrateurs</strong> et aux <strong>directeurs de plongée</strong>. Certains types de créneaux et clubs peuvent être réservés à une liste d'utilisateurs autorisés.</p>
 
           <h4>Bouton « + Nouveau créneau » (toutes les vues)</h4>
           <ol>
@@ -583,6 +583,8 @@ export function HelpPage() {
           <p>
             Lorsqu'un directeur de plongée a <strong>activé les inscriptions libres</strong> sur un créneau,
             tout plongeur inscrit sur la plateforme peut soumettre une demande d'inscription.
+            Pour certains types de créneaux, l'administrateur peut restreindre l'accès à une liste d'utilisateurs autorisés.
+            Dans ce cas, l'inscription est refusée si l'adresse e-mail du demandeur ne fait pas partie de la liste configurée.
           </p>
 
           <h4>Pour les plongeurs (DIVER)</h4>
@@ -1051,6 +1053,9 @@ export function HelpPage() {
           <ul>
             <li><strong>Types de plongée</strong> — ex : Exploration, Formation, Apnée. Chaque entrée peut être personnalisée avec une couleur.</li>
             <li><strong>Clubs</strong> — liste des clubs participants. Utilisée à deux endroits : associée à chaque <strong>créneau</strong> (club organisateur) et proposée aux plongeurs lors de leur <strong>inscription libre</strong> pour indiquer leur club d'appartenance.</li>
+            <li><strong>Types de créneaux réservés</strong> — liste de types de créneaux qui ne peuvent être créés que par des utilisateurs autorisés.</li>
+            <li><strong>Clubs réservés</strong> — liste de clubs pour lesquels la création de créneaux est restreinte.</li>
+            <li><strong>E-mails autorisés pour les créneaux réservés</strong> — adresses e-mail autorisées à créer des créneaux de type ou de club réservé.</li>
             <li><strong>Niveaux de plongeurs</strong> — liste maître de tous les niveaux de certification, utilisée par le DP pour l'ajout manuel d'un plongeur sur un créneau.</li>
           </ul>
 

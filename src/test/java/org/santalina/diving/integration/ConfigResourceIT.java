@@ -76,6 +76,53 @@ class ConfigResourceIT {
 
     @Test
     @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void updateRestrictedSlotTypes_shouldReturn200_whenAdmin() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"items\":[\"CODEP - Plongée\"]}")
+                .when().put("/api/config/restricted-slot-types")
+                .then()
+                .statusCode(200)
+                .body("restrictedSlotTypes", hasItem("CODEP - Plongée"));
+    }
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void updateRestrictedClubs_shouldReturn200_whenAdmin() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"items\":[\"CODEP - Plongée\"]}")
+                .when().put("/api/config/restricted-clubs")
+                .then()
+                .statusCode(200)
+                .body("restrictedClubs", hasItem("CODEP - Plongée"));
+    }
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
+    void updateRestrictedAllowedEmails_shouldReturn200_whenAdmin() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"items\":[\"allowed@test.com\"]}")
+                .when().put("/api/config/restricted-allowed-emails")
+                .then()
+                .statusCode(200)
+                .body("restrictedAllowedEmails", hasItem("allowed@test.com"));
+    }
+
+    @Test
+    @TestSecurity(user = "diver@test.com", roles = {"DIVER"})
+    void updateRestrictedSlotTypes_shouldReturn403_whenDiver() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"items\":[\"CODEP - Plongée\"]}")
+                .when().put("/api/config/restricted-slot-types")
+                .then()
+                .statusCode(403);
+    }
+
+    @Test
+    @TestSecurity(user = "admin@santalina.com", roles = {"ADMIN"})
     void updatePublicAccess_shouldReturn200_whenAdmin() {
         given()
                 .contentType(ContentType.JSON)

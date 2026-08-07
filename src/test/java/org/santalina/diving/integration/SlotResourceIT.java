@@ -5,6 +5,7 @@ import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.Test;
+import org.santalina.diving.domain.AppConfigEntry;
 import org.santalina.diving.domain.DiveSlot;
 import org.santalina.diving.domain.User;
 import org.santalina.diving.domain.UserRole;
@@ -71,6 +72,32 @@ class SlotResourceIT {
         }
     }
 
+    @Transactional
+    void cleanupSlot(Long slotId) {
+        DiveSlot slot = DiveSlot.findById(slotId);
+        if (slot != null) {
+            slot.delete();
+        }
+    }
+
+    @Transactional
+    void setRestrictedSlotConfig(String slotTypes, String clubs, String allowedEmails) {
+        upsertConfig("slot.restricted.types", slotTypes);
+        upsertConfig("slot.restricted.clubs", clubs);
+        upsertConfig("slot.restricted.allowed.emails", allowedEmails);
+    }
+
+    @Transactional
+    void upsertConfig(String key, String value) {
+        AppConfigEntry entry = AppConfigEntry.findByKey(key);
+        if (entry == null) {
+            entry = new AppConfigEntry();
+            entry.configKey = key;
+        }
+        entry.configValue = value;
+        entry.persist();
+    }
+
     /* ── Accès public ── */
 
     @Test
@@ -126,6 +153,119 @@ class SlotResourceIT {
                 .when().post("/api/slots")
                 .then()
                 .statusCode(403);
+    }
+
+    @Test
+    @TestSecurity(user = "dp_restricted_notallowed@test.com", roles = {"DIVE_DIRECTOR"})
+    void createSlot_shouldReturn403_whenTypeRestrictedAndDpNotAllowed() {
+        createDiveDirector("dp_restricted_notallowed@test.com", "NOALLOW");
+        setRestrictedSlotConfig("CODEP - Plongée", "", "allowed@test.com");
+        try {
+            given()
+                    .contentType(ContentType.JSON)
+                    .body("""
+                          {"slotDate":"2099-07-01","startTime":"09:00","endTime":"12:00",
+                           "diverCount":5,"title":"Sortie test","slotType":"CODEP - Plongée"}
+                          """)
+                    .when().post("/api/slots")
+                    .then()
+                    .statusCode(403);
+        } finally {
+            cleanupUser("dp_restricted_notallowed@test.com");
+            setRestrictedSlotConfig("", "", "");
+        }
+    }
+
+    @Test
+    @TestSecurity(user = "dp_restricted_no_allowed@test.com", roles = {"DIVE_DIRECTOR"})
+    void createSlot_shouldReturn403_whenTypeRestrictedAndNoAllowedEmailsConfigured() {
+        createDiveDirector("dp_restricted_no_allowed@test.com", "NOEMAIL");
+        setRestrictedSlotConfig("CODEP - Plongée", "", "");
+        try {
+            given()
+                    .contentType(ContentType.JSON)
+                    .body("""
+                          {"slotDate":"2099-07-01","startTime":"09:00","endTime":"12:00",
+                           "diverCount":5,"title":"Sortie test","slotType":"CODEP - Plongée"}
+                          """)
+                    .when().post("/api/slots")
+                    .then()
+                    .statusCode(403);
+        } finally {
+            cleanupUser("dp_restricted_no_allowed@test.com");
+            setRestrictedSlotConfig("", "", "");
+        }
+    }
+
+    @Test
+    @TestSecurity(user = "dp_restricted_allowed@test.com", roles = {"DIVE_DIRECTOR"})
+    void createSlot_shouldReturn201_whenTypeRestrictedAndDpAllowed() {
+        createDiveDirector("dp_restricted_allowed@test.com", "ALLOW");
+        setRestrictedSlotConfig("CODEP - Plongée", "", "dp_restricted_allowed@test.com");
+        Long slotId = null;
+        try {
+            var response = given()
+                    .contentType(ContentType.JSON)
+                    .body("""
+                          {"slotDate":"2099-07-01","startTime":"09:00","endTime":"12:00",
+                           "diverCount":5,"title":"Sortie test","slotType":"CODEP - Plongée"}
+                          """)
+                    .when().post("/api/slots")
+                    .then()
+                    .statusCode(201)
+                    .extract().body().jsonPath().getLong("slots[0].id");
+            slotId = response;
+        } finally {
+            if (slotId != null) cleanupSlot(slotId);
+            cleanupUser("dp_restricted_allowed@test.com");
+            setRestrictedSlotConfig("", "", "");
+        }
+    }
+
+    @Test
+    @TestSecurity(user = "dp_restricted_club_notallowed@test.com", roles = {"DIVE_DIRECTOR"})
+    void createSlot_shouldReturn403_whenClubRestrictedAndDpNotAllowed() {
+        createDiveDirector("dp_restricted_club_notallowed@test.com", "NOCLUB");
+        setRestrictedSlotConfig("", "CODEP - Plongée", "allowed@test.com");
+        try {
+            given()
+                    .contentType(ContentType.JSON)
+                    .body("""
+                          {"slotDate":"2099-07-01","startTime":"09:00","endTime":"12:00",
+                           "diverCount":5,"title":"Sortie test","club":"CODEP - Plongée"}
+                          """)
+                    .when().post("/api/slots")
+                    .then()
+                    .statusCode(403);
+        } finally {
+            cleanupUser("dp_restricted_club_notallowed@test.com");
+            setRestrictedSlotConfig("", "", "");
+        }
+    }
+
+    @Test
+    @TestSecurity(user = "dp_restricted_club_allowed@test.com", roles = {"DIVE_DIRECTOR"})
+    void createSlot_shouldReturn201_whenClubRestrictedAndDpAllowed() {
+        createDiveDirector("dp_restricted_club_allowed@test.com", "ALLOWCLUB");
+        setRestrictedSlotConfig("", "CODEP - Plongée", "dp_restricted_club_allowed@test.com");
+        Long slotId = null;
+        try {
+            var response = given()
+                    .contentType(ContentType.JSON)
+                    .body("""
+                          {"slotDate":"2099-07-01","startTime":"09:00","endTime":"12:00",
+                           "diverCount":5,"title":"Sortie test","club":"CODEP - Plongée"}
+                          """)
+                    .when().post("/api/slots")
+                    .then()
+                    .statusCode(201)
+                    .extract().body().jsonPath().getLong("slots[0].id");
+            slotId = response;
+        } finally {
+            if (slotId != null) cleanupSlot(slotId);
+            cleanupUser("dp_restricted_club_allowed@test.com");
+            setRestrictedSlotConfig("", "", "");
+        }
     }
 
     @Test

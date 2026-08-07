@@ -45,7 +45,7 @@ export function CalendarPage({ onNavigate, returnContext, onReturnConsumed, init
     diverLevels: [], dpLevels: [], preparedLevels: [], aptitudes: [],
     publicAccess: true, selfRegistration: true,
     bookingOpenHour: -1, bookingCloseHour: -1,
-    exclusiveSlotTypes: [], defaultSlotHours: 2,
+    restrictedSlotTypes: [], restrictedClubs: [], restrictedAllowedEmails: [], exclusiveSlotTypes: [], defaultSlotHours: 2,
     notificationBookingEmail: '', maxRecurringMonths: 4,
     notifRegistrationEnabled: true, notifApprovedEnabled: true,
     notifCancelledEnabled: true, notifMovedToWlEnabled: true, notifDpNewRegEnabled: true,
