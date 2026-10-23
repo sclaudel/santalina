@@ -16,6 +16,8 @@ ansible/vars.yml
 ansible/vars-santalina.yml
 ansible/inventory.ini
 ansible/inventory-santalina.ini
+ansible/inventory-codep.ini
+ansible/vars-codep.yml
 
 # Déploiement — variables d'environnement de production
 deploy/.env
