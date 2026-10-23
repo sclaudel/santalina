@@ -285,7 +285,36 @@ docker logs --since 24h santalina-smtp
 
 Le conteneur `certbot` tourne en arrière-plan et tente un renouvellement toutes
 les 12 heures. Let's Encrypt ne renouvelle que si le certificat expire dans
-moins de 30 jours. Aucune action manuelle n'est nécessaire.
+moins de 30 jours.
+
+Sur le VPS, depuis `/opt/santalina`, les commandes suivantes permettent de
+vérifier ou de lancer un renouvellement manuellement :
+
+```bash
+cd /opt/santalina
+
+# Vérifier le certificat et sa date d'expiration
+docker compose exec certbot certbot certificates
+
+# Renouveler uniquement si nécessaire
+docker compose exec certbot certbot renew
+
+# À n'utiliser qu'en cas de besoin : force le renouvellement
+docker compose exec certbot certbot renew --force-renewal
+
+# Recharger Nginx pour qu'il prenne en compte le nouveau certificat
+docker compose exec nginx nginx -s reload
+```
+
+Pour automatiser aussi le rechargement de Nginx après un renouvellement, ajoutez
+une tâche quotidienne au cron de `root` (`sudo crontab -e`) :
+
+```cron
+15 4 * * * cd /opt/santalina && docker compose exec -T nginx nginx -s reload >> /var/log/santalina-nginx-reload.log 2>&1
+```
+
+Cette tâche recharge Nginx sans interruption. Le renouvellement reste géré par
+le conteneur Certbot ; consultez ses logs avec `docker compose logs certbot`.
 
 ---
 
